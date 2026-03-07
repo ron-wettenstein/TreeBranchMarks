@@ -31,6 +31,7 @@ from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
 from treebranchmarks.core.params import TreeParameters
 from treebranchmarks.core.task import Task
+from treebranchmarks.methods.builtin import SHAP, WOODELF
 from woodelf import WoodelfExplainer
 import shap
 
@@ -48,11 +49,10 @@ class BackgroundSHAPApproach(Approach):
     Complexity: O(T * L * n * m)
     """
 
-    name = "background_shap"
-    method = "shap"
+    name = "shap Package Background SHAP"
+    method = SHAP
     description = (
-        "SHAP TreeExplainer (interventional). "
-        "Requires background dataset. Complexity: O(T * L * n * m)."
+        "O(nmTLD)."
     )
 
     # shap.TreeExplainer internally uses only the first 100 background rows.
@@ -104,14 +104,15 @@ class WoodelfBackgroundSHAPApproach(Approach):
     Complexity: O(T * L * n * m)
     """
 
-    name = "shap_interventional"
-    method = "woodelf"
+    name = "Woodelf Background SHAP"
+    method = WOODELF
     description = (
-        "SHAP TreeExplainer (interventional). "
-        "Requires background dataset. Complexity: O(T * L * n * m)."
+        "Complexity: O(mTL + nTLD + TL2**D * D²)."
     )
 
     _SHAP_BG_LIMIT = 100
+
+    MAX_SUPPORTED_DEPTH = 21
 
     def run(
         self,
@@ -119,6 +120,9 @@ class WoodelfBackgroundSHAPApproach(Approach):
         X_explain: pd.DataFrame,
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
+
+        if trained_model.params.D > self.MAX_SUPPORTED_DEPTH:
+            return ApproachOutput(elapsed_s=0.0, not_supported=True)
 
         if X_background is None:
             raise ValueError(
@@ -146,6 +150,7 @@ class WoodelfBackgroundSHAPApproach(Approach):
 # ---------------------------------------------------------------------------
 
 def BackgroundSHAPTask(
+    methods: list | None = None,
     extra_approaches: list[Approach] | None = None,
     n_repeats: int = 3,
     cache_root: Path = Path("cache"),
@@ -153,15 +158,28 @@ def BackgroundSHAPTask(
     """
     Convenience factory that returns a Task preconfigured for background SHAP.
 
-    The default approach is the shap library's interventional TreeExplainer.
-    Add your own implementations via extra_approaches.
+    Parameters
+    ----------
+    methods : list[Method] | None
+        Which built-in methods to include.  Defaults to [SHAP, WOODELF].
+        Pass a subset to run only selected methods, e.g. ``methods=[SHAP]``.
+    extra_approaches : list[Approach] | None
+        Additional Approach instances (e.g. a custom method) appended after
+        the built-in ones.
     """
-    approaches: list[Approach] = [BackgroundSHAPApproach(), WoodelfBackgroundSHAPApproach()]
+    _registry = {
+        SHAP:    BackgroundSHAPApproach,
+        WOODELF: WoodelfBackgroundSHAPApproach,
+    }
+    if methods is None:
+        methods = [SHAP, WOODELF]
+
+    approaches: list[Approach] = [_registry[m]() for m in methods if m in _registry]
     if extra_approaches:
         approaches.extend(extra_approaches)
 
     return Task(
-        name="background_shap",
+        name="Background SHAP Task",
         approaches=approaches,
         n_repeats=n_repeats,
         cache_root=cache_root,

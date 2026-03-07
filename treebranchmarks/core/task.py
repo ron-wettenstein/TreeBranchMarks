@@ -17,7 +17,7 @@ from __future__ import annotations
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,9 @@ import pandas as pd
 from treebranchmarks.core.approach import Approach
 from treebranchmarks.core.model import TrainedModel
 from treebranchmarks.core.params import TreeParameters
+
+if TYPE_CHECKING:
+    from treebranchmarks.cache.method_cache import MethodResultCache
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +41,8 @@ class ApproachResult:
     std_time_s: float               # 0.0 when is_estimated=True
     is_estimated: bool              # True = run was skipped; time is linearly extrapolated
     error: Optional[str]            # filled if the approach raised an exception
-    method: str = ""                # "shap" | "woodelf" | ""
+    method: str = ""                # method.name — e.g. "shap" | "woodelf"
+    not_supported: bool = False     # True = approach cannot handle this input; score = 0
 
     def as_dict(self) -> dict:
         return {
@@ -48,6 +52,7 @@ class ApproachResult:
             "is_estimated": self.is_estimated,
             "error": self.error,
             "method": self.method,
+            "not_supported": self.not_supported,
         }
 
 
@@ -114,6 +119,8 @@ class Task:
         X_background: Optional[pd.DataFrame],
         prev_times: Optional[dict[str, tuple[int, float]]] = None,
         timeout_s: float = 600.0,
+        method_cache: Optional["MethodResultCache"] = None,
+        mission_name: str = "",
     ) -> TaskResult:
         """
         Time all approaches and return a TaskResult.
@@ -128,6 +135,11 @@ class Task:
             is_estimated=True with the extrapolated time as running_time.
         timeout_s : float
             Skip threshold in seconds (default 600 = 10 minutes).
+        method_cache : MethodResultCache | None
+            If provided, cached results are used when available, and new results
+            are written to the cache after measurement.
+        mission_name : str
+            Required when method_cache is provided to build the cache key.
         """
         params = trained_model.params.with_run_params(
             n=len(X_explain),
@@ -137,12 +149,25 @@ class Task:
 
         approach_results: dict[str, ApproachResult] = {}
         for approach in self.approaches:
+            # Try method cache first
+            if method_cache is not None:
+                cached = method_cache.get(approach, mission_name, self.name, params)
+                if cached is not None:
+                    approach_results[approach.name] = cached
+                    print(f"  [approach:{approach.name}] CACHED={cached.running_time:.3f}s")
+                    continue
+
             prev = (prev_times or {}).get(approach.name)
             result = self._time_approach(
                 approach, trained_model, X_explain, X_background, params,
                 prev_n_time=prev, current_n=current_n, timeout_s=timeout_s,
             )
             approach_results[approach.name] = result
+
+            # Store in method cache if available and the run succeeded (or was not_supported)
+            if method_cache is not None and not result.error:
+                method_cache.put(approach, mission_name, self.name, params, result)
+
             if result.error:
                 print(f"  [approach:{approach.name}] ERROR: {result.error}")
             elif result.is_estimated:
@@ -179,27 +204,49 @@ class Task:
             if prev_n > 0:
                 extrapolated = prev_time * (current_n / prev_n)
                 if extrapolated > timeout_s:
+                    method_name = getattr(getattr(approach, "method", None), "name", "")
                     return ApproachResult(
                         approach_name=approach.name,
                         running_time=extrapolated,
                         std_time_s=0.0,
                         is_estimated=True,
                         error=None,
-                        method=getattr(approach, "method", ""),
+                        method=method_name,
                     )
 
         REPEAT_THRESHOLD_S = 10.0
 
+        method_name = getattr(getattr(approach, "method", None), "name", "")
         times: list[float] = []
         any_estimated = False
         error: Optional[str] = None
 
         try:
             if self.warmup:
-                approach.run(trained_model, X_explain, X_background)
+                warmup_out = approach.run(trained_model, X_explain, X_background)
+                if warmup_out.not_supported:
+                    return ApproachResult(
+                        approach_name=approach.name,
+                        running_time=0.0,
+                        std_time_s=0.0,
+                        is_estimated=False,
+                        error=None,
+                        method=method_name,
+                        not_supported=True,
+                    )
 
             # Always run once.
             first = approach.run(trained_model, X_explain, X_background)
+            if first.not_supported:
+                return ApproachResult(
+                    approach_name=approach.name,
+                    running_time=0.0,
+                    std_time_s=0.0,
+                    is_estimated=False,
+                    error=None,
+                    method=method_name,
+                    not_supported=True,
+                )
             times.append(first.elapsed_s)
             if first.is_estimated:
                 any_estimated = True
@@ -227,5 +274,5 @@ class Task:
             std_time_s=std_t,
             is_estimated=any_estimated,
             error=error,
-            method=getattr(approach, "method", ""),
+            method=method_name,
         )

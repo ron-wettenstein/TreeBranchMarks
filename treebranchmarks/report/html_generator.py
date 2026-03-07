@@ -24,6 +24,7 @@ import json
 from pathlib import Path
 
 from treebranchmarks.core.experiment import ExperimentResult
+from treebranchmarks.core.method import Method
 
 
 # ---------------------------------------------------------------------------
@@ -61,8 +62,34 @@ def _collect_rows(experiment: ExperimentResult) -> list[dict]:
                     "running_time": ar.running_time,
                     "std_s": ar.std_time_s,
                     "is_estimated": ar.is_estimated,
+                    "not_supported": ar.not_supported,
                 })
     return rows
+
+
+def _collect_methods(experiment: ExperimentResult) -> list[dict]:
+    """
+    Return a list of {name, label, description} dicts for every Method found
+    in the experiment's approach results, ordered by first appearance.
+    Preserves full Method metadata so the JS never needs to hardcode labels.
+    """
+    seen: dict[str, dict] = {}
+    for mr in experiment.mission_results:
+        for tr in mr.task_results:
+            for ar in tr.approach_results.values():
+                if ar.method and ar.method not in seen:
+                    seen[ar.method] = {"name": ar.method, "label": ar.method, "description": ""}
+
+    # Overlay rich metadata from actual Method objects when available
+    try:
+        from treebranchmarks.methods.builtin import SHAP, WOODELF
+        for m in (SHAP, WOODELF):
+            if m.name in seen:
+                seen[m.name] = m.as_dict()
+    except ImportError:
+        pass
+
+    return list(seen.values())
 
 
 def _collect_mission_meta(experiment: ExperimentResult) -> dict:
@@ -81,62 +108,83 @@ def _collect_mission_meta(experiment: ExperimentResult) -> dict:
 
 def _compute_scores(rows: list[dict]) -> dict:
     """
-    Compare method="woodelf" vs method="shap" for each unique
+    Compare all methods against each other for each unique
     (dataset, mission, task, n, m, D, ensemble) group.
 
     Scoring rule per group:
-      - winner (lower time) gets 100
-      - loser gets (winner_time / loser_time) * 100
+      - winner (lowest time) gets 100
+      - each other method gets (winner_time / their_time) * 100
+      - groups where fewer than 2 methods have valid (>0) times are skipped
 
-    Returns a dict ready for JSON embedding with keys:
-      overall, background, path_dependent, by_mission
-    Each value is {w, s, n} (woodelf score, shap score, run count) or None.
+    Returns a dict ready for JSON embedding:
+      {
+        "methods": ["shap", "woodelf", ...],   # all method names found
+        "overall":    { "scores": {"shap": 87.3, "woodelf": 54.2}, "n": 15 },
+        "by_mission": { "mission_name": { "scores": {...}, "n": 5 }, ... }
+      }
     """
     from collections import defaultdict
 
-    groups: dict = defaultdict(lambda: {"woodelf": [], "shap": [], "mission": "", "task": ""})
+    # group_data[key] = { "_times": {method: [times]}, "_not_supported": {methods}, "mission": str, "task": str }
+    group_data: dict = defaultdict(lambda: {"_times": defaultdict(list), "_not_supported": set(), "mission": "", "task": ""})
 
     for r in rows:
         method = r.get("method", "")
-        if method not in ("woodelf", "shap"):
+        if not method:
             continue
         key = (r["dataset"], r["mission"], r["task"], r["n"], r["m"], r["D"], r["ensemble"])
-        g = groups[key]
-        g[method].append(r["running_time"])
+        g = group_data[key]
+        if r.get("not_supported"):
+            g["_not_supported"].add(method)
+        else:
+            g["_times"][method].append(r["running_time"])
         g["mission"] = r["mission"]
         g["task"] = r["task"]
 
-    runs = []
-    for g in groups.values():
-        if not g["woodelf"] or not g["shap"]:
-            continue
-        wt = sum(g["woodelf"]) / len(g["woodelf"])
-        st = sum(g["shap"]) / len(g["shap"])
-        if wt <= 0 or st <= 0:
-            continue
-        ws, ss = (100.0, (wt / st) * 100.0) if wt <= st else ((st / wt) * 100.0, 100.0)
-        runs.append({"mission": g["mission"], "task": g["task"], "ws": ws, "ss": ss})
+    # runs[i] = { "mission": str, "task": str, "method_scores": {method: score} }
+    runs: list[dict] = []
+    all_methods: set[str] = set()
 
-    def avg_pair(subset: list) -> dict | None:
+    for g in group_data.values():
+        times_by_method = {m: sum(ts) / len(ts) for m, ts in g["_times"].items() if ts}
+        supported = {m: t for m, t in times_by_method.items() if t > 0}
+        not_supported_methods = g["_not_supported"]
+        # Need at least one supported method with a competitor (supported or not_supported)
+        if not supported or (len(supported) < 2 and not not_supported_methods):
+            continue
+        if supported:
+            winner_time = min(supported.values())
+            winner = min(supported, key=supported.get)
+            scores = {m: (winner_time / t) * 100.0 for m, t in supported.items()}
+            scores[winner] = 100.0
+        else:
+            scores = {}
+        for m in not_supported_methods:
+            scores[m] = 0.0
+        all_methods.update(scores.keys())
+        runs.append({"mission": g["mission"], "task": g["task"], "method_scores": scores})
+
+    def avg_scores(subset: list) -> dict | None:
         if not subset:
             return None
+        totals: dict[str, float] = {}
+        counts: dict[str, int] = {}
+        for r in subset:
+            for m, s in r["method_scores"].items():
+                totals[m] = totals.get(m, 0.0) + s
+                counts[m] = counts.get(m, 0) + 1
         return {
-            "w": sum(r["ws"] for r in subset) / len(subset),
-            "s": sum(r["ss"] for r in subset) / len(subset),
+            "scores": {m: totals[m] / counts[m] for m in totals},
             "n": len(subset),
         }
 
-    bg_runs = [r for r in runs if "background" in r["task"]]
-    pd_runs = [r for r in runs if "path_dependent" in r["task"]]
-
     by_mission: dict = {}
     for mn in {r["mission"] for r in runs}:
-        by_mission[mn] = avg_pair([r for r in runs if r["mission"] == mn])
+        by_mission[mn] = avg_scores([r for r in runs if r["mission"] == mn])
 
     return {
-        "overall": avg_pair(runs),
-        "background": avg_pair(bg_runs),
-        "path_dependent": avg_pair(pd_runs),
+        "methods": sorted(all_methods),
+        "overall": avg_scores(runs),
         "by_mission": by_mission,
     }
 
@@ -160,10 +208,11 @@ class HtmlGenerator:
         if not rows:
             raise ValueError("ExperimentResult contains no successful approach results.")
 
-        data_js   = json.dumps(rows, separators=(",", ":"))
-        meta_js   = json.dumps(_collect_mission_meta(result), separators=(",", ":"))
-        scores_js = json.dumps(_compute_scores(rows), separators=(",", ":"))
-        html = _build_html(result.experiment_name, data_js, meta_js, scores_js)
+        data_js    = json.dumps(rows, separators=(",", ":"))
+        meta_js    = json.dumps(_collect_mission_meta(result), separators=(",", ":"))
+        scores_js  = json.dumps(_compute_scores(rows), separators=(",", ":"))
+        methods_js = json.dumps(_collect_methods(result), separators=(",", ":"))
+        html = _build_html(result.experiment_name, data_js, meta_js, scores_js, methods_js)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(html, encoding="utf-8")
 
@@ -172,7 +221,7 @@ class HtmlGenerator:
 # HTML assembly — use concatenation so JS braces need no escaping
 # ---------------------------------------------------------------------------
 
-def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str) -> str:
+def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str, methods_js: str) -> str:
     head = (
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"
@@ -180,7 +229,7 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "  <meta charset=\"utf-8\">\n"
         "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"  <title>Treebranchmarks \u2014 {experiment_name}</title>\n"
-        "  <script src=\"https://cdn.plot.ly/plotly-latest.min.js\"></script>\n"
+        "  <script src=\"https://cdn.plot.ly/plotly-2.35.2.min.js\"></script>\n"
         "  <style>\n" + _css() + "\n  </style>\n"
         "</head>\n"
         "<body>\n"
@@ -204,6 +253,7 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         f"    const DATA = {data_js};\n"
         f"    const MISSION_META = {meta_js};\n"
         f"    const SCORES = {scores_js};\n"
+        f"    const METHODS = {methods_js};\n"
     )
     tail = (
         "  </script>\n"
@@ -492,7 +542,7 @@ def _css() -> str:
       border-bottom: 1px solid #dee2e6;
       white-space: nowrap;
     }
-    .score-table tbody tr:hover { background: none; }
+    .score-table tbody tr:hover { background: #f8f9fa; }
     .score-table tbody td {
       padding: 7px 20px 7px 4px;
       border-bottom: none;
@@ -518,8 +568,7 @@ def _css() -> str:
       min-width: 4px;
       max-width: 120px;
     }
-    .woodelf-bar { background: #2ca02c; }
-    .shap-bar    { background: #1f77b4; }
+    .score-bar   { background: #2ca02c; } /* default; overridden inline per method */
 
     /* Mission score banner */
     #mission-score-banner {
@@ -569,41 +618,63 @@ def _js() -> str:
     # Plain string — no Python f-string, so { and } are literal JS.
     return r"""
     // -----------------------------------------------------------------------
+    // Method metadata — keyed by method.name, built from METHODS constant.
+    // -----------------------------------------------------------------------
+    var _methodMap = {};
+    METHODS.forEach(function(m) { _methodMap[m.name] = m; });
+    function methodLabel(name) {
+      return (_methodMap[name] && _methodMap[name].label) || name || 'unknown';
+    }
+    var _scoreColors = ['#2ca02c','#1f77b4','#ff7f0e','#9467bd','#8c564b','#e377c2'];
+    function methodColor(name) {
+      var idx = (SCORES.methods || []).indexOf(name);
+      return _scoreColors[idx >= 0 ? idx % _scoreColors.length : 0];
+    }
+    function renderMethodBadge(m, val, maxScore) {
+      var win = val >= maxScore - 0.001;
+      var color = methodColor(m);
+      var ns = val === 0 && !win;
+      var label = methodLabel(m) + ': ' + (ns ? 'N/A' : val.toFixed(1) + (win ? ' \u2605' : ''));
+      return '<span class="msb-badge" style="background:' + color +
+             ';color:#fff;opacity:' + (win ? '1' : '0.7') + ';border:1px solid ' + color + '">' +
+             label + '</span>';
+    }
+
     // Scoring — pre-computed by Python, embedded as SCORES constant.
-    // SCORES = { overall, background, path_dependent, by_mission }
-    // Each category: { w (woodelf avg), s (shap avg), n (run count) } or null.
+    // SCORES = { methods: [...], overall: { scores: {method: avg}, n }, by_mission: {...} }
     // -----------------------------------------------------------------------
 
     function renderScoreboard() {
       var el = document.getElementById('scoreboard');
       if (!SCORES.overall) { el.style.display = 'none'; return; }
 
-      function scoreCell(pair, who) {
-        if (!pair) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
-        var val   = who === 'w' ? pair.w : pair.s;
-        var other = who === 'w' ? pair.s : pair.w;
-        var isWin = val >= other;
-        var color  = who === 'w' ? '#2ca02c' : '#1f77b4';
-        var barCls = who === 'w' ? 'woodelf-bar' : 'shap-bar';
-        var barW   = Math.round(val * 1.2);
+      function scoreCell(scoresObj, methodName) {
+        if (!scoresObj || !scoresObj.scores) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
+        var val = scoresObj.scores[methodName];
+        if (val === undefined) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
+        var maxVal = Math.max.apply(null, Object.keys(scoresObj.scores).map(function(m){ return scoresObj.scores[m]; }));
+        var isWin = val >= maxVal - 0.001;
+        var isNs = val === 0 && !isWin;
+        var color = methodColor(methodName);
         return '<td class="score-cell' + (isWin ? ' winner' : '') + '">' +
-               '<div class="score-bar-wrap">' +
-               '<div class="score-bar ' + barCls + '" style="width:' + barW + 'px"></div>' +
-               '<span style="color:' + color + '">' + val.toFixed(1) + (isWin ? ' \u2605' : '') + '</span>' +
-               '</div></td>';
+               '<span style="color:' + color + (isNs ? ';opacity:0.5' : '') + '">' +
+               (isNs ? 'N/A' : val.toFixed(1) + (isWin ? ' \u2605' : '')) + '</span>' +
+               '</td>';
       }
 
       // --- Left: overall summary table ---
-      var leftHtml = '<div class="scoreboard-title">Score Summary &mdash; Woodelf vs SHAP</div>';
+      var methods = SCORES.methods || [];
+      var leftTitle = methods.map(function(m){ return methodLabel(m); }).join(' vs ');
+      var leftHtml = '<div class="scoreboard-title">Score Summary &mdash; ' + leftTitle + '</div>';
       leftHtml += '<table class="score-table"><thead><tr>';
       leftHtml += '<th></th><th>Overall (' + SCORES.overall.n + ' runs)</th>';
       leftHtml += '</tr></thead><tbody>';
-      leftHtml += '<tr><td class="team-name woodelf-color">Woodelf</td>';
-      leftHtml += scoreCell(SCORES.overall, 'w');
-      leftHtml += '</tr>';
-      leftHtml += '<tr><td class="team-name shap-color">SHAP</td>';
-      leftHtml += scoreCell(SCORES.overall, 's');
-      leftHtml += '</tr></tbody></table>';
+      methods.forEach(function(m) {
+        leftHtml += '<tr><td class="team-name" style="color:' + methodColor(m) + '">' + methodLabel(m) + '</td>';
+        leftHtml += scoreCell(SCORES.overall, m);
+        leftHtml += '</tr>';
+      });
+      leftHtml += '</tbody></table>';
 
       // --- Right: filter sliders + live filtered score ---
       var SB_PARAMS = ['n', 'm', 'D'];
@@ -661,30 +732,49 @@ def _js() -> str:
       function computeScoreFromRows(rows, removeFast) {
         var groups = {};
         rows.forEach(function(r) {
-          if (r.method !== 'woodelf' && r.method !== 'shap') return;
+          if (!r.method) return;
           var key = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
-          if (!groups[key]) groups[key] = { woodelf: [], shap: [] };
-          groups[key][r.method].push(r.running_time);
+          if (!groups[key]) groups[key] = { times: {}, notSupported: {} };
+          if (r.not_supported) {
+            groups[key].notSupported[r.method] = true;
+          } else {
+            if (!groups[key].times[r.method]) groups[key].times[r.method] = [];
+            groups[key].times[r.method].push(r.running_time);
+          }
         });
-        var runs = [];
+        var totals = {}, counts = {}, nGroups = 0;
         Object.keys(groups).forEach(function(key) {
           var g = groups[key];
-          if (!g.woodelf.length || !g.shap.length) return;
-          var wt = g.woodelf.reduce(function(a,b){return a+b;},0) / g.woodelf.length;
-          var st = g.shap.reduce(function(a,b){return a+b;},0) / g.shap.length;
-          if (wt <= 0 || st <= 0) return;
-          if (removeFast && wt < 10 && st < 10) return;
-          var ws, ss;
-          if (wt <= st) { ws = 100; ss = (wt / st) * 100; }
-          else          { ss = 100; ws = (st / wt) * 100; }
-          runs.push({ ws: ws, ss: ss });
+          var times = {};
+          Object.keys(g.times).forEach(function(m) {
+            var avg = g.times[m].reduce(function(a,b){return a+b;},0) / g.times[m].length;
+            if (avg > 0) times[m] = avg;
+          });
+          var nsKeys = Object.keys(g.notSupported);
+          // Need at least one supported method with a competitor
+          if (Object.keys(times).length === 0) return;
+          if (Object.keys(times).length < 2 && nsKeys.length === 0) return;
+          var minT = Math.min.apply(null, Object.keys(times).map(function(m){ return times[m]; }));
+          if (removeFast) {
+            var allFast = Object.keys(times).every(function(m){ return times[m] < 10; });
+            if (allFast) return;
+          }
+          var winner = Object.keys(times).filter(function(m){ return times[m] <= minT; })[0];
+          Object.keys(times).forEach(function(m) {
+            var score = m === winner ? 100 : (minT / times[m]) * 100;
+            totals[m] = (totals[m] || 0) + score;
+            counts[m] = (counts[m] || 0) + 1;
+          });
+          nsKeys.forEach(function(m) {
+            totals[m] = (totals[m] || 0) + 0;
+            counts[m] = (counts[m] || 0) + 1;
+          });
+          nGroups++;
         });
-        if (!runs.length) return null;
-        return {
-          w: runs.reduce(function(a,r){return a+r.ws;},0) / runs.length,
-          s: runs.reduce(function(a,r){return a+r.ss;},0) / runs.length,
-          n: runs.length,
-        };
+        if (!nGroups) return null;
+        var scores = {};
+        Object.keys(totals).forEach(function(m) { scores[m] = totals[m] / counts[m]; });
+        return { scores: scores, n: nGroups };
       }
 
       function updateFilteredScore() {
@@ -701,22 +791,18 @@ def _js() -> str:
           return r.n >= nLo && r.n <= nHi && r.m >= mLo && r.m <= mHi && r.D >= dLo && r.D <= dHi &&
                  (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1);
         });
-        var pair = computeScoreFromRows(filtered, removeFast);
+        var result = computeScoreFromRows(filtered, removeFast);
         var el2 = document.getElementById('sb-filtered-score');
-        if (!pair) {
+        if (!result) {
           el2.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
           return;
         }
-        var wWin = pair.w >= pair.s;
-        function fBadge(label, val, cls, win) {
-          return '<span class="msb-badge ' + cls + (win ? ' winner' : '') + '">' +
-                 label + ': ' + val.toFixed(1) + (win ? ' \u2605' : '') + '</span>';
-        }
-        el2.innerHTML =
-          fBadge('Woodelf', pair.w, 'woodelf', wWin) +
-          '<span class="msb-sep">vs</span>' +
-          fBadge('SHAP', pair.s, 'shap', !wWin) +
-          '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + pair.n + ' runs)</span>';
+        var maxScore = Math.max.apply(null, Object.keys(result.scores).map(function(m){ return result.scores[m]; }));
+        var html = Object.keys(result.scores).sort().map(function(m) {
+          return renderMethodBadge(m, result.scores[m], maxScore);
+        }).join('<span class="msb-sep">vs</span>');
+        html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + result.n + ' runs)</span>';
+        el2.innerHTML = html;
       }
 
       SB_PARAMS.forEach(function(p) {
@@ -754,22 +840,19 @@ def _js() -> str:
 
     function renderMissionScore(missionName) {
       var el = document.getElementById('mission-score-banner');
-      var pair = (SCORES.by_mission || {})[missionName];
-      if (!pair) { el.innerHTML = ''; return; }
-      var wWin = pair.w >= pair.s;
+      var entry = (SCORES.by_mission || {})[missionName];
+      if (!entry || !entry.scores) { el.innerHTML = ''; return; }
 
-      function badge(label, val, cls, win) {
-        return '<span class="msb-badge ' + cls + (win ? ' winner' : '') + '">' +
-               label + ': ' + val.toFixed(1) + (win ? ' \u2605' : '') + '</span>';
-      }
+      var maxScore = Math.max.apply(null, Object.keys(entry.scores).map(function(m){ return entry.scores[m]; }));
+      var badges = Object.keys(entry.scores).sort().map(function(m) {
+        return renderMethodBadge(m, entry.scores[m], maxScore);
+      });
 
       el.innerHTML =
         '<span class="msb-label">Mission Score:</span>' +
-        badge('Woodelf', pair.w, 'woodelf', wWin) +
-        '<span class="msb-sep">vs</span>' +
-        badge('SHAP', pair.s, 'shap', !wWin) +
+        badges.join('<span class="msb-sep">vs</span>') +
         '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">avg of ' +
-        pair.n + ' run' + (pair.n > 1 ? 's' : '') + '</span>';
+        entry.n + ' run' + (entry.n > 1 ? 's' : '') + '</span>';
     }
 
     // -----------------------------------------------------------------------
@@ -843,19 +926,14 @@ def _js() -> str:
     // Chart
     // -----------------------------------------------------------------------
     function buildTraces(rows, xp) {
-      function methodLabel(m) {
-        if (m === 'shap')    return 'SHAP';
-        if (m === 'woodelf') return 'Woodelf';
-        return m || 'unknown';
-      }
-
       var approaches = unique(rows.map(function(r) { return r.approach; }));
       return approaches.map(function(app) {
         var appRows = rows
-          .filter(function(r) { return r.approach === app; })
+          .filter(function(r) { return r.approach === app && !r.not_supported; })
           .sort(function(a, b) { return a[xp] - b[xp]; });
+        if (!appRows.length) return null;  // all points unsupported — skip trace
 
-        var label = methodLabel(appRows[0] ? appRows[0].method : '');
+        var label = methodLabel(appRows[0].method);
         return {
           x: appRows.map(function(r) { return r[xp]; }),
           y: appRows.map(function(r) { return r.running_time; }),
@@ -889,9 +967,10 @@ def _js() -> str:
     }
 
     function renderChart(rows, xp) {
-      var traces = buildTraces(rows, xp);
+      var traces = buildTraces(rows, xp).filter(function(t) { return t !== null; });
       var xVals = getUnique(xp, rows);
-      var yVals = rows.map(function(r) { return r.running_time; }).filter(function(v) { return v > 0; });
+      var supportedRows = rows.filter(function(r) { return !r.not_supported; });
+      var yVals = supportedRows.map(function(r) { return r.running_time; }).filter(function(v) { return v > 0; });
       var useLogX = shouldUseLogScale(xVals);
       var useLogY = shouldUseLogScale(yVals);
       var layout = {

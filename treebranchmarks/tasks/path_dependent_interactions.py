@@ -1,19 +1,17 @@
 """
-Path-Dependent SHAP (TreeSHAP, interventional=False).
+Path-Dependent SHAP Interaction Values.
 
 Algorithm
 ---------
-Uses the decision path through the tree to compute SHAP values without a
-background dataset.  The data distribution is estimated from the training
-data that passes through each internal node.
-
-Theoretical complexity: O(T * L^2 * n)
-  - T trees, each with L leaves
-  - For each of the n rows, the algorithm walks the tree and at each split
-    considers which leaves are reachable from each ancestor
+Computes pairwise SHAP interaction values using the tree path-dependent
+perturbation (no background dataset required).
 
 Reference implementation: shap.TreeExplainer with
     feature_perturbation="tree_path_dependent"
+    calling shap_interaction_values().
+
+Woodelf: WoodelfExplainer with feature_perturbation="tree_path_dependent"
+    calling shap_interaction_values().
 """
 
 from __future__ import annotations
@@ -22,8 +20,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 import pandas as pd
+import shap
 
 from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
@@ -31,28 +29,22 @@ from treebranchmarks.core.params import TreeParameters
 from treebranchmarks.core.task import Task
 from treebranchmarks.methods.builtin import SHAP, WOODELF
 from woodelf import WoodelfExplainer
-import shap
 
 
 # ---------------------------------------------------------------------------
-# Approach
+# Approaches
 # ---------------------------------------------------------------------------
 
-class SHAPTreePathDependentApproach(Approach):
+class SHAPPathDependentInteractionsApproach(Approach):
     """
-    SHAP TreeExplainer with feature_perturbation="tree_path_dependent".
+    SHAP TreeExplainer path-dependent interaction values.
 
-    This approach does not require a background dataset.  X_background is
-    ignored.
-
-    Complexity: O(T * L^2 * n)
+    No background dataset needed.
     """
 
-    name = "shap Package Path-Dependent SHAP"
+    name = "shap Package Path-Dependent SHAP Interactions"
     method = SHAP
-    description = (
-        "Complexity: O(nTLD²)."
-    )
+    description = "Complexity: O(nTLFD²)"
 
     def run(
         self,
@@ -65,35 +57,24 @@ class SHAPTreePathDependentApproach(Approach):
             feature_perturbation="tree_path_dependent",
         )
         t0 = time.perf_counter()
-        explainer.shap_values(X_explain, check_additivity=False)
+        explainer.shap_interaction_values(X_explain)
         elapsed = time.perf_counter() - t0
 
         return ApproachOutput(elapsed_s=elapsed)
 
-    def complexity_formula(self, params: TreeParameters) -> Optional[float]:
-        # O(T * L^2 * n)
-        return params.T * (params.L ** 2) * params.n
 
-
-
-
-class WoodelfSHAPTreePathDependentApproach(Approach):
+class WoodelfPathDependentInteractionsApproach(Approach):
     """
-    SHAP TreeExplainer with feature_perturbation="tree_path_dependent".
+    Woodelf path-dependent SHAP interaction values.
 
-    This approach does not require a background dataset.  X_background is
-    ignored.
-
-    Complexity: O(T * L^2 * n)
+    No background dataset needed.
     """
 
-    name = "Woodelf Path-Dependent SHAP"
+    name = "Woodelf Path-Dependent SHAP Interactions"
     method = WOODELF
-    description = (
-        "Complexity: O(nTLD + TL2**D * D²)."
-    )
+    description = "Complexity: O(nTLD + TL2**D * D**3)."
 
-    MAX_SUPPORTED_DEPTH = 21
+    MAX_SUPPORTED_DEPTH = 18
 
     def run(
         self,
@@ -101,8 +82,6 @@ class WoodelfSHAPTreePathDependentApproach(Approach):
         X_explain: pd.DataFrame,
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
-        import shap
-
         if trained_model.params.D > self.MAX_SUPPORTED_DEPTH:
             return ApproachOutput(elapsed_s=0.0, not_supported=True)
 
@@ -111,39 +90,35 @@ class WoodelfSHAPTreePathDependentApproach(Approach):
             feature_perturbation="tree_path_dependent",
         )
         t0 = time.perf_counter()
-        explainer.shap_values(X_explain)
+        explainer.shap_interaction_values(X_explain)
         elapsed = time.perf_counter() - t0
 
         return ApproachOutput(elapsed_s=elapsed)
 
-    def complexity_formula(self, params: TreeParameters) -> Optional[float]:
-        return params.n * params.T * params.D  + params.T * params.L * (2 ** params.D)* (params.D ** 2)
 
 # ---------------------------------------------------------------------------
 # Task factory
 # ---------------------------------------------------------------------------
 
-def PathDependentSHAPTask(
+def PathDependentInteractionsTask(
     methods: list | None = None,
     extra_approaches: list[Approach] | None = None,
     n_repeats: int = 3,
     cache_root: Path = Path("cache"),
 ) -> Task:
     """
-    Convenience factory that returns a Task preconfigured for path-dependent SHAP.
+    Task for path-dependent SHAP interaction values.
 
     Parameters
     ----------
     methods : list[Method] | None
-        Which built-in methods to include.  Defaults to [SHAP, WOODELF].
-        Pass a subset to run only selected methods, e.g. ``methods=[SHAP]``.
+        Which built-in methods to include. Defaults to [SHAP, WOODELF].
     extra_approaches : list[Approach] | None
-        Additional Approach instances (e.g. a custom method) appended after
-        the built-in ones.
+        Additional Approach instances appended after the built-in ones.
     """
     _registry = {
-        SHAP:    SHAPTreePathDependentApproach,
-        WOODELF: WoodelfSHAPTreePathDependentApproach,
+        SHAP:    SHAPPathDependentInteractionsApproach,
+        WOODELF: WoodelfPathDependentInteractionsApproach,
     }
     if methods is None:
         methods = [SHAP, WOODELF]
@@ -153,7 +128,7 @@ def PathDependentSHAPTask(
         approaches.extend(extra_approaches)
 
     return Task(
-        name="Path-Dependent SHAP Task",
+        name="Path-Dependent SHAP Interactions",
         approaches=approaches,
         n_repeats=n_repeats,
         cache_root=cache_root,

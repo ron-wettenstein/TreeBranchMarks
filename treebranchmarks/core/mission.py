@@ -31,6 +31,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from treebranchmarks.cache.method_cache import MethodResultCache
 from treebranchmarks.core.dataset import Dataset
 from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
 from treebranchmarks.core.task import Task, TaskResult
@@ -149,7 +150,11 @@ class Mission:
         self.config = config
         self.name: str = config.name or _auto_name(config)
 
-    def run(self, timeout_s: float = 600.0) -> MissionResult:
+    def run(
+        self,
+        timeout_s: float = 600.0,
+        method_cache: Optional[MethodResultCache] = None,
+    ) -> MissionResult:
         """
         Execute the parameter sweep.
 
@@ -157,9 +162,13 @@ class Mission:
         ----------
         timeout_s : float
             If the linearly-extrapolated runtime for an approach at the current n
-            (based on the previous n's measured time) exceeds this value, the
-            actual run is skipped and the time is marked as estimated.
+            exceeds this value, the run is skipped and marked as estimated.
             Default: 600 s (10 minutes).
+        method_cache : MethodResultCache | None
+            If provided, each approach result is looked up in the cache before
+            running and written to the cache after running.  Methods whose cache
+            was cleared (via ``force_rerun_methods``) will simply miss and be
+            re-measured.
         """
         cfg = self.config
         rng = np.random.default_rng(cfg.random_state)
@@ -239,6 +248,8 @@ class Mission:
                             trained, X_explain, X_background,
                             prev_times=prev_times,
                             timeout_s=timeout_s,
+                            method_cache=method_cache,
+                            mission_name=self.name,
                         )
                         result.task_results.append(task_result)
 

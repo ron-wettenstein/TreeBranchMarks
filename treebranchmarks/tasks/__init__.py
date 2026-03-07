@@ -1,12 +1,22 @@
 from treebranchmarks.tasks.path_dependent_shap import (
     PathDependentSHAPTask,
     SHAPTreePathDependentApproach,
-    WoodelfSHAPTreePathDependentApproach
+    WoodelfSHAPTreePathDependentApproach,
 )
 from treebranchmarks.tasks.background_shap import (
     BackgroundSHAPTask,
+    BackgroundSHAPApproach,
     WoodelfBackgroundSHAPApproach,
-    BackgroundSHAPApproach
+)
+from treebranchmarks.tasks.background_shap_interactions import (
+    BackgroundSHAPInteractionsTask,
+    SHAPBackgroundInteractionsApproach,
+    WoodelfBackgroundInteractionsApproach,
+)
+from treebranchmarks.tasks.path_dependent_interactions import (
+    PathDependentInteractionsTask,
+    SHAPPathDependentInteractionsApproach,
+    WoodelfPathDependentInteractionsApproach,
 )
 
 __all__ = [
@@ -14,6 +24,12 @@ __all__ = [
     "SHAPTreePathDependentApproach",
     "WoodelfSHAPTreePathDependentApproach",
     "BackgroundSHAPTask",
-    "WoodelfBackgroundSHAPApproach",
     "BackgroundSHAPApproach",
+    "WoodelfBackgroundSHAPApproach",
+    "BackgroundSHAPInteractionsTask",
+    "SHAPBackgroundInteractionsApproach",
+    "WoodelfBackgroundInteractionsApproach",
+    "PathDependentInteractionsTask",
+    "SHAPPathDependentInteractionsApproach",
+    "WoodelfPathDependentInteractionsApproach",
 ]

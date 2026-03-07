@@ -41,6 +41,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from treebranchmarks.cache.method_cache import MethodResultCache
 from treebranchmarks.core.mission import Mission, MissionResult
 
 
@@ -78,7 +79,19 @@ class Experiment:
     results_dir : Path
         Where to write results JSON and HTML.  Created if it doesn't exist.
     force_rerun : bool
-        If True, ignore cached results and re-run everything.
+        If True, ignore the top-level results JSON and re-run all methods.
+        Approach-level method caches are still used unless force_rerun_methods
+        is also set.
+    force_rerun_methods : list | None
+        List of Method objects (or method name strings) whose cached approach
+        results should be discarded and re-measured.  All other methods reuse
+        their cached times.  Use ``force_rerun=True`` to bypass all caches.
+    delete_dataset_cache : bool
+        Delete the dataset cache before running.
+    delete_model_cache : bool
+        Delete the model cache before running.
+    delete_results : bool
+        Delete the top-level results JSON and HTML before running.
     """
 
     def __init__(
@@ -87,6 +100,7 @@ class Experiment:
         missions: list[Mission],
         results_dir: Path = Path("results"),
         force_rerun: bool = False,
+        force_rerun_methods: Optional[list] = None,
         delete_dataset_cache: bool = False,
         delete_model_cache: bool = False,
         delete_results: bool = False,
@@ -95,6 +109,9 @@ class Experiment:
         self.missions = missions
         self.results_dir = results_dir
         self.force_rerun = force_rerun
+        self.force_rerun_methods: list[str] = [
+            (getattr(m, "name", m) or m) for m in (force_rerun_methods or [])
+        ]
         self.delete_dataset_cache = delete_dataset_cache
         self.delete_model_cache = delete_model_cache
         self.delete_results = delete_results
@@ -107,20 +124,35 @@ class Experiment:
         """
         Run all missions and persist results to JSON.
 
-        If a results file already exists and force_rerun=False, the cached
-        results are loaded instead.
+        Uses a per-method approach cache (``cache/method_results/``) so that
+        individual methods can be re-run without re-timing the others.
+        Set ``force_rerun_methods`` on the Experiment to clear specific method
+        caches before running.
         """
         self._maybe_clear_caches()
 
+        # Build the method cache (shared across all missions).
+        cache_root = (
+            self.missions[0].config.cache_root
+            if self.missions
+            else Path("cache")
+        )
+        method_cache = MethodResultCache(
+            experiment_name=self.name,
+            cache_root=cache_root,
+        )
+        for method_name in self.force_rerun_methods:
+            method_cache.clear_method(method_name)
+
         results_path = self._results_path()
 
-        if not self.force_rerun and results_path.exists():
+        if not self.force_rerun and not self.force_rerun_methods and results_path.exists():
             print(f"[experiment:{self.name}] Loading cached results from {results_path}")
             return self.load_results()
 
         result = ExperimentResult(experiment_name=self.name)
         for mission in self.missions:
-            mission_result = mission.run()
+            mission_result = mission.run(method_cache=method_cache)
             result.mission_results.append(mission_result)
 
         self._persist(result)

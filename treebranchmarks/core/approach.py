@@ -35,6 +35,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from treebranchmarks.core.method import Method
 from treebranchmarks.core.params import TreeParameters
 from treebranchmarks.core.model import TrainedModel
 
@@ -48,7 +49,8 @@ class ApproachOutput:
     """Raw output of a single approach invocation."""
 
     elapsed_s: float        # wall-clock time for this invocation
-    is_estimated: bool = False  # True if elapsed_s was extrapolated internally
+    is_estimated: bool = False    # True if elapsed_s was extrapolated internally
+    not_supported: bool = False   # True if the approach cannot handle this input
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +71,7 @@ class Approach(ABC):
 
     name: str
     description: str = ""
-    method: str = ""          # "shap" | "woodelf" | "" (unknown)
+    method: Optional[Method] = None
 
     # ------------------------------------------------------------------
     # Abstract interface
