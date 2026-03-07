@@ -924,6 +924,7 @@ def _js() -> str:
         if (!appRows.length) return null;  // all points unsupported — skip trace
 
         var label = methodLabel(appRows[0].method);
+        var color = methodColor(appRows[0].method);
         return {
           x: appRows.map(function(r) { return r[xp]; }),
           y: appRows.map(function(r) { return r.running_time; }),
@@ -934,9 +935,11 @@ def _js() -> str:
           },
           mode: 'lines+markers',
           name: label,
+          line: { color: color },
           marker: {
             symbol: appRows.map(function(r) { return r.is_estimated ? 'circle-open' : 'circle'; }),
             size: 9,
+            color: color,
           },
           customdata: appRows.map(function(r) { return r.is_estimated ? '\u2009\u2605\u202festimated' : ''; }),
           hovertemplate:
@@ -948,6 +951,29 @@ def _js() -> str:
       });
     }
 
+    function buildNotSupportedTraces(rows, xp, yPos) {
+      var approaches = unique(rows.map(function(r) { return r.approach; }));
+      var traces = [];
+      approaches.forEach(function(app) {
+        var nsRows = rows
+          .filter(function(r) { return r.approach === app && r.not_supported; })
+          .sort(function(a, b) { return a[xp] - b[xp]; });
+        if (!nsRows.length) return;
+        var color = methodColor(nsRows[0].method);
+        var label = methodLabel(nsRows[0].method) + ' \u2014 not supported';
+        traces.push({
+          x: nsRows.map(function(r) { return r[xp]; }),
+          y: nsRows.map(function() { return yPos; }),
+          mode: 'lines+markers',
+          name: label,
+          line: { dash: 'dash', color: color, width: 1.5 },
+          marker: { symbol: 'x', size: 11, color: color, line: { width: 2.5, color: color } },
+          hovertemplate: '<b>' + label + '</b><br>' + xp + ': %{x}<extra></extra>',
+        });
+      });
+      return traces;
+    }
+
     function shouldUseLogScale(vals) {
       var nums = vals.filter(function(v) { return v > 0; });
       if (nums.length < 2) return false;
@@ -957,15 +983,35 @@ def _js() -> str:
     }
 
     function renderChart(rows, xp) {
-      var traces = buildTraces(rows, xp).filter(function(t) { return t !== null; });
       var xVals = getUnique(xp, rows);
       var supportedRows = rows.filter(function(r) { return !r.not_supported; });
       var yVals = supportedRows.map(function(r) { return r.running_time; }).filter(function(v) { return v > 0; });
       var useLogX = shouldUseLogScale(xVals);
       var useLogY = shouldUseLogScale(yVals);
+
+      var hasNotSupported = rows.some(function(r) { return r.not_supported; });
+      var yMax = yVals.length ? Math.max.apply(null, yVals) : 1;
+      var yMin = yVals.length ? Math.min.apply(null, yVals) : 0;
+      var yPos, yAxisRange;
+      if (useLogY) {
+        yPos = yMax * 100;
+        yAxisRange = [Math.log10(Math.max(yMin * 0.5, 1e-6)), Math.log10(yPos * 3)];
+      } else {
+        yPos = yMax * 1.35;
+        yAxisRange = hasNotSupported ? [0, yMax * 1.7] : null;
+      }
+
+      var traces = buildTraces(rows, xp).filter(function(t) { return t !== null; });
+      if (hasNotSupported) {
+        traces = traces.concat(buildNotSupportedTraces(rows, xp, yPos));
+      }
+
+      var yAxis = { title: 'Time (s)', type: useLogY ? 'log' : 'linear' };
+      if (yAxisRange) yAxis.range = yAxisRange;
+
       var layout = {
         xaxis: { title: X_LABELS[xp] || xp, type: useLogX ? 'log' : 'linear' },
-        yaxis: { title: 'Time (s)', type: useLogY ? 'log' : 'linear' },
+        yaxis: yAxis,
         legend: { title: { text: 'Method\u2003\u25cb\u202f=\u202festimated' } },
         template: 'plotly_white',
         margin: { t: 30, r: 20, l: 70, b: 55 },
@@ -987,11 +1033,11 @@ def _js() -> str:
       var xVals     = getUnique(xp, rows);
       var approaches = getUnique('approach', rows);
 
-      // index[approach][xVal] = {t, est}
+      // index[approach][xVal] = {t, est, ns}
       var index = {};
       rows.forEach(function(r) {
         if (!index[r.approach]) index[r.approach] = {};
-        index[r.approach][r[xp]] = { t: r.running_time, est: r.is_estimated };
+        index[r.approach][r[xp]] = { t: r.running_time, est: r.is_estimated, ns: r.not_supported };
       });
 
       var html = '<table><thead><tr><th>Approach</th>';
@@ -1003,9 +1049,13 @@ def _js() -> str:
         xVals.forEach(function(v) {
           var cell = (index[app] || {})[v];
           if (cell !== undefined) {
-            var val = cell.t.toFixed(3);
-            html += '<td class="' + (cell.est ? 'estimated' : '') + '">'
-                  + val + (cell.est ? '*' : '') + '</td>';
+            if (cell.ns) {
+              html += '<td class="missing" style="color:#aaa;font-style:italic">N/A</td>';
+            } else {
+              var val = cell.t.toFixed(3);
+              html += '<td class="' + (cell.est ? 'estimated' : '') + '">'
+                    + val + (cell.est ? '*' : '') + '</td>';
+            }
           } else {
             html += '<td class="missing">\u2014</td>';
           }

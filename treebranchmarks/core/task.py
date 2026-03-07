@@ -2,12 +2,8 @@
 Task: times all approaches for a given (model, X_explain, X_background) triple.
 
 A Task owns a list of Approach objects.  When run(), it:
-  1. Checks whether the projected runtime (extrapolated from prev_times) exceeds
-     timeout_s.  If so, the approach is skipped and its time is estimated by
-     linear scaling from the previous measurement.
-  2. Warms up each approach that will actually run (one un-timed call)
-  3. Runs each approach n_repeats times, recording wall-clock time
-  4. Returns a TaskResult
+  1. Runs each approach n_repeats times, recording wall-clock time
+  2. Returns a TaskResult
 
 TaskResult / ApproachResult are plain dataclasses that serialize cleanly to JSON.
 """
@@ -113,8 +109,6 @@ class Task:
         trained_model: TrainedModel,
         X_explain: pd.DataFrame,
         X_background: Optional[pd.DataFrame],
-        prev_times: Optional[dict[str, tuple[int, float]]] = None,
-        timeout_s: float = 600.0,
         method_cache: Optional["MethodResultCache"] = None,
         mission_name: str = "",
     ) -> TaskResult:
@@ -125,12 +119,6 @@ class Task:
         ----------
         X_background : DataFrame or None
             None when no background dataset is needed (path-dependent tasks).
-        prev_times : dict mapping approach_name → (prev_n, prev_measured_time_s)
-            If provided, any approach whose linearly-extrapolated runtime to the
-            current n exceeds timeout_s is skipped — its result is marked
-            is_estimated=True with the extrapolated time as running_time.
-        timeout_s : float
-            Skip threshold in seconds (default 600 = 10 minutes).
         method_cache : MethodResultCache | None
             If provided, cached results are used when available, and new results
             are written to the cache after measurement.
@@ -141,7 +129,6 @@ class Task:
             n=len(X_explain),
             m=len(X_background) if X_background is not None else 0,
         )
-        current_n = len(X_explain)
 
         approach_results: dict[str, ApproachResult] = {}
         for approach in self.approaches:
@@ -153,11 +140,7 @@ class Task:
                     print(f"  [approach:{approach.name}] CACHED={cached.running_time:.3f}s")
                     continue
 
-            prev = (prev_times or {}).get(approach.name)
-            result = self._time_approach(
-                approach, trained_model, X_explain, X_background, params,
-                prev_n_time=prev, current_n=current_n, timeout_s=timeout_s,
-            )
+            result = self._time_approach(approach, trained_model, X_explain, X_background, params)
             approach_results[approach.name] = result
 
             # Store in method cache if available and the run succeeded (or was not_supported)
@@ -169,7 +152,7 @@ class Task:
             elif result.is_estimated:
                 print(
                     f"  [approach:{approach.name}] "
-                    f"ESTIMATED={result.running_time:.1f}s* (extrapolated, skipped)"
+                    f"ESTIMATED={result.running_time:.3f}s"
                 )
             else:
                 print(
@@ -190,26 +173,7 @@ class Task:
         X_explain: pd.DataFrame,
         X_background: Optional[pd.DataFrame],
         params: TreeParameters,
-        prev_n_time: Optional[tuple[int, float]],
-        current_n: int,
-        timeout_s: float,
     ) -> ApproachResult:
-        # Check whether extrapolated runtime exceeds the timeout.
-        if prev_n_time is not None:
-            prev_n, prev_time = prev_n_time
-            if prev_n > 0:
-                extrapolated = prev_time * (current_n / prev_n)
-                if extrapolated > timeout_s:
-                    method_name = getattr(getattr(approach, "method", None), "name", "")
-                    return ApproachResult(
-                        approach_name=approach.name,
-                        running_time=extrapolated,
-                        std_time_s=0.0,
-                        is_estimated=True,
-                        error=None,
-                        method=method_name,
-                    )
-
         REPEAT_THRESHOLD_S = 10.0
 
         method_name = getattr(getattr(approach, "method", None), "name", "")

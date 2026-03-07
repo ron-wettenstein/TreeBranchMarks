@@ -83,7 +83,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             dataset=fraud,
             model_wrappers=xgb_d6_t10,
             tasks=[pd_iv_task],
-            n_values=[10_000, 100_000, 500_000],
+            n_values=[100, 1000, 10_000],
             m_values=[0],
             cache_root=cache_root,
         )),

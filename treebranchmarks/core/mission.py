@@ -8,14 +8,6 @@ The mission name is auto-generated to reflect the free variable if not provided.
 The outer loop is:
     model_config × n_value (sorted asc) × m_value × task × approach
 
-Estimation / timeout
---------------------
-n_values are always iterated smallest-to-largest.  Before running an approach
-at n, the mission checks whether linearly extrapolating the previous measured
-time for that approach (at the same m) to n would exceed timeout_s (default
-600 s = 10 min).  If so, task.run() receives that previous (n, time) pair and
-marks the result is_estimated=True rather than actually running.
-
 Caching
 -------
 Dataset loading and model training are cached via the wrappers' own mechanisms.
@@ -152,7 +144,6 @@ class Mission:
 
     def run(
         self,
-        timeout_s: float = 600.0,
         method_cache: Optional[MethodResultCache] = None,
     ) -> MissionResult:
         """
@@ -160,10 +151,6 @@ class Mission:
 
         Parameters
         ----------
-        timeout_s : float
-            If the linearly-extrapolated runtime for an approach at the current n
-            exceeds this value, the run is skipped and marked as estimated.
-            Default: 600 s (10 minutes).
         method_cache : MethodResultCache | None
             If provided, each approach result is looked up in the cache before
             running and written to the cache after running.  Methods whose cache
@@ -182,7 +169,6 @@ class Mission:
         print(f"  n_values      : {n_values_sorted}")
         print(f"  m_values      : {cfg.m_values}")
         print(f"  tasks         : {[t.name for t in cfg.tasks]}")
-        print(f"  timeout       : {timeout_s:.0f}s")
         print(f"{'='*60}")
 
         X, y = cfg.dataset.load()
@@ -226,10 +212,6 @@ class Mission:
                 cache_root=cfg.cache_root,
             )
 
-            # prev_by_m[m][approach_name] = (prev_n, prev_measured_time_s)
-            # Tracks the last *actually measured* (non-estimated) time per (m, approach).
-            prev_by_m: dict[int, dict[str, tuple[int, float]]] = {}
-
             for n in n_values_sorted:
                 for m in cfg.m_values:
                     idx = rng.permutation(len(X))
@@ -240,24 +222,14 @@ class Mission:
                         else None
                     )
 
-                    prev_times = prev_by_m.get(m, {})
                     print(f"\n  > model={model_config}  n={n}  m={m}")
 
                     for task in cfg.tasks:
                         task_result = task.run(
                             trained, X_explain, X_background,
-                            prev_times=prev_times,
-                            timeout_s=timeout_s,
                             method_cache=method_cache,
                             mission_name=self.name,
                         )
                         result.task_results.append(task_result)
-
-                        # Update prev_by_m with any newly measured (non-estimated) times.
-                        if m not in prev_by_m:
-                            prev_by_m[m] = {}
-                        for approach_name, ar in task_result.approach_results.items():
-                            if not ar.is_estimated and not ar.error:
-                                prev_by_m[m][approach_name] = (n, ar.running_time)
 
         return result

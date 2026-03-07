@@ -65,7 +65,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
     dt_d10 = {
         ModelConfig(
             ensemble_type=EnsembleType.DECISION_TREE,
-            hyperparams={"max_depth": 10},
+            hyperparams={"max_depth": 7},
         ): DecisionTreeWrapper(task_type="classification", use_cache=False)
     }
 
