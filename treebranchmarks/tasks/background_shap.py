@@ -179,7 +179,7 @@ def BackgroundSHAPTask(
         approaches.extend(extra_approaches)
 
     return Task(
-        name="Background SHAP Task",
+        name="Background SHAP",
         approaches=approaches,
         n_repeats=n_repeats,
         cache_root=cache_root,

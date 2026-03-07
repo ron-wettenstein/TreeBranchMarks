@@ -106,6 +106,12 @@ class ModelWrapper(ABC):
     """
     Base class for ensemble wrappers.
 
+    Parameters
+    ----------
+    use_cache : bool
+        If True (default), trained models are saved to / loaded from disk.
+        Set False for small/fast models to skip the cache overhead.
+
     Caching design
     --------------
     The cache for a trained model is a directory:
@@ -122,6 +128,9 @@ class ModelWrapper(ABC):
         train()               — fit and return a TrainedModel
         _extract_tree_params() — pull T, D, L, F out of the fitted model
     """
+
+    def __init__(self, use_cache: bool = True) -> None:
+        self.use_cache = use_cache
 
     @abstractmethod
     def train(
@@ -181,19 +190,22 @@ class ModelWrapper(ABC):
         Return a cached TrainedModel if one exists for (dataset, config);
         otherwise train, cache, and return it.
         """
-        model_dir = self._model_cache_dir(cache_root, dataset_name, config)
+        if self.use_cache:
+            model_dir = self._model_cache_dir(cache_root, dataset_name, config)
+            if (model_dir / "meta.json").exists():
+                print(f"[model:{config.ensemble_type.value}] Cache hit — loading from {model_dir.name}/")
+                return self._load_cached_model(model_dir)
 
-        if (model_dir / "meta.json").exists():
-            print(f"[model:{config.ensemble_type.value}] Cache hit — loading from {model_dir.name}/")
-            return self._load_cached_model(model_dir)
-
-        print(f"[model:{config.ensemble_type.value}] Cache miss — training.")
+        print(f"[model:{config.ensemble_type.value}] Training.")
         trained = self.train(X, y, config, dataset_name)
-        self._save_model(model_dir, trained)
         print(
             f"[model:{config.ensemble_type.value}] Trained in {trained.train_time_s:.2f}s — "
             f"T={trained.params.T}, D={trained.params.D}, L={trained.params.L:.1f}, F={trained.params.F}"
         )
+
+        if self.use_cache:
+            self._save_model(model_dir, trained)
+
         return trained
 
     # ------------------------------------------------------------------

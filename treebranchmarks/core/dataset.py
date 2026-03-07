@@ -41,6 +41,7 @@ class Dataset(ABC):
 
     name: str
     cache_root: Path = Path("cache")
+    use_cache: bool = True  # set False for small/fast datasets to skip disk I/O
 
     # ------------------------------------------------------------------
     # Public API
@@ -50,18 +51,21 @@ class Dataset(ABC):
         """
         Return (X, y) as a DataFrame and a Series.
 
-        Uses the on-disk cache if available; otherwise downloads raw data,
-        preprocesses it, and writes the cache before returning.
+        If use_cache=True (default), reads from / writes to the on-disk cache.
+        If use_cache=False, always downloads and preprocesses without caching.
         """
-        if self._is_cached():
-            return self._load_cache()
+        if self.use_cache:
+            if self._is_cached():
+                return self._load_cache()
+            print(f"[dataset:{self.name}] Cache miss — downloading and preprocessing.")
+            self.download()
+            X, y = self.preprocess(self._raw_dir())
+            self._save_cache(X, y)
+            print(f"[dataset:{self.name}] Cached {X.shape[0]} rows × {X.shape[1]} features.")
+            return X, y
 
-        print(f"[dataset:{self.name}] Cache miss — downloading and preprocessing.")
         self.download()
-        X, y = self.preprocess(self._raw_dir())
-        self._save_cache(X, y)
-        print(f"[dataset:{self.name}] Cached {X.shape[0]} rows × {X.shape[1]} features.")
-        return X, y
+        return self.preprocess(self._raw_dir())
 
     def dump_details(self) -> dict:
         """

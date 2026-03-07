@@ -1,23 +1,21 @@
 """
-scikit-learn Random Forest wrapper.
+scikit-learn HistGradientBoosting model wrapper.
 
 Tree parameter extraction
 --------------------------
-sklearn exposes the internal tree structure via the Cython Tree object
-on each estimator:
+HistGradientBoosting stores its fitted trees in:
+    model._predictors  — list[list[TreePredictor]]
+                         outer: one entry per boosting iteration
+                         inner: one TreePredictor per class (length 1 for regression)
 
-    estimator.tree_.n_node_samples  — array of sample counts per node
-    estimator.tree_.children_left   — left child index (-1 = leaf)
-    estimator.tree_.max_depth       — max depth of this tree
-    estimator.tree_.n_leaves        — number of leaf nodes
+Each TreePredictor has a `nodes` structured numpy array with fields:
+    is_leaf  — bool
+    depth    — uint32
 
-T  = len(estimators_)
-L  = mean(estimator.tree_.n_leaves for estimator in estimators_)
-D  = max(estimator.tree_.max_depth for estimator in estimators_)
+T  = total number of TreePredictor objects (== n_iterations for regression)
+L  = mean(nodes['is_leaf'].sum() for each predictor)
+D  = max(nodes['depth'].max() for each predictor)
 F  = X.shape[1]
-
-Note: sklearn's max_depth attribute on the tree object is the actual depth
-of the fitted tree, not the hyperparameter (which can be None = unbounded).
 """
 
 from __future__ import annotations
@@ -32,9 +30,9 @@ from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
 from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
 
 
-class RandomForestWrapper(ModelWrapper):
+class HistGradientBoostingWrapper(ModelWrapper):
     """
-    Wrapper for sklearn RandomForestClassifier and RandomForestRegressor.
+    Wrapper for sklearn HistGradientBoostingClassifier and HistGradientBoostingRegressor.
 
     Parameters
     ----------
@@ -42,7 +40,7 @@ class RandomForestWrapper(ModelWrapper):
         "classification" (default) or "regression".
     """
 
-    def __init__(self, task_type: str = "classification", use_cache: bool = True) -> None:
+    def __init__(self, task_type: str = "regression", use_cache: bool = True) -> None:
         super().__init__(use_cache=use_cache)
         self.task_type = task_type
 
@@ -53,14 +51,17 @@ class RandomForestWrapper(ModelWrapper):
         config: ModelConfig,
         dataset_name: str,
     ) -> TrainedModel:
-        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.ensemble import (
+            HistGradientBoostingClassifier,
+            HistGradientBoostingRegressor,
+        )
 
         hp = {**config.hyperparams, "random_state": config.random_state}
 
         if self.task_type == "regression":
-            model = RandomForestRegressor(**hp)
+            model = HistGradientBoostingRegressor(**hp)
         else:
-            model = RandomForestClassifier(**hp)
+            model = HistGradientBoostingClassifier(**hp)
 
         t0 = time.perf_counter()
         model.fit(X, y)
@@ -76,8 +77,6 @@ class RandomForestWrapper(ModelWrapper):
         )
 
     def _save_model_artifact(self, model_dir: Path, raw_model: object) -> None:
-        # sklearn has no library-native text format; joblib is sklearn's own
-        # recommended serialization (it handles numpy arrays efficiently).
         import joblib
         joblib.dump(raw_model, model_dir / "model.joblib")
 
@@ -91,14 +90,18 @@ class RandomForestWrapper(ModelWrapper):
         X: pd.DataFrame,
         config: ModelConfig,
     ) -> TreeParameters:
-        estimators = raw_model.estimators_  # type: ignore[union-attr]
+        # Flatten all TreePredictor objects across iterations and classes.
+        predictors = [p for plist in raw_model._predictors for p in plist]  # type: ignore[union-attr]
 
-        T = len(estimators)
-        leaf_counts = [est.tree_.n_leaves for est in estimators]
-        depth_values = [est.tree_.max_depth for est in estimators]
+        T = len(predictors)
+        leaf_counts = [int(p.nodes["is_leaf"].sum()) for p in predictors]
+        depth_values = [int(p.nodes["depth"].max()) for p in predictors]
 
-        L = float(np.mean(leaf_counts))
-        D = int(max(depth_values))
+        L = float(np.mean(leaf_counts)) if leaf_counts else 1.0
+        D = int(max(depth_values)) if depth_values else 0
         F = X.shape[1]
 
-        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=EnsembleType.RANDOM_FOREST)
+        return partial_tree_params(
+            T=T, D=D, L=L, F=F,
+            ensemble_type=EnsembleType.HIST_GRADIENT_BOOSTING,
+        )

@@ -266,6 +266,7 @@ class Experiment:
                         is_estimated=ar["is_estimated"],
                         error=ar.get("error"),
                         method=ar.get("method", ""),
+                        not_supported=ar.get("not_supported", False),
                     )
                     for name, ar in tr["approach_results"].items()
                 }

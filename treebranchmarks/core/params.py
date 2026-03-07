@@ -29,6 +29,8 @@ class EnsembleType(str, Enum):
     XGBOOST = "xgboost"
     LIGHTGBM = "lightgbm"
     RANDOM_FOREST = "random_forest"
+    DECISION_TREE = "decision_tree"
+    HIST_GRADIENT_BOOSTING = "hist_gradient_boosting"
 
 
 @dataclass(frozen=True)

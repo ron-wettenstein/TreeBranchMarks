@@ -1,23 +1,16 @@
 """
-scikit-learn Random Forest wrapper.
+scikit-learn Decision Tree wrapper (single tree, T=1).
 
 Tree parameter extraction
 --------------------------
-sklearn exposes the internal tree structure via the Cython Tree object
-on each estimator:
+    estimator.tree_.n_leaves   — number of leaf nodes
+    estimator.tree_.max_depth  — actual depth of the fitted tree
+    X.shape[1]                 — feature count
 
-    estimator.tree_.n_node_samples  — array of sample counts per node
-    estimator.tree_.children_left   — left child index (-1 = leaf)
-    estimator.tree_.max_depth       — max depth of this tree
-    estimator.tree_.n_leaves        — number of leaf nodes
-
-T  = len(estimators_)
-L  = mean(estimator.tree_.n_leaves for estimator in estimators_)
-D  = max(estimator.tree_.max_depth for estimator in estimators_)
-F  = X.shape[1]
-
-Note: sklearn's max_depth attribute on the tree object is the actual depth
-of the fitted tree, not the hyperparameter (which can be None = unbounded).
+T = 1 (always — this is a single tree, not an ensemble)
+L = estimator.tree_.n_leaves
+D = estimator.tree_.max_depth
+F = X.shape[1]
 """
 
 from __future__ import annotations
@@ -32,9 +25,9 @@ from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
 from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
 
 
-class RandomForestWrapper(ModelWrapper):
+class DecisionTreeWrapper(ModelWrapper):
     """
-    Wrapper for sklearn RandomForestClassifier and RandomForestRegressor.
+    Wrapper for sklearn DecisionTreeClassifier and DecisionTreeRegressor.
 
     Parameters
     ----------
@@ -53,14 +46,14 @@ class RandomForestWrapper(ModelWrapper):
         config: ModelConfig,
         dataset_name: str,
     ) -> TrainedModel:
-        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
         hp = {**config.hyperparams, "random_state": config.random_state}
 
         if self.task_type == "regression":
-            model = RandomForestRegressor(**hp)
+            model = DecisionTreeRegressor(**hp)
         else:
-            model = RandomForestClassifier(**hp)
+            model = DecisionTreeClassifier(**hp)
 
         t0 = time.perf_counter()
         model.fit(X, y)
@@ -76,8 +69,6 @@ class RandomForestWrapper(ModelWrapper):
         )
 
     def _save_model_artifact(self, model_dir: Path, raw_model: object) -> None:
-        # sklearn has no library-native text format; joblib is sklearn's own
-        # recommended serialization (it handles numpy arrays efficiently).
         import joblib
         joblib.dump(raw_model, model_dir / "model.joblib")
 
@@ -91,14 +82,11 @@ class RandomForestWrapper(ModelWrapper):
         X: pd.DataFrame,
         config: ModelConfig,
     ) -> TreeParameters:
-        estimators = raw_model.estimators_  # type: ignore[union-attr]
+        tree = raw_model.tree_  # type: ignore[union-attr]
 
-        T = len(estimators)
-        leaf_counts = [est.tree_.n_leaves for est in estimators]
-        depth_values = [est.tree_.max_depth for est in estimators]
-
-        L = float(np.mean(leaf_counts))
-        D = int(max(depth_values))
+        T = 1
+        L = float(tree.n_leaves)
+        D = int(tree.max_depth)
         F = X.shape[1]
 
-        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=EnsembleType.RANDOM_FOREST)
+        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=EnsembleType.DECISION_TREE)

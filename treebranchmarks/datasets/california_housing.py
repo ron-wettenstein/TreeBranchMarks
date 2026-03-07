@@ -28,8 +28,9 @@ class CaliforniaHousingDataset(Dataset):
 
     name = "california_housing"
 
-    def __init__(self, cache_root: Path = Path("cache")) -> None:
+    def __init__(self, cache_root: Path = Path("cache"), use_cache: bool = True) -> None:
         self.cache_root = cache_root
+        self.use_cache = use_cache
 
     def download(self) -> None:
         # sklearn handles its own download; nothing to do here.

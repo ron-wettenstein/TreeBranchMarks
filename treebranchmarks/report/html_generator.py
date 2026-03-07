@@ -271,10 +271,6 @@ def _controls_html() -> str:
         "      <select id=\"ctrl-dataset\"></select>\n"
         "    </div>\n"
         "    <div class=\"control-group\">\n"
-        "      <label for=\"ctrl-task\">Task:</label>\n"
-        "      <select id=\"ctrl-task\"></select>\n"
-        "    </div>\n"
-        "    <div class=\"control-group\">\n"
         "      <label for=\"ctrl-mission\">Mission:</label>\n"
         "      <select id=\"ctrl-mission\"></select>\n"
         "    </div>\n"
@@ -881,7 +877,6 @@ def _js() -> str:
     var allDatasets = getUnique('dataset');
     var state = {
       dataset: allDatasets[0],
-      task:    null,
       mission: null,
     };
 
@@ -892,16 +887,11 @@ def _js() -> str:
       return DATA.filter(function(r) { return r.dataset === state.dataset; });
     }
 
-    function rowsForTask() {
-      return rowsForDataset().filter(function(r) { return r.task === state.task; });
-    }
-
     function rowsForMission() {
-      return rowsForTask().filter(function(r) { return r.mission === state.mission; });
+      return rowsForDataset().filter(function(r) { return r.mission === state.mission; });
     }
 
-    function tasksForDataset() { return getUnique('task', rowsForDataset()); }
-    function missionsForTask()  { return getUnique('mission', rowsForTask()); }
+    function missionsForDataset() { return getUnique('mission', rowsForDataset()); }
 
     // -----------------------------------------------------------------------
     // Auto-detect x-axis from the current mission's data
@@ -1141,16 +1131,8 @@ def _js() -> str:
       return el.options[el.selectedIndex] ? el.options[el.selectedIndex].value : (values[0] || null);
     }
 
-    function refreshTaskSelect() {
-      var tasks = tasksForDataset();
-      if (tasks.indexOf(state.task) === -1) state.task = tasks[0] || null;
-      populateSelect('ctrl-task', tasks, state.task);
-      state.task = tasks.indexOf(state.task) !== -1 ? state.task : (tasks[0] || null);
-      refreshMissionSelect();
-    }
-
     function refreshMissionSelect() {
-      var missions = missionsForTask();
+      var missions = missionsForDataset();
       if (missions.indexOf(state.mission) === -1) state.mission = missions[0] || null;
       populateSelect('ctrl-mission', missions, state.mission);
       state.mission = missions.indexOf(state.mission) !== -1 ? state.mission : (missions[0] || null);
@@ -1160,15 +1142,10 @@ def _js() -> str:
     // Initialise
     // -----------------------------------------------------------------------
     populateSelect('ctrl-dataset', allDatasets, state.dataset);
-    refreshTaskSelect();
+    refreshMissionSelect();
 
     document.getElementById('ctrl-dataset').addEventListener('change', function(e) {
       state.dataset = e.target.value;
-      refreshTaskSelect();
-      render();
-    });
-    document.getElementById('ctrl-task').addEventListener('change', function(e) {
-      state.task = e.target.value;
       refreshMissionSelect();
       render();
     });

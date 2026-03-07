@@ -153,7 +153,7 @@ def PathDependentSHAPTask(
         approaches.extend(extra_approaches)
 
     return Task(
-        name="Path-Dependent SHAP Task",
+        name="Path-Dependent SHAP",
         approaches=approaches,
         n_repeats=n_repeats,
         cache_root=cache_root,

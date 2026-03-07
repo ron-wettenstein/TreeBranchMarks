@@ -88,8 +88,6 @@ class Task:
         The algorithm implementations to benchmark.
     n_repeats : int
         How many timed repetitions per approach (default 3).
-    warmup : bool
-        Whether to run one un-timed warmup call before timing (default True).
     cache_root : Path
         Reserved for future calibration lookup.
     """
@@ -99,13 +97,11 @@ class Task:
         name: str,
         approaches: list[Approach],
         n_repeats: int = 3,
-        warmup: bool = True,
         cache_root: Path = Path("cache"),
     ) -> None:
         self.name = name
         self.approaches = approaches
         self.n_repeats = n_repeats
-        self.warmup = warmup
         self.cache_root = cache_root
 
     # ------------------------------------------------------------------
@@ -222,20 +218,6 @@ class Task:
         error: Optional[str] = None
 
         try:
-            if self.warmup:
-                warmup_out = approach.run(trained_model, X_explain, X_background)
-                if warmup_out.not_supported:
-                    return ApproachResult(
-                        approach_name=approach.name,
-                        running_time=0.0,
-                        std_time_s=0.0,
-                        is_estimated=False,
-                        error=None,
-                        method=method_name,
-                        not_supported=True,
-                    )
-
-            # Always run once.
             first = approach.run(trained_model, X_explain, X_background)
             if first.not_supported:
                 return ApproachResult(

@@ -57,7 +57,8 @@ class XGBoostWrapper(ModelWrapper):
         "classification" (default) or "regression".
     """
 
-    def __init__(self, task_type: str = "classification") -> None:
+    def __init__(self, task_type: str = "classification", use_cache: bool = True) -> None:
+        super().__init__(use_cache=use_cache)
         self.task_type = task_type
 
     def train(
