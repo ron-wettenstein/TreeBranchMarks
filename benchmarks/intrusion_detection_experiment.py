@@ -69,8 +69,8 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             dataset=intrusion,
             model_wrappers=hgb_d6_t10,
             tasks=[bg_shap_task],
-            n_values=[1, 10_000, 100_000, 5_000_000],
-            m_values=[5_000_000],
+            n_values=[1, 10_000, 100_000, 4_000_000],
+            m_values=[4_000_000],
             cache_root=cache_root,
         )),
         Mission(MissionConfig(
@@ -88,7 +88,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             model_wrappers=hgb_d6_t10,
             tasks=[bg_iv_task],
             n_values=[10_000],
-            m_values=[5_000_000],
+            m_values=[4_000_000],
             cache_root=cache_root,
         )),
         Mission(MissionConfig(
