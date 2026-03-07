@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+.env
+.ipynb_checkpoints
+.pytest_cache/
+.venv/
+venv/
+
+# treebranchmarks runtime output
+cache/
+results/
+*.html
+!benchmarks/*.html
