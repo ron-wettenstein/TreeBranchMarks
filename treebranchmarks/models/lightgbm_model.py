@@ -1,19 +1,5 @@
 """
 LightGBM model wrapper.
-
-Tree parameter extraction
---------------------------
-LightGBM exposes the full model structure via:
-    model.booster_.dump_model()
-
-This returns a nested dict.  The top-level "tree_info" key contains a list
-of per-tree dicts.  Each tree has a "tree_structure" key with the root node.
-Leaf nodes have "leaf_value"; internal nodes have "left_child" / "right_child".
-
-T  = len(tree_info)
-L  = mean(leaves per tree)
-D  = max(depth across all trees)
-F  = X.shape[1]
 """
 
 from __future__ import annotations
@@ -25,25 +11,6 @@ import numpy as np
 import pandas as pd
 
 from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
-from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
-
-
-def _walk_lgbm_node(node: dict, depth: int = 0) -> tuple[int, int]:
-    """
-    Recursively walk a LightGBM tree node dict.
-    Returns (leaf_count, max_depth).
-    """
-    if "leaf_value" in node:
-        return 1, depth
-    leaves = 0
-    max_d = depth
-    for key in ("left_child", "right_child"):
-        child = node.get(key)
-        if child is not None:
-            c_leaves, c_depth = _walk_lgbm_node(child, depth + 1)
-            leaves += c_leaves
-            max_d = max(max_d, c_depth)
-    return leaves, max_d
 
 
 class LightGBMWrapper(ModelWrapper):
@@ -99,27 +66,3 @@ class LightGBMWrapper(ModelWrapper):
         import joblib
         return joblib.load(model_dir / "model.joblib")
 
-    def _extract_tree_params(
-        self,
-        raw_model: object,
-        X: pd.DataFrame,
-        config: ModelConfig,
-    ) -> TreeParameters:
-        model_dict = raw_model.booster_.dump_model()  # type: ignore[union-attr]
-        tree_info = model_dict.get("tree_info", [])
-
-        T = len(tree_info)
-        leaf_counts = []
-        depth_values = []
-
-        for tree in tree_info:
-            root = tree.get("tree_structure", {})
-            leaves, max_depth = _walk_lgbm_node(root)
-            leaf_counts.append(leaves)
-            depth_values.append(max_depth)
-
-        L = float(np.mean(leaf_counts)) if leaf_counts else 1.0
-        D = int(max(depth_values)) if depth_values else 0
-        F = X.shape[1]
-
-        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=EnsembleType.LIGHTGBM)

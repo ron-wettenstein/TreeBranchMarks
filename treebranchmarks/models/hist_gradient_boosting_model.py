@@ -1,21 +1,5 @@
 """
 scikit-learn HistGradientBoosting model wrapper.
-
-Tree parameter extraction
---------------------------
-HistGradientBoosting stores its fitted trees in:
-    model._predictors  — list[list[TreePredictor]]
-                         outer: one entry per boosting iteration
-                         inner: one TreePredictor per class (length 1 for regression)
-
-Each TreePredictor has a `nodes` structured numpy array with fields:
-    is_leaf  — bool
-    depth    — uint32
-
-T  = total number of TreePredictor objects (== n_iterations for regression)
-L  = mean(nodes['is_leaf'].sum() for each predictor)
-D  = max(nodes['depth'].max() for each predictor)
-F  = X.shape[1]
 """
 
 from __future__ import annotations
@@ -23,11 +7,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
-from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
 
 
 class HistGradientBoostingWrapper(ModelWrapper):
@@ -84,24 +66,3 @@ class HistGradientBoostingWrapper(ModelWrapper):
         import joblib
         return joblib.load(model_dir / "model.joblib")
 
-    def _extract_tree_params(
-        self,
-        raw_model: object,
-        X: pd.DataFrame,
-        config: ModelConfig,
-    ) -> TreeParameters:
-        # Flatten all TreePredictor objects across iterations and classes.
-        predictors = [p for plist in raw_model._predictors for p in plist]  # type: ignore[union-attr]
-
-        T = len(predictors)
-        leaf_counts = [int(p.nodes["is_leaf"].sum()) for p in predictors]
-        depth_values = [int(p.nodes["depth"].max()) for p in predictors]
-
-        L = float(np.mean(leaf_counts)) if leaf_counts else 1.0
-        D = int(max(depth_values)) if depth_values else 0
-        F = X.shape[1]
-
-        return partial_tree_params(
-            T=T, D=D, L=L, F=F,
-            ensemble_type=EnsembleType.HIST_GRADIENT_BOOSTING,
-        )

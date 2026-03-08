@@ -1,24 +1,9 @@
 """
 XGBoost model wrapper.
-
-Tree parameter extraction
---------------------------
-XGBoost exposes the raw tree structure via:
-    booster.get_dump(dump_format='json')
-
-This returns a list of JSON strings, one per tree.  Each tree is a nested
-dict where leaf nodes have a "leaf" key and internal nodes have "children".
-We walk every tree to count leaves and compute max depth.
-
-T  = len(trees)
-L  = mean(leaves per tree)
-D  = max(depth across all trees)
-F  = X.shape[1]  (feature count from training data)
 """
 
 from __future__ import annotations
 
-import json
 import time
 from pathlib import Path
 
@@ -26,23 +11,6 @@ import numpy as np
 import pandas as pd
 
 from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
-from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
-
-
-def _walk_xgb_tree(node: dict, depth: int = 0) -> tuple[int, int]:
-    """
-    Recursively walk an XGBoost tree node dict.
-    Returns (leaf_count, max_depth).
-    """
-    if "leaf" in node:
-        return 1, depth
-    leaves = 0
-    max_d = depth
-    for child in node.get("children", []):
-        c_leaves, c_depth = _walk_xgb_tree(child, depth + 1)
-        leaves += c_leaves
-        max_d = max(max_d, c_depth)
-    return leaves, max_d
 
 
 class XGBoostWrapper(ModelWrapper):
@@ -108,29 +76,3 @@ class XGBoostWrapper(ModelWrapper):
         model.load_model(str(model_dir / "model.json"))
         return model
 
-    def _extract_tree_params(
-        self,
-        raw_model: object,
-        X: pd.DataFrame,
-        config: ModelConfig,
-    ) -> TreeParameters:
-        import xgboost as xgb
-
-        booster = raw_model.get_booster()  # type: ignore[union-attr]
-        tree_dumps = booster.get_dump(dump_format="json")
-
-        T = len(tree_dumps)
-        leaf_counts = []
-        depth_values = []
-
-        for tree_str in tree_dumps:
-            root = json.loads(tree_str)
-            leaves, max_depth = _walk_xgb_tree(root)
-            leaf_counts.append(leaves)
-            depth_values.append(max_depth)
-
-        L = float(np.mean(leaf_counts)) if leaf_counts else 1.0
-        D = int(max(depth_values)) if depth_values else 0
-        F = X.shape[1]
-
-        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=EnsembleType.XGBOOST)

@@ -626,6 +626,15 @@ def _js() -> str:
       var idx = (SCORES.methods || []).indexOf(name);
       return _scoreColors[idx >= 0 ? idx % _scoreColors.length : 0];
     }
+    function fmtTime(s) {
+      if (s == null || isNaN(s)) return '?';
+      var abs = Math.abs(s);
+      if (abs < 60)         return s.toFixed(4) + ' s';
+      if (abs < 3600)       return (s / 60).toFixed(3) + ' min';
+      if (abs < 86400)      return (s / 3600).toFixed(3) + ' hr';
+      if (abs < 31536000)   return (s / 86400).toFixed(3) + ' days';
+      return (s / 31536000).toFixed(3) + ' yr';
+    }
     function renderMethodBadge(m, val, maxScore) {
       var win = val >= maxScore - 0.001;
       var color = methodColor(m);
@@ -941,11 +950,13 @@ def _js() -> str:
             size: 9,
             color: color,
           },
-          customdata: appRows.map(function(r) { return r.is_estimated ? '\u2009\u2605\u202festimated' : ''; }),
+          customdata: appRows.map(function(r) {
+            return fmtTime(r.running_time) + (r.is_estimated ? '\u2009\u2605\u202festimated' : '');
+          }),
           hovertemplate:
             '<b>' + label + '</b><br>' +
             xp + ': %{x}<br>' +
-            'time: %{y:.4f} s%{customdata}' +
+            'time: %{customdata}' +
             '<extra></extra>',
         };
       });
@@ -1052,7 +1063,7 @@ def _js() -> str:
             if (cell.ns) {
               html += '<td class="missing" style="color:#aaa;font-style:italic">N/A</td>';
             } else {
-              var val = cell.t.toFixed(3);
+              var val = fmtTime(cell.t);
               html += '<td class="' + (cell.est ? 'estimated' : '') + '">'
                     + val + (cell.est ? '*' : '') + '</td>';
             }
@@ -1335,7 +1346,7 @@ def _js() -> str:
         AR_COLS.forEach(function(c) {
           if (c === 'running_time') {
             html += '<td class="time-cell' + (r.is_estimated ? ' estimated' : '') + '">'
-                  + Number(r[c]).toFixed(4) + (r.is_estimated ? '*' : '') + '</td>';
+                  + fmtTime(Number(r[c])) + (r.is_estimated ? '*' : '') + '</td>';
           } else if (c === 'is_estimated') {
             html += '<td>' + (r[c] ? '\u2605' : '') + '</td>';
           } else {

@@ -96,7 +96,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             cache_root=cache_root,
         )),
         Mission(MissionConfig(
-            name="housing: BG SHAP n=1000 (sweep m)",
+            name="housing: BG SHAP n=1k (sweep m)",
             dataset=california,
             model_wrappers=xgb_d3_t10,
             tasks=[bg_shap_task],
@@ -105,7 +105,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             cache_root=cache_root,
         )),
         Mission(MissionConfig(
-            name="housing: BG SHAP IV n=1000, m=10000",
+            name="housing: BG SHAP IV n=1k, m=10k",
             dataset=california,
             model_wrappers=xgb_d3_t10,
             tasks=[bg_iv_task],

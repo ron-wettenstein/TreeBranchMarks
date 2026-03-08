@@ -13,7 +13,10 @@ until task run time).
 
 ModelWrapper is an ABC with one key abstract method per ensemble type:
     - train()                  — fit and return a TrainedModel
-    - _extract_tree_params()   — inspect the fitted model to get T, D, L, F
+
+The base class provides a default _extract_tree_params() via
+woodelf.parse_models.load_decision_tree_ensemble_model, which handles all
+supported model types (XGBoost, LightGBM, Random Forest, HistGradientBoosting).
 
 load_or_train() is the public entry point.  It checks the cache first and
 only trains if there is a miss.
@@ -31,6 +34,8 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
+
+from woodelf.parse_models import load_decision_tree_ensemble_model
 
 from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
 
@@ -124,9 +129,8 @@ class ModelWrapper(ABC):
         _save_model_artifact(model_dir, raw_model)
         _load_model_artifact(model_dir) -> Any
 
-    Subclasses must also implement:
+    Subclasses must implement:
         train()               — fit and return a TrainedModel
-        _extract_tree_params() — pull T, D, L, F out of the fitted model
     """
 
     def __init__(self, use_cache: bool = True) -> None:
@@ -142,7 +146,6 @@ class ModelWrapper(ABC):
     ) -> TrainedModel:
         """Fit the model and return a TrainedModel with params populated."""
 
-    @abstractmethod
     def _extract_tree_params(
         self,
         raw_model: Any,
@@ -150,10 +153,16 @@ class ModelWrapper(ABC):
         config: ModelConfig,
     ) -> TreeParameters:
         """
-        Inspect the fitted model to derive T, D, L, F.
+        Derive T, D, L, F from the fitted model via woodelf's universal parser.
 
         n and m are left at 0 (populated at task run time).
         """
+        ensemble = load_decision_tree_ensemble_model(raw_model, list(X.columns))
+        T = len(ensemble.trees)
+        D = ensemble.max_depth
+        L = float(np.mean([len(tree.get_all_leaves()) for tree in ensemble.trees]))
+        F = X.shape[1]
+        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=config.ensemble_type)
 
     @abstractmethod
     def _save_model_artifact(self, model_dir: Path, raw_model: Any) -> None:

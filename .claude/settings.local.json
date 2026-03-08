@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:asv.readthedocs.io)"
+      "WebFetch(domain:asv.readthedocs.io)",
+      "Bash(python -c \"from woodelf.parse_models import load_decision_tree_ensemble_model; help\\(load_decision_tree_ensemble_model\\)\")",
+      "Bash(python -c \":*)"
     ]
   }
 }

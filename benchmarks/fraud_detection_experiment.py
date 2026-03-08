@@ -88,7 +88,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             cache_root=cache_root,
         )),
         Mission(MissionConfig(
-            name="fraud: BG SHAP n=100000 (sweep m)",
+            name="fraud: BG SHAP n=100k (sweep m)",
             dataset=fraud,
             model_wrappers=xgb_d6_t10,
             tasks=[bg_shap_task],
@@ -97,7 +97,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
             cache_root=cache_root,
         )),
         Mission(MissionConfig(
-            name="fraud: BG SHAP IV n=10000 (sweep m)",
+            name="fraud: BG SHAP IV n=10k (sweep m)",
             dataset=fraud,
             model_wrappers=xgb_d6_t10,
             tasks=[bg_iv_task],

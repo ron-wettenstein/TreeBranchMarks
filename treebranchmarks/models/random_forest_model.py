@@ -1,23 +1,5 @@
 """
 scikit-learn Random Forest wrapper.
-
-Tree parameter extraction
---------------------------
-sklearn exposes the internal tree structure via the Cython Tree object
-on each estimator:
-
-    estimator.tree_.n_node_samples  — array of sample counts per node
-    estimator.tree_.children_left   — left child index (-1 = leaf)
-    estimator.tree_.max_depth       — max depth of this tree
-    estimator.tree_.n_leaves        — number of leaf nodes
-
-T  = len(estimators_)
-L  = mean(estimator.tree_.n_leaves for estimator in estimators_)
-D  = max(estimator.tree_.max_depth for estimator in estimators_)
-F  = X.shape[1]
-
-Note: sklearn's max_depth attribute on the tree object is the actual depth
-of the fitted tree, not the hyperparameter (which can be None = unbounded).
 """
 
 from __future__ import annotations
@@ -25,11 +7,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
-from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
 
 
 class RandomForestWrapper(ModelWrapper):
@@ -85,20 +65,3 @@ class RandomForestWrapper(ModelWrapper):
         import joblib
         return joblib.load(model_dir / "model.joblib")
 
-    def _extract_tree_params(
-        self,
-        raw_model: object,
-        X: pd.DataFrame,
-        config: ModelConfig,
-    ) -> TreeParameters:
-        estimators = raw_model.estimators_  # type: ignore[union-attr]
-
-        T = len(estimators)
-        leaf_counts = [est.tree_.n_leaves for est in estimators]
-        depth_values = [est.tree_.max_depth for est in estimators]
-
-        L = float(np.mean(leaf_counts))
-        D = int(max(depth_values))
-        F = X.shape[1]
-
-        return partial_tree_params(T=T, D=D, L=L, F=F, ensemble_type=EnsembleType.RANDOM_FOREST)
