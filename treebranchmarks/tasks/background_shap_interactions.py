@@ -64,6 +64,7 @@ class WoodelfBackgroundInteractionsApproach(Approach):
     description = "Complexity: O(mTL + nTLD + TL2**D * D**3)."
 
     MAX_SUPPORTED_DEPTH = 18
+    _TREE_LIMIT_DEPTH   = 15
 
     def run(
         self,
@@ -72,11 +73,31 @@ class WoodelfBackgroundInteractionsApproach(Approach):
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
         if trained_model.params.D > self.MAX_SUPPORTED_DEPTH:
-            return ApproachOutput(elapsed_s=0.0, not_supported=True)
+            return ApproachOutput(elapsed_s=0.0, memory_crash=True)
 
         if X_background is None:
             raise ValueError(
                 "WoodelfBackgroundInteractionsApproach requires a background dataset."
+            )
+
+        T = trained_model.params.T
+
+        if trained_model.params.D >= self._TREE_LIMIT_DEPTH:
+            explainer = WoodelfExplainer(
+                trained_model.raw_model,
+                data=X_background,
+                feature_perturbation="interventional",
+            )
+            t0 = time.perf_counter()
+            explainer.shap_interaction_values(X_explain, tree_limit=1)
+            elapsed = time.perf_counter() - t0
+            return ApproachOutput(
+                elapsed_s=elapsed * T,
+                is_estimated=True,
+                estimation_description=(
+                    f"D={trained_model.params.D} ≥ {self._TREE_LIMIT_DEPTH}: "
+                    f"ran with tree_limit=1, extrapolated ×{T} trees"
+                ),
             )
 
         explainer = WoodelfExplainer(
@@ -87,7 +108,6 @@ class WoodelfBackgroundInteractionsApproach(Approach):
         t0 = time.perf_counter()
         explainer.shap_interaction_values(X_explain)
         elapsed = time.perf_counter() - t0
-
         return ApproachOutput(elapsed_s=elapsed, is_estimated=False)
 
 

@@ -51,6 +51,8 @@ class ApproachOutput:
     elapsed_s: float        # wall-clock time for this invocation
     is_estimated: bool = False    # True if elapsed_s was extrapolated internally
     not_supported: bool = False   # True if the approach cannot handle this input
+    memory_crash: bool = False    # True if the approach would exhaust memory on this input
+    estimation_description: str = ""  # human-readable note on how estimation was done
 
 
 # ---------------------------------------------------------------------------

@@ -171,15 +171,52 @@ class Mission:
         print(f"  tasks         : {[t.name for t in cfg.tasks]}")
         print(f"{'='*60}")
 
-        X, y = cfg.dataset.load()
+        # Determine which models actually need to run (not fully cached).
+        # For models whose runs are all cached we only need the lightweight
+        # meta.json sidecar; the heavy model artifact and the dataset itself
+        # are never loaded for those models.
+        models_needing_run: list[tuple] = []      # (model_config, wrapper)
+        fully_cached_models: list[tuple] = []     # (model_config, base_params)
 
-        meta = {
-            "dataset": {
+        for model_config, wrapper in cfg.model_wrappers.items():
+            if method_cache is not None:
+                base_params = wrapper.load_params_only(cfg.cache_root, cfg.dataset.name, model_config)
+                if base_params is not None and all(
+                    method_cache.all_approaches_cached(
+                        task.approaches, self.name, task.name,
+                        base_params.with_run_params(n=n, m=m),
+                    )
+                    for n in n_values_sorted
+                    for m in cfg.m_values
+                    for task in cfg.tasks
+                ):
+                    fully_cached_models.append((model_config, base_params))
+                    continue
+            models_needing_run.append((model_config, wrapper))
+
+        # Only load the dataset when at least one model still needs to run.
+        X = y = None
+        if models_needing_run:
+            X, y = cfg.dataset.load()
+
+        # Build the meta dict — dataset section requires a loaded X.
+        # For fully-cached missions use the first cached model's params for
+        # feature count / column list (read from meta.json, not from X).
+        if X is not None:
+            dataset_meta = {
                 "name": cfg.dataset.name,
                 "n_samples": len(X),
                 "n_features": X.shape[1],
                 "columns": list(X.columns),
-            },
+            }
+        elif fully_cached_models:
+            bp = fully_cached_models[0][1]
+            dataset_meta = {"name": cfg.dataset.name, "n_features": bp.F}
+        else:
+            dataset_meta = {"name": cfg.dataset.name}
+
+        meta = {
+            "dataset": dataset_meta,
             "models": [
                 {
                     "ensemble_type": mc.ensemble_type.value,
@@ -204,7 +241,29 @@ class Mission:
 
         result = MissionResult(config=cfg, mission_name=self.name, meta=meta)
 
-        for model_config, wrapper in cfg.model_wrappers.items():
+        # Reconstruct results for fully-cached models directly from cache.
+        for model_config, base_params in fully_cached_models:
+            print(f"\n  [model:{model_config.ensemble_type.value}] All runs cached — skipping model load.")
+            for n in n_values_sorted:
+                for m in cfg.m_values:
+                    params = base_params.with_run_params(n=n, m=m)
+                    for task in cfg.tasks:
+                        approach_results = {
+                            approach.name: method_cache.get(
+                                approach, self.name, task.name, params
+                            )
+                            for approach in task.approaches
+                        }
+                        result.task_results.append(
+                            TaskResult(
+                                task_name=task.name,
+                                params=params,
+                                approach_results=approach_results,
+                            )
+                        )
+
+        # Run models that have at least one uncached result.
+        for model_config, wrapper in models_needing_run:
             trained = wrapper.load_or_train(
                 dataset_name=cfg.dataset.name,
                 X=X, y=y,

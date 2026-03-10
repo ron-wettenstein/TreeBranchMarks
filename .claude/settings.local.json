@@ -4,7 +4,10 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:asv.readthedocs.io)",
       "Bash(python -c \"from woodelf.parse_models import load_decision_tree_ensemble_model; help\\(load_decision_tree_ensemble_model\\)\")",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(python -c \"import woodelf; print\\(woodelf.__file__\\)\")",
+      "Bash(python -c \"from woodelf.decision_trees_ensemble import DecisionTreeNode; import inspect; print\\(inspect.getsource\\(DecisionTreeNode\\)\\)\")",
+      "Bash(python -c \"from woodelf.high_depth_woodelf import woodelf_for_high_depth; help\\(woodelf_for_high_depth\\)\")"
     ]
   }
 }

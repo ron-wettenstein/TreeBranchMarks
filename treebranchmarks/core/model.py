@@ -187,6 +187,31 @@ class ModelWrapper(ABC):
     # Public entry point — use this instead of train() directly
     # ------------------------------------------------------------------
 
+    def load_params_only(
+        self,
+        cache_root: Path,
+        dataset_name: str,
+        config: ModelConfig,
+    ) -> Optional[TreeParameters]:
+        """
+        Return only the TreeParameters from a previously cached model's meta.json
+        without loading the model artifact itself.  Returns None if not cached.
+        """
+        if not self.use_cache:
+            return None
+        model_dir = cache_root / "models" / dataset_name / config.cache_key()
+        meta_path = model_dir / "meta.json"
+        if not meta_path.exists():
+            return None
+        with open(meta_path) as f:
+            meta = json.load(f)
+        p = meta["params"]
+        return TreeParameters(
+            n=p["n"], m=p["m"], F=p["F"],
+            T=p["T"], D=p["D"], L=p["L"],
+            ensemble_type=EnsembleType(p["ensemble_type"]),
+        )
+
     def load_or_train(
         self,
         dataset_name: str,

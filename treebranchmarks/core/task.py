@@ -39,6 +39,9 @@ class ApproachResult:
     error: Optional[str]            # filled if the approach raised an exception
     method: str = ""                # method.name — e.g. "shap" | "woodelf"
     not_supported: bool = False     # True = approach cannot handle this input; score = 0
+    memory_crash: bool = False      # True = approach would exhaust memory; score = 0
+    runtime_error: bool = False     # True = approach raised an exception; score = 0
+    estimation_description: str = ""  # human-readable note on how estimation was done
 
     def as_dict(self) -> dict:
         return {
@@ -49,6 +52,9 @@ class ApproachResult:
             "error": self.error,
             "method": self.method,
             "not_supported": self.not_supported,
+            "memory_crash": self.memory_crash,
+            "runtime_error": self.runtime_error,
+            "estimation_description": self.estimation_description,
         }
 
 
@@ -143,12 +149,15 @@ class Task:
             result = self._time_approach(approach, trained_model, X_explain, X_background, params)
             approach_results[approach.name] = result
 
-            # Store in method cache if available and the run succeeded (or was not_supported)
+            # Store in method cache if available and the run succeeded (not_supported and
+            # memory_crash are deterministic and safe to cache; runtime_error is not).
             if method_cache is not None and not result.error:
                 method_cache.put(approach, mission_name, self.name, params, result)
 
-            if result.error:
-                print(f"  [approach:{approach.name}] ERROR: {result.error}")
+            if result.runtime_error:
+                print(f"  [approach:{approach.name}] RUNTIME ERROR: {result.error}")
+            elif result.memory_crash:
+                print(f"  [approach:{approach.name}] MEMORY CRASH")
             elif result.is_estimated:
                 print(
                     f"  [approach:{approach.name}] "
@@ -179,7 +188,9 @@ class Task:
         method_name = getattr(getattr(approach, "method", None), "name", "")
         times: list[float] = []
         any_estimated = False
+        estimation_description = ""
         error: Optional[str] = None
+        runtime_error = False
 
         try:
             first = approach.run(trained_model, X_explain, X_background)
@@ -193,9 +204,20 @@ class Task:
                     method=method_name,
                     not_supported=True,
                 )
+            if first.memory_crash:
+                return ApproachResult(
+                    approach_name=approach.name,
+                    running_time=0.0,
+                    std_time_s=0.0,
+                    is_estimated=False,
+                    error=None,
+                    method=method_name,
+                    memory_crash=True,
+                )
             times.append(first.elapsed_s)
             if first.is_estimated:
                 any_estimated = True
+                estimation_description = first.estimation_description
 
             # Only repeat if the first run was fast enough.
             if first.elapsed_s < REPEAT_THRESHOLD_S:
@@ -204,9 +226,12 @@ class Task:
                     times.append(output.elapsed_s)
                     if output.is_estimated:
                         any_estimated = True
+                        if not estimation_description:
+                            estimation_description = output.estimation_description
 
         except Exception:
             error = traceback.format_exc()
+            runtime_error = True
 
         if times:
             mean_t = float(np.mean(times))
@@ -221,4 +246,6 @@ class Task:
             is_estimated=any_estimated,
             error=error,
             method=method_name,
+            runtime_error=runtime_error,
+            estimation_description=estimation_description,
         )

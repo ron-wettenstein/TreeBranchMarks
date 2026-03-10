@@ -267,6 +267,9 @@ class Experiment:
                         error=ar.get("error"),
                         method=ar.get("method", ""),
                         not_supported=ar.get("not_supported", False),
+                        memory_crash=ar.get("memory_crash", False),
+                        runtime_error=ar.get("runtime_error", False),
+                        estimation_description=ar.get("estimation_description", ""),
                     )
                     for name, ar in tr["approach_results"].items()
                 }
