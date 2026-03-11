@@ -33,15 +33,16 @@ from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import LightGBMWrapper, XGBoostWrapper
-from treebranchmarks.tasks import PathDependentSHAPTask
-from treebranchmarks.methods.builtin import (
-    SHAP,
-    WOODELF_VEC_SIMPLE,
-    WOODELF_VEC_SIMPLE_NLT,
-    WOODELF_VEC_IMPROVED,
-    WOODELF_VEC_IMPROVED_NLT,
-    WOODELF_VEC_DEFAULT,
-    WOODELF_VEC_DEFAULT_NLT,
+from treebranchmarks.core.task import Task, TaskType
+from treebranchmarks.methods.shap_method import SHAPApproach
+from treebranchmarks.methods.linear_tree_shap_method import (
+    VectorizedLinearTreeSHAPSimpleApproach,
+    VectorizedLinearTreeSHAPSimpleNLTApproach,
+    VectorizedLinearTreeSHAPImprovedApproach,
+    VectorizedLinearTreeSHAPImprovedNLTApproach,
+    VectorizedLinearTreeSHAPDefaultApproach,
+    VectorizedLinearTreeSHAPDefaultNLTApproach,
+    VectorizedLinearTreeSHAPRecursiveNLTApproach,
 )
 
 CACHE_ROOT  = Path("cache")
@@ -95,14 +96,15 @@ MEDIUM_DEPTHS  = [9, 12, 15, 18]
 HIGH_DEPTHS    = [20, 25, 30, 35, 40, 50, 60]
 XGB_DEPTHS     = [9, 12, 18, 21, 24]
 
-_VEC_METHODS = [
-    SHAP,
-    WOODELF_VEC_SIMPLE,
-    WOODELF_VEC_SIMPLE_NLT,
-    WOODELF_VEC_IMPROVED,
-    WOODELF_VEC_IMPROVED_NLT,
-    WOODELF_VEC_DEFAULT,
-    WOODELF_VEC_DEFAULT_NLT,
+_VEC_APPROACHES = [
+    SHAPApproach(),
+    VectorizedLinearTreeSHAPSimpleApproach(),
+    VectorizedLinearTreeSHAPSimpleNLTApproach(),
+    VectorizedLinearTreeSHAPImprovedApproach(),
+    VectorizedLinearTreeSHAPImprovedNLTApproach(),
+    VectorizedLinearTreeSHAPDefaultApproach(),
+    VectorizedLinearTreeSHAPDefaultNLTApproach(),
+    VectorizedLinearTreeSHAPRecursiveNLTApproach(),
 ]
 
 
@@ -148,11 +150,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
 
     # LightGBM missions: n in [1, 10k, 100k]
     for label, models in [("medium depth", medium_models), ("high depth", high_models)]:
-        task = PathDependentSHAPTask(
-            methods=_VEC_METHODS,
-            n_repeats=1,
-            cache_root=cache_root,
-        )
+        task = Task(TaskType.PATH_DEPENDENT_SHAP, _VEC_APPROACHES, n_repeats=1, cache_root=cache_root)
         for n in [1, 10_000]:
             n_label = {1: "n=1", 10_000: "n=10k"}[n]
             missions.append(Mission(MissionConfig(
@@ -176,11 +174,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
     )))
 
     # XGBoost mission: n=10k depth sweep
-    xgb_task = PathDependentSHAPTask(
-        methods=_VEC_METHODS,
-        n_repeats=1,
-        cache_root=cache_root,
-    )
+    xgb_task = Task(TaskType.PATH_DEPENDENT_SHAP, _VEC_APPROACHES, n_repeats=1, cache_root=cache_root)
     missions.append(Mission(MissionConfig(
         name="fraud vec PD SHAP n=10k (XGBoost T=10)",
         dataset=fraud,

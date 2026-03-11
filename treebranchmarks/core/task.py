@@ -1,7 +1,8 @@
 """
 Task: times all approaches for a given (model, X_explain, X_background) triple.
 
-A Task owns a list of Approach objects.  When run(), it:
+A Task owns a list of Approach objects and a TaskType that determines which
+task method to call on each approach.  When run(), it:
   1. Runs each approach n_repeats times, recording wall-clock time
   2. Returns a TaskResult
 
@@ -12,8 +13,9 @@ from __future__ import annotations
 
 import traceback
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pandas as pd
@@ -24,6 +26,26 @@ from treebranchmarks.core.params import TreeParameters
 
 if TYPE_CHECKING:
     from treebranchmarks.cache.method_cache import MethodResultCache
+
+
+# ---------------------------------------------------------------------------
+# TaskType
+# ---------------------------------------------------------------------------
+
+class TaskType(str, Enum):
+    PATH_DEPENDENT_SHAP          = "path_dependent_shap"
+    PATH_DEPENDENT_INTERACTIONS  = "path_dependent_interactions"
+    BACKGROUND_SHAP              = "background_shap"
+    BACKGROUND_SHAP_INTERACTIONS = "background_shap_interactions"
+
+    @property
+    def display_name(self) -> str:
+        return {
+            TaskType.PATH_DEPENDENT_SHAP:          "Path-Dependent SHAP",
+            TaskType.PATH_DEPENDENT_INTERACTIONS:  "Path-Dependent SHAP Interactions",
+            TaskType.BACKGROUND_SHAP:              "Background SHAP",
+            TaskType.BACKGROUND_SHAP_INTERACTIONS: "Background SHAP Interactions",
+        }[self]
 
 
 # ---------------------------------------------------------------------------
@@ -80,31 +102,35 @@ class TaskResult:
 
 class Task:
     """
-    Groups one or more Approaches under a shared task name and times them.
+    Groups one or more Approaches under a task type and times them.
 
     Parameters
     ----------
-    name : str
-        Unique task identifier shown in reports.
+    task_type : TaskType
+        Which benchmark task to run on each approach.
     approaches : list[Approach]
         The algorithm implementations to benchmark.
     n_repeats : int
         How many timed repetitions per approach (default 3).
     cache_root : Path
         Reserved for future calibration lookup.
+    name : str | None
+        Display name; defaults to task_type.display_name.
     """
 
     def __init__(
         self,
-        name: str,
+        task_type: TaskType,
         approaches: list[Approach],
         n_repeats: int = 3,
         cache_root: Path = Path("cache"),
+        name: Optional[str] = None,
     ) -> None:
-        self.name = name
+        self.task_type = task_type
         self.approaches = approaches
         self.n_repeats = n_repeats
         self.cache_root = cache_root
+        self.name = name or task_type.display_name
 
     # ------------------------------------------------------------------
     # Main entry point
@@ -186,6 +212,7 @@ class Task:
         REPEAT_THRESHOLD_S = 10.0
 
         method_name = getattr(getattr(approach, "method", None), "name", "")
+        task_fn = getattr(approach, self.task_type.value)
         times: list[float] = []
         any_estimated = False
         estimation_description = ""
@@ -193,7 +220,7 @@ class Task:
         runtime_error = False
 
         try:
-            first = approach.run(trained_model, X_explain, X_background)
+            first = task_fn(trained_model, X_explain, X_background)
             if first.not_supported:
                 return ApproachResult(
                     approach_name=approach.name,
@@ -222,7 +249,7 @@ class Task:
             # Only repeat if the first run was fast enough.
             if first.elapsed_s < REPEAT_THRESHOLD_S:
                 for _ in range(self.n_repeats - 1):
-                    output = approach.run(trained_model, X_explain, X_background)
+                    output = task_fn(trained_model, X_explain, X_background)
                     times.append(output.elapsed_s)
                     if output.is_estimated:
                         any_estimated = True

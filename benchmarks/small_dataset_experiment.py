@@ -29,18 +29,15 @@ from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import CaliforniaHousingDataset, BreastCancerDataset
 from treebranchmarks.models import XGBoostWrapper, DecisionTreeWrapper
-from treebranchmarks.tasks import (
-    PathDependentSHAPTask,
-    BackgroundSHAPTask,
-    BackgroundSHAPInteractionsTask,
-    PathDependentInteractionsTask,
-)
+from treebranchmarks.core.task import Task, TaskType
+from treebranchmarks.methods.shap_method import SHAPApproach
+from treebranchmarks.methods.woodelf_method import WoodelfApproach
 
 CACHE_ROOT   = Path("cache")
 RESULTS_DIR  = Path("results")
 
 
-def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
+def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Mission]:
     """
     Return all missions for this experiment.
 
@@ -52,6 +49,9 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
 
         Experiment(name="combined", missions=small_missions() + other_missions(), ...)
     """
+    if approaches is None:
+        approaches = [SHAPApproach(), WoodelfApproach()]
+
     california    = CaliforniaHousingDataset(cache_root=cache_root, use_cache=False)
     breast_cancer = BreastCancerDataset(cache_root=cache_root, use_cache=False)
 
@@ -70,10 +70,10 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
     }
 
     # Tasks
-    pd_shap_task = PathDependentSHAPTask(n_repeats=1, cache_root=cache_root)
-    pd_iv_task   = PathDependentInteractionsTask(n_repeats=1, cache_root=cache_root)
-    bg_shap_task = BackgroundSHAPTask(n_repeats=1, cache_root=cache_root)
-    bg_iv_task   = BackgroundSHAPInteractionsTask(n_repeats=1, cache_root=cache_root)
+    pd_shap_task = Task(TaskType.PATH_DEPENDENT_SHAP,          approaches, n_repeats=1, cache_root=cache_root)
+    pd_iv_task   = Task(TaskType.PATH_DEPENDENT_INTERACTIONS,  approaches, n_repeats=1, cache_root=cache_root)
+    bg_shap_task = Task(TaskType.BACKGROUND_SHAP,              approaches, n_repeats=1, cache_root=cache_root)
+    bg_iv_task   = Task(TaskType.BACKGROUND_SHAP_INTERACTIONS, approaches, n_repeats=1, cache_root=cache_root)
 
     return [
         # California Housing / XGBoost

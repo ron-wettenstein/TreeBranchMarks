@@ -31,8 +31,9 @@ from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import XGBoostWrapper
-from treebranchmarks.tasks import PathDependentSHAPTask
-from treebranchmarks.methods.builtin import WOODELF, VECTORIZED_LINEAR_TREE_SHAP
+from treebranchmarks.core.task import Task, TaskType
+from treebranchmarks.methods.woodelf_method import WoodelfApproach
+from treebranchmarks.methods.linear_tree_shap_method import VectorizedLinearTreeSHAPApproach
 
 CACHE_ROOT  = Path("cache")
 RESULTS_DIR = Path("results")
@@ -53,7 +54,7 @@ _XGB_BASE = {
 
 DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
-_METHODS = [WOODELF, VECTORIZED_LINEAR_TREE_SHAP]
+_APPROACHES = [WoodelfApproach(), VectorizedLinearTreeSHAPApproach()]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -78,11 +79,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
     fraud = FraudDetectionDataset(cache_root=cache_root)
     models = _xgb_models(DEPTHS)
 
-    task = PathDependentSHAPTask(
-        methods=_METHODS,
-        n_repeats=1,
-        cache_root=cache_root,
-    )
+    task = Task(TaskType.PATH_DEPENDENT_SHAP, _APPROACHES, n_repeats=1, cache_root=cache_root)
 
     n_labels = {
         1:        "n=1",

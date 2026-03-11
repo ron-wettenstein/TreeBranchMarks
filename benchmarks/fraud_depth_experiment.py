@@ -30,11 +30,9 @@ from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import LightGBMWrapper
-from treebranchmarks.tasks import (
-    PathDependentSHAPTask,
-    BackgroundSHAPTask,
-    BackgroundSHAPInteractionsTask,
-)
+from treebranchmarks.core.task import Task, TaskType
+from treebranchmarks.methods.shap_method import SHAPApproach
+from treebranchmarks.methods.woodelf_method import WoodelfApproach
 
 CACHE_ROOT  = Path("cache")
 RESULTS_DIR = Path("results")
@@ -102,15 +100,18 @@ def _lgbm_models(base_params: dict, depths: list[int]) -> dict:
 # Mission builder
 # ---------------------------------------------------------------------------
 
-def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
+def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Mission]:
+    if approaches is None:
+        approaches = [SHAPApproach(), WoodelfApproach()]
+
     fraud = FraudDetectionDataset(cache_root=cache_root)
 
     medium_models = _lgbm_models(_LGBM_MEDIUM_BASE, MEDIUM_DEPTHS)
     high_models   = _lgbm_models(_LGBM_HIGH_BASE,   HIGH_DEPTHS)
 
-    pd_shap_task = PathDependentSHAPTask(n_repeats=1, cache_root=cache_root)
-    bg_shap_task = BackgroundSHAPTask(n_repeats=1, cache_root=cache_root)
-    bg_iv_task   = BackgroundSHAPInteractionsTask(n_repeats=1, cache_root=cache_root)
+    pd_shap_task = Task(TaskType.PATH_DEPENDENT_SHAP,          approaches, n_repeats=1, cache_root=cache_root)
+    bg_shap_task = Task(TaskType.BACKGROUND_SHAP,              approaches, n_repeats=1, cache_root=cache_root)
+    bg_iv_task   = Task(TaskType.BACKGROUND_SHAP_INTERACTIONS, approaches, n_repeats=1, cache_root=cache_root)
 
     missions = []
     for label, models in [("medium depth", medium_models), ("high depth", high_models)]:

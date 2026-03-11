@@ -23,12 +23,9 @@ from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import XGBoostWrapper
-from treebranchmarks.tasks import (
-    PathDependentSHAPTask,
-    BackgroundSHAPTask,
-    BackgroundSHAPInteractionsTask,
-    PathDependentInteractionsTask,
-)
+from treebranchmarks.core.task import Task, TaskType
+from treebranchmarks.methods.shap_method import SHAPApproach
+from treebranchmarks.methods.woodelf_method import WoodelfApproach
 
 CACHE_ROOT  = Path("cache")
 RESULTS_DIR = Path("results")
@@ -45,7 +42,7 @@ XGB_PARAMS = {
 }
 
 
-def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
+def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Mission]:
     """
     Return all missions for this experiment.
 
@@ -53,6 +50,9 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
         from benchmarks.fraud_detection_experiment import build_missions as fraud_missions
         Experiment(name="combined", missions=fraud_missions() + other_missions(), ...)
     """
+    if approaches is None:
+        approaches = [SHAPApproach(), WoodelfApproach()]
+
     fraud = FraudDetectionDataset(cache_root=cache_root)
 
     xgb_d6_t10 = {
@@ -63,10 +63,10 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
         ): XGBoostWrapper(task_type="regression")
     }
 
-    pd_shap_task = PathDependentSHAPTask(n_repeats=1, cache_root=cache_root)
-    pd_iv_task   = PathDependentInteractionsTask(n_repeats=1, cache_root=cache_root)
-    bg_shap_task = BackgroundSHAPTask(n_repeats=1, cache_root=cache_root)
-    bg_iv_task   = BackgroundSHAPInteractionsTask(n_repeats=1, cache_root=cache_root)
+    pd_shap_task = Task(TaskType.PATH_DEPENDENT_SHAP,          approaches, n_repeats=1, cache_root=cache_root)
+    pd_iv_task   = Task(TaskType.PATH_DEPENDENT_INTERACTIONS,  approaches, n_repeats=1, cache_root=cache_root)
+    bg_shap_task = Task(TaskType.BACKGROUND_SHAP,              approaches, n_repeats=1, cache_root=cache_root)
+    bg_iv_task   = Task(TaskType.BACKGROUND_SHAP_INTERACTIONS, approaches, n_repeats=1, cache_root=cache_root)
 
     return [
         Mission(MissionConfig(

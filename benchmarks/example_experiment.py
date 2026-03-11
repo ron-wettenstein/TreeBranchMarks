@@ -20,10 +20,9 @@ from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import CaliforniaHousingDataset
 from treebranchmarks.models import LightGBMWrapper
-from treebranchmarks.tasks import (
-    PathDependentSHAPTask,
-    BackgroundSHAPTask,
-)
+from treebranchmarks.core.task import Task, TaskType
+from treebranchmarks.methods.shap_method import SHAPApproach
+from treebranchmarks.methods.woodelf_method import WoodelfApproach
 
 CACHE_ROOT = Path("cache")
 RESULTS_DIR = Path("results")
@@ -48,8 +47,9 @@ def _lgbm(depth: int) -> dict[ModelConfig, LightGBMWrapper]:
 def build_experiment() -> Experiment:
     california = CaliforniaHousingDataset(cache_root=CACHE_ROOT)
 
-    path_dep_task   = PathDependentSHAPTask(n_repeats=1, cache_root=CACHE_ROOT)
-    background_task = BackgroundSHAPTask(n_repeats=1, cache_root=CACHE_ROOT)
+    _approaches = [SHAPApproach(), WoodelfApproach()]
+    path_dep_task   = Task(TaskType.PATH_DEPENDENT_SHAP, _approaches, n_repeats=1, cache_root=CACHE_ROOT)
+    background_task = Task(TaskType.BACKGROUND_SHAP,     _approaches, n_repeats=1, cache_root=CACHE_ROOT)
 
     # ------------------------------------------------------------------
     # Path-dependent SHAP — sweep n  (D fixed)

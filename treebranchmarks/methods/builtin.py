@@ -57,3 +57,27 @@ VECTORIZED_LINEAR_TREE_SHAP = Method(
     label="VectorizedLinearTreeSHAP",
     description="vectorized_linear_tree_shap.",
 )
+
+WOODELF_ECAI = Method(
+    name="woodelf_ecai",
+    label="Woodelf ECAI",
+    description="Woodelf ECAI algorithm (WDNF-based path-dependent/background SHAP).",
+)
+
+WOODELF_AAAI = Method(
+    name="woodelf_aaai",
+    label="Woodelf AAAI",
+    description="Woodelf AAAI algorithm (cube-based path-dependent/background SHAP).",
+)
+
+WOODELF_HD = Method(
+    name="woodelf_hd",
+    label="WoodelfHD",
+    description="Woodelf high-depth algorithm (woodelf_for_high_depth).",
+)
+
+WOODELF_VEC_RECURSIVE_NLT = Method(
+    name="woodelf_vec_recursive_nlt",
+    label="Woodelf Vec (Recursive + NLT)",
+    description="vectorized_linear_tree_shap with LinearTreeShapPathToMatricesSimpleNeighborTrickAbstract + improved_linear_tree_shap_magic.",
+)
