@@ -97,7 +97,7 @@ HIGH_DEPTHS    = [20, 25, 30, 35, 40, 50, 60]
 XGB_DEPTHS     = [9, 12, 18, 21, 24]
 
 _VEC_APPROACHES = [
-    SHAPApproach(),
+    # SHAPApproach(),
     VectorizedLinearTreeSHAPSimpleApproach(),
     VectorizedLinearTreeSHAPSimpleNLTApproach(),
     VectorizedLinearTreeSHAPImprovedApproach(),

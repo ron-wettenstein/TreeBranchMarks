@@ -1,8 +1,8 @@
 """
-Woodelf vs VectorizedLinearTreeSHAP — Fraud Detection depth sweep.
+WoodelfHD vs VectorizedLinearTreeSHAP — Fraud Detection depth sweep.
 
 Compares two path-dependent SHAP implementations across tree depths 1–11:
-  - Woodelf (WoodelfExplainer, tree_path_dependent)
+  - WoodelfHD (woodelf_for_high_depth)
   - VectorizedLinearTreeSHAP (vectorized_linear_tree_shap, NLT on, default p2m)
 
 Dataset / models
@@ -32,7 +32,7 @@ from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import XGBoostWrapper
 from treebranchmarks.core.task import Task, TaskType
-from treebranchmarks.methods.woodelf_method import WoodelfApproach
+from treebranchmarks.methods.woodelf_historical_methods import WoodelfHDApproach
 from treebranchmarks.methods.linear_tree_shap_method import VectorizedLinearTreeSHAPApproach
 
 CACHE_ROOT  = Path("cache")
@@ -52,9 +52,9 @@ _XGB_BASE = {
     "n_estimators": 10,
 }
 
-DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
-_APPROACHES = [WoodelfApproach(), VectorizedLinearTreeSHAPApproach()]
+_APPROACHES = [WoodelfHDApproach(), VectorizedLinearTreeSHAPApproach()]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -93,7 +93,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
     missions = []
     for n, label in n_labels.items():
         missions.append(Mission(MissionConfig(
-            name=f"fraud woodelf vs vec LTSHAP {label} (XGBoost T=10)",
+            name=f"fraud woodelfHD vs vec LTSHAP {label} (XGBoost T=10)",
             dataset=fraud,
             model_wrappers=models,
             tasks=[task],
