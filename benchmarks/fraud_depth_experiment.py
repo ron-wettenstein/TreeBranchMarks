@@ -116,7 +116,7 @@ def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Missi
     missions = []
     for label, models in [("medium depth", medium_models), ("high depth", high_models)]:
 
-        # 1/2 — PD SHAP n=100 000
+        # 1/6 — PD SHAP n=100 000
         missions.append(Mission(MissionConfig(
             name=f"fraud: PD SHAP n=100k ({label})",
             dataset=fraud,
@@ -127,7 +127,7 @@ def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Missi
             cache_root=cache_root,
         )))
 
-        # 3/4 — PD SHAP n=1
+        # 2/7 — PD SHAP n=1
         missions.append(Mission(MissionConfig(
             name=f"fraud: PD SHAP n=1 ({label})",
             dataset=fraud,
@@ -138,7 +138,7 @@ def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Missi
             cache_root=cache_root,
         )))
 
-        # 5/6 — BG SHAP m=100, n=400 000
+        # 3/8 — BG SHAP m=100, n=400 000
         missions.append(Mission(MissionConfig(
             name=f"fraud: BG SHAP m=100 n=400k ({label})",
             dataset=fraud,
@@ -149,7 +149,7 @@ def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Missi
             cache_root=cache_root,
         )))
 
-        # 7/8 — BG SHAP m=400 000, n=100 000
+        # 4/9 — BG SHAP m=400 000, n=100 000
         missions.append(Mission(MissionConfig(
             name=f"fraud: BG SHAP m=400k n=100k ({label})",
             dataset=fraud,
@@ -160,7 +160,7 @@ def build_missions(cache_root: Path = CACHE_ROOT, approaches=None) -> list[Missi
             cache_root=cache_root,
         )))
 
-        # 9/10 — BG SHAP IV m=400 000, n=10 000
+        # 5/10 — BG SHAP IV m=400 000, n=10 000
         missions.append(Mission(MissionConfig(
             name=f"fraud: BG SHAP IV m=400k n=10k ({label})",
             dataset=fraud,

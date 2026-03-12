@@ -7,11 +7,6 @@ Supported tasks
 - path_dependent_interactions: shap_interaction_values, tree_path_dependent
 - background_shap            : TreeExplainer(feature_perturbation="interventional")
 - background_shap_interactions: not supported by the shap library
-
-Complexity
-----------
-- path_dependent_shap : O(T * L^2 * n)
-- background_shap     : O(T * L * n * m)
 """
 
 from __future__ import annotations
@@ -24,7 +19,6 @@ import shap
 
 from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
-from treebranchmarks.core.params import TreeParameters
 from treebranchmarks.methods.builtin import SHAP
 
 
@@ -123,13 +117,3 @@ class SHAPApproach(Approach):
         return ApproachOutput(elapsed_s=elapsed)
 
     # background_shap_interactions: not supported (inherits not_supported default)
-
-    # ---------------------------------------------------------------------------
-    # Complexity formulas
-    # ---------------------------------------------------------------------------
-
-    def complexity_formula_path_dependent_shap(self, params: TreeParameters) -> Optional[float]:
-        return params.T * (params.L ** 2) * params.n
-
-    def complexity_formula_background_shap(self, params: TreeParameters) -> Optional[float]:
-        return params.T * params.L * params.n * params.m

@@ -2,7 +2,7 @@
 Historical Woodelf algorithm implementations.
 
 _WoodelfAlgorithmApproach
-    Shared base for ECAI, AAAI, and HD approaches.
+    Shared base for ECAI and AAAI approaches.
     memory_crash when D > MAX_SUPPORTED_DEPTH.
 
 WoodelfECAIApproach
@@ -12,7 +12,9 @@ WoodelfAAAIApproach
     AAAI cube-based algorithm. MAX_SUPPORTED_DEPTH=10.
 
 WoodelfHDApproach
-    woodelf_for_high_depth. MAX_SUPPORTED_DEPTH=17 (crashes at D >= 18).
+    woodelf_for_high_depth. Per-task depth limits:
+      SHAP tasks (PD + BG):     extrapolate when D > 18, BG crashes at D >= 20
+      IV tasks (PD + BG):       extrapolate when D > 15, BG crashes at D >= 18
 """
 
 from __future__ import annotations
@@ -42,6 +44,8 @@ from woodelf.cube_metric import (
     ShapleyValues as HDShapleyValues,
     ShapleyInteractionValues as HDShapleyInteractionValues,
 )
+from woodelf.parse_models import load_decision_tree_ensemble_model
+from woodelf.decision_trees_ensemble import DecisionTreesEnsemble
 
 
 # ---------------------------------------------------------------------------
@@ -178,28 +182,98 @@ class WoodelfAAAIApproach(_WoodelfAlgorithmApproach):
 # WoodelfHDApproach
 # ---------------------------------------------------------------------------
 
-def _woodelf_hd_pd(model, X_explain, metric):
-    """Adapter: path-dependent call passes background_data=None."""
-    woodelf_for_high_depth(model, X_explain, None, metric)
-
-
-class WoodelfHDApproach(_WoodelfAlgorithmApproach):
+class WoodelfHDApproach(Approach):
     """
     woodelf_for_high_depth implementation covering all 4 task types.
 
     Path-dependent tasks: background_data=None.
     Background (interventional) tasks: background_data=X_background.
     Metrics: ShapleyValues / ShapleyInteractionValues from woodelf.cube_metric.
-    Memory crash returned for D >= 18.
+
+    SHAP tasks (PD + BG):  extrapolate when D > 18, BG crashes at D >= 20.
+    IV tasks (PD + BG):    extrapolate when D > 15, BG crashes at D >= 18.
     """
 
     name = "WoodelfHD"
     method = WOODELF_HD
     description = "woodelf_for_high_depth implementation (woodelf.cube_metric metrics)."
 
-    MAX_SUPPORTED_DEPTH = 18  # crashes at D >= 18
+    _SHAP_TREE_LIMIT_DEPTH = 18
+    _IV_TREE_LIMIT_DEPTH   = 15
+    _BG_SHAP_CRASH_DEPTH   = 20   # background_shap: crash when D >= this
+    _IV_CRASH_DEPTH        = 18   # PD/BG interactions: crash when D >= this
 
-    _calculate_pd           = staticmethod(_woodelf_hd_pd)
-    _calculate_bg           = staticmethod(woodelf_for_high_depth)
-    _shap_values_cls        = HDShapleyValues
-    _interaction_values_cls = HDShapleyInteractionValues
+    # ------------------------------------------------------------------
+    # Private helper
+    # ------------------------------------------------------------------
+
+    def _run_hd(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+        metric,
+        tree_limit_depth: int,
+        memory_crash_depth: Optional[int],
+    ) -> ApproachOutput:
+        if memory_crash_depth is not None and trained_model.params.D >= memory_crash_depth:
+            return ApproachOutput(elapsed_s=0.0, memory_crash=True)
+
+        T = trained_model.params.T
+
+        if trained_model.params.D > tree_limit_depth:
+            model_obj = load_decision_tree_ensemble_model(
+                trained_model.raw_model, list(X_explain.columns)
+            )
+            single_tree = DecisionTreesEnsemble([model_obj.trees[0]])
+            t0 = time.perf_counter()
+            woodelf_for_high_depth(single_tree, X_explain, X_background, metric, model_was_loaded=True)
+            elapsed = time.perf_counter() - t0
+            return ApproachOutput(
+                elapsed_s=elapsed * T,
+                is_estimated=True,
+                estimation_description=(
+                    f"D={trained_model.params.D} > {tree_limit_depth}: "
+                    f"ran with tree_limit=1, extrapolated ×{T} trees"
+                ),
+            )
+
+        t0 = time.perf_counter()
+        woodelf_for_high_depth(trained_model.raw_model, X_explain, X_background, metric)
+        return ApproachOutput(elapsed_s=time.perf_counter() - t0)
+
+    # ------------------------------------------------------------------
+    # Task methods
+    # ------------------------------------------------------------------
+
+    def path_dependent_shap(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        return self._run_hd(trained_model, X_explain, None, HDShapleyValues(), self._SHAP_TREE_LIMIT_DEPTH, None)
+
+    def path_dependent_interactions(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        return self._run_hd(trained_model, X_explain, None, HDShapleyInteractionValues(), self._IV_TREE_LIMIT_DEPTH, self._IV_CRASH_DEPTH)
+
+    def background_shap(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        return self._run_hd(trained_model, X_explain, X_background, HDShapleyValues(), self._SHAP_TREE_LIMIT_DEPTH, self._BG_SHAP_CRASH_DEPTH)
+
+    def background_shap_interactions(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        return self._run_hd(trained_model, X_explain, X_background, HDShapleyInteractionValues(), self._IV_TREE_LIMIT_DEPTH, self._IV_CRASH_DEPTH)
