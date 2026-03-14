@@ -12,6 +12,7 @@ from treebranchmarks.methods.builtin import (
     WOODELF_ECAI,
     WOODELF_AAAI,
     WOODELF_HD,
+    LINEAR_TREESHAP_V6,
 )
 from treebranchmarks.methods.shap_method import SHAPApproach
 from treebranchmarks.methods.woodelf_method import WoodelfApproach
@@ -20,6 +21,7 @@ from treebranchmarks.methods.woodelf_historical_methods import (
     WoodelfAAAIApproach,
     WoodelfHDApproach,
 )
+from treebranchmarks.methods.linear_treeshap_v6_method import LinearTreeSHAPV6Approach
 from treebranchmarks.methods.linear_tree_shap_method import (
     VectorizedLinearTreeSHAPApproach,
     VectorizedLinearTreeSHAPSimpleApproach,
@@ -40,6 +42,7 @@ __all__ = [
     "WOODELF_VEC_RECURSIVE_NLT",
     "VECTORIZED_LINEAR_TREE_SHAP",
     "WOODELF_ECAI", "WOODELF_AAAI", "WOODELF_HD",
+    "LINEAR_TREESHAP_V6",
     # Approach classes
     "SHAPApproach",
     "WoodelfApproach", "WoodelfHDApproach",
@@ -53,4 +56,5 @@ __all__ = [
     "VectorizedLinearTreeSHAPDefaultApproach",
     "VectorizedLinearTreeSHAPDefaultNLTApproach",
     "VectorizedLinearTreeSHAPRecursiveNLTApproach",
+    "LinearTreeSHAPV6Approach",
 ]

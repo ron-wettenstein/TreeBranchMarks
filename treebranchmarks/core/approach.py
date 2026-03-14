@@ -97,4 +97,3 @@ class Approach(ABC):
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
         return ApproachOutput(elapsed_s=0.0, not_supported=True)
-

@@ -9,7 +9,9 @@
       "Bash(python -c \"from woodelf.decision_trees_ensemble import DecisionTreeNode; import inspect; print\\(inspect.getsource\\(DecisionTreeNode\\)\\)\")",
       "Bash(python -c \"from woodelf.high_depth_woodelf import woodelf_for_high_depth; help\\(woodelf_for_high_depth\\)\")",
       "Bash(python3 -c \"from woodelf.high_depth_woodelf import woodelf_for_high_depth; help\\(woodelf_for_high_depth\\)\")",
-      "Bash(py -c \":*)"
+      "Bash(py -c \":*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

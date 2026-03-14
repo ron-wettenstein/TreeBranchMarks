@@ -81,3 +81,9 @@ WOODELF_VEC_RECURSIVE_NLT = Method(
     label="Woodelf Vec (Recursive + NLT)",
     description="vectorized_linear_tree_shap with LinearTreeShapPathToMatricesSimpleNeighborTrickAbstract + improved_linear_tree_shap_magic.",
 )
+
+LINEAR_TREESHAP_V6 = Method(
+    name="linear_treeshap_v6",
+    label="Linear TreeSHAP V6",
+    description="Path-dependent SHAP via telescoping + Gauss-Legendre quadrature (woodelf tree API).",
+)

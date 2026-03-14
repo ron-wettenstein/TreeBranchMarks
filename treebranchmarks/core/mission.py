@@ -24,9 +24,11 @@ import numpy as np
 import pandas as pd
 
 from treebranchmarks.cache.method_cache import MethodResultCache
+from treebranchmarks.core.approach import Approach
 from treebranchmarks.core.dataset import Dataset
 from treebranchmarks.core.model import ModelConfig, ModelWrapper, TrainedModel
-from treebranchmarks.core.task import Task, TaskResult
+from treebranchmarks.core.params import TreeParameters
+from treebranchmarks.core.task import ApproachResult, Task, TaskResult, TaskType
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +213,13 @@ class Mission:
             }
         elif fully_cached_models:
             bp = fully_cached_models[0][1]
-            dataset_meta = {"name": cfg.dataset.name, "n_features": bp.F}
+            details = cfg.dataset.dump_details()
+            dataset_meta = {
+                "name": cfg.dataset.name,
+                "n_samples": details.get("n_samples"),
+                "n_features": bp.F,
+                "columns": details.get("columns", []),
+            }
         else:
             dataset_meta = {"name": cfg.dataset.name}
 
@@ -275,11 +283,14 @@ class Mission:
                 for m in cfg.m_values:
                     idx = rng.permutation(len(X))
                     X_explain = X.iloc[idx[:n]].reset_index(drop=True)
-                    X_background = (
-                        X.iloc[idx[n : n + m]].reset_index(drop=True)
-                        if m > 0
-                        else None
-                    )
+                    if m == 0:
+                        X_background = None
+                    elif n + m <= len(X):
+                        X_background = X.iloc[idx[n : n + m]].reset_index(drop=True)
+                    else:
+                        # n + m exceeds dataset size — allow overlap with a fresh permutation
+                        bg_idx = rng.permutation(len(X))[:m]
+                        X_background = X.iloc[bg_idx].reset_index(drop=True)
 
                     print(f"\n  > model={model_config}  n={n}  m={m}")
 
@@ -290,5 +301,322 @@ class Mission:
                             mission_name=self.name,
                         )
                         result.task_results.append(task_result)
+
+        return result
+
+
+# ---------------------------------------------------------------------------
+# ControlledMission — per-approach, per-D model configuration
+# ---------------------------------------------------------------------------
+
+#: Sentinel value for ApproachDOverride.model_by_D — forces memory_crash.
+MEMORY_CRASH = "memory_crash"
+
+
+@dataclass
+class PrerecordedTime:
+    """
+    A prerecorded elapsed time to use in place of actually running an approach.
+
+    Use this in ApproachDOverride.model_by_D when you already know how long
+    the approach took (e.g. a previous 2-hour run) and don't want to re-run it.
+
+    Parameters
+    ----------
+    elapsed_s : float
+        The known wall-clock time in seconds.
+    estimation_description : str
+        Optional note explaining the source of the prerecorded value.
+    """
+    elapsed_s: float
+    estimation_description: str = ""
+
+
+@dataclass
+class ModelSpec:
+    """Pairs a ModelConfig with its ModelWrapper for use in ControlledMission."""
+    config: ModelConfig
+    wrapper: ModelWrapper
+
+
+@dataclass
+class ApproachDOverride:
+    """
+    Specifies which model each approach uses for each D value.
+
+    Parameters
+    ----------
+    approach : Approach
+    full_T : int
+        The "reference" tree count.  When the model at a given D has fewer
+        than full_T trees, elapsed time is scaled by full_T / actual_T and
+        is_estimated is set to True.
+    model_by_D : dict[int, ModelSpec | str]
+        Maps D value → ModelSpec to use, or MEMORY_CRASH to force a crash result.
+        D values absent from the map produce MEMORY_CRASH results.
+    """
+    approach: Approach
+    full_T: int
+    model_by_D: dict
+
+
+class ControlledMission:
+    """
+    A D-sweep mission where each approach can use a different model per D value.
+
+    Useful when some approaches are too slow at high depth: provide a
+    reduced-tree ModelSpec and the mission scales elapsed_s by full_T / actual_T
+    automatically (is_estimated=True).
+
+    Example
+    -------
+    ::
+
+        from treebranchmarks.core.mission import (
+            ControlledMission, ApproachDOverride, ModelSpec, MEMORY_CRASH
+        )
+        from treebranchmarks.core.task import TaskType
+
+        mission = ControlledMission(
+            name="D sweep controlled",
+            dataset=FraudDetectionDataset(),
+            D_values=[6, 9, 12],
+            approach_overrides=[
+                ApproachDOverride(
+                    approach=WoodelfApproach(),
+                    full_T=100,
+                    model_by_D={
+                        6: ModelSpec(lgbm_cfg_d6_100t, LightGBMModel()),
+                        9: ModelSpec(lgbm_cfg_d9_10t,  LightGBMModel()),   # extrap ×10
+                       12: ModelSpec(lgbm_cfg_d12_10t, LightGBMModel()),
+                    },
+                ),
+                ApproachDOverride(
+                    approach=WoodelfAAAIApproach(),
+                    full_T=100,
+                    model_by_D={
+                        6: ModelSpec(lgbm_cfg_d6_100t, LightGBMModel()),
+                        9: ModelSpec(lgbm_cfg_d9_1t,   LightGBMModel()),   # extrap ×100
+                       12: MEMORY_CRASH,
+                    },
+                ),
+            ],
+            task_types=[TaskType.BACKGROUND_SHAP],
+            n=1000,
+            m=100,
+        )
+    """
+
+    def __init__(
+        self,
+        name: str,
+        dataset: Dataset,
+        D_values: list,
+        approach_overrides: list,
+        task_types: list,
+        n: int,
+        m: int,
+        random_state: int = 42,
+        cache_root: Path = Path("cache"),
+    ) -> None:
+        self.name = name
+        self.dataset = dataset
+        self.D_values = sorted(D_values)
+        self.approach_overrides: list[ApproachDOverride] = approach_overrides
+        self.task_types: list[TaskType] = task_types
+        self.n = n
+        self.m = m
+        self.random_state = random_state
+        self.cache_root = cache_root
+
+    def run(
+        self,
+        method_cache: Optional[MethodResultCache] = None,
+    ) -> MissionResult:
+        rng = np.random.default_rng(self.random_state)
+
+        print(f"\n{'='*60}")
+        print(f"Mission: {self.name}")
+        print(f"  dataset   : {self.dataset.name}")
+        print(f"  D_values  : {self.D_values}")
+        print(f"  n={self.n}  m={self.m}")
+        print(f"  tasks     : {[t.display_name for t in self.task_types]}")
+        print(f"{'='*60}")
+
+        X, y = self.dataset.load()
+
+        meta = {
+            "dataset": {
+                "name": self.dataset.name,
+                "n_samples": len(X),
+                "n_features": X.shape[1],
+                "columns": list(X.columns),
+            },
+            "n_values": [self.n],
+            "m_values": [self.m],
+        }
+
+        result = MissionResult(config=None, mission_name=self.name, meta=meta)
+        result._dataset_name = self.dataset.name
+
+        # Cache trained models by ModelSpec identity to avoid redundant training.
+        _trained_cache: dict[int, TrainedModel] = {}
+
+        def _get_trained(spec: ModelSpec) -> TrainedModel:
+            key = id(spec)
+            if key not in _trained_cache:
+                _trained_cache[key] = spec.wrapper.load_or_train(
+                    dataset_name=self.dataset.name,
+                    X=X, y=y,
+                    config=spec.config,
+                    cache_root=self.cache_root,
+                )
+            return _trained_cache[key]
+
+        def _sample(D: int):
+            idx = rng.permutation(len(X))
+            X_exp = X.iloc[idx[:self.n]].reset_index(drop=True)
+            if self.m == 0:
+                X_bg = None
+            elif self.n + self.m <= len(X):
+                X_bg = X.iloc[idx[self.n : self.n + self.m]].reset_index(drop=True)
+            else:
+                bg_idx = rng.permutation(len(X))[:self.m]
+                X_bg = X.iloc[bg_idx].reset_index(drop=True)
+            return X_exp, X_bg
+
+        for D in self.D_values:
+            X_explain, X_background = _sample(D)
+            print(f"\n  > D={D}  n={self.n}  m={self.m}")
+
+            for task_type in self.task_types:
+                approach_results: dict[str, ApproachResult] = {}
+                reference_params: Optional[TreeParameters] = None
+
+                for override in self.approach_overrides:
+                    approach = override.approach
+                    model_spec = override.model_by_D.get(D, MEMORY_CRASH)
+                    method_name = getattr(getattr(approach, "method", None), "name", "")
+
+                    if model_spec == MEMORY_CRASH:
+                        approach_results[approach.name] = ApproachResult(
+                            approach_name=approach.name,
+                            running_time=0.0,
+                            std_time_s=0.0,
+                            is_estimated=False,
+                            error=None,
+                            method=method_name,
+                            memory_crash=True,
+                        )
+                        print(f"  [approach:{approach.name}] MEMORY CRASH (configured)")
+                        continue
+
+                    if isinstance(model_spec, PrerecordedTime):
+                        ar = ApproachResult(
+                            approach_name=approach.name,
+                            running_time=model_spec.elapsed_s,
+                            std_time_s=0.0,
+                            is_estimated=True,
+                            error=None,
+                            method=method_name,
+                            estimation_description=model_spec.estimation_description or "prerecorded time",
+                        )
+                        approach_results[approach.name] = ar
+                        print(f"  [approach:{approach.name}] PRERECORDED={ar.running_time:.3f}s")
+                        continue
+
+                    trained = _get_trained(model_spec)
+                    actual_T = trained.params.T
+                    full_T = override.full_T
+
+                    # Build reference params using full_T so all approaches are
+                    # compared on the same footing in the HTML report.
+                    base_params = trained.params.with_run_params(
+                        n=self.n, m=self.m if self.m > 0 else 0
+                    )
+                    ref_params = TreeParameters(
+                        T=full_T,
+                        D=base_params.D,
+                        L=base_params.L,
+                        F=base_params.F,
+                        ensemble_type=base_params.ensemble_type,
+                        n=base_params.n,
+                        m=base_params.m,
+                    )
+                    if reference_params is None:
+                        reference_params = ref_params
+
+                    # Check method cache.
+                    if method_cache is not None:
+                        cached = method_cache.get(
+                            approach, self.name, task_type.display_name, ref_params
+                        )
+                        if cached is not None:
+                            approach_results[approach.name] = cached
+                            print(f"  [approach:{approach.name}] CACHED={cached.running_time:.3f}s")
+                            continue
+
+                    # Time the approach via Task's internal helper.
+                    _task = Task(
+                        task_type=task_type,
+                        approaches=[approach],
+                        cache_root=self.cache_root,
+                    )
+                    ar = _task._time_approach(
+                        approach, trained, X_explain, X_background, ref_params
+                    )
+
+                    # Scale if running on fewer trees than full_T.
+                    if (
+                        actual_T < full_T
+                        and not ar.memory_crash
+                        and not ar.not_supported
+                        and not ar.runtime_error
+                    ):
+                        scale = full_T / actual_T
+                        extrap_note = f"ran {actual_T} of {full_T} trees, extrapolated ×{scale:.0f}"
+                        desc = (
+                            f"{ar.estimation_description}; {extrap_note}"
+                            if ar.estimation_description
+                            else extrap_note
+                        )
+                        ar = ApproachResult(
+                            approach_name=ar.approach_name,
+                            running_time=ar.running_time * scale,
+                            std_time_s=ar.std_time_s * scale,
+                            is_estimated=True,
+                            error=ar.error,
+                            method=ar.method,
+                            estimation_description=desc,
+                        )
+
+                    approach_results[approach.name] = ar
+
+                    if method_cache is not None and not ar.error:
+                        method_cache.put(
+                            approach, self.name, task_type.display_name, ref_params, ar
+                        )
+
+                    if ar.runtime_error:
+                        print(f"  [approach:{approach.name}] RUNTIME ERROR: {ar.error}")
+                    elif ar.is_estimated:
+                        print(f"  [approach:{approach.name}] ESTIMATED={ar.running_time:.3f}s")
+                    else:
+                        print(
+                            f"  [approach:{approach.name}] "
+                            f"mean={ar.running_time:.3f}s ± {ar.std_time_s:.3f}s"
+                        )
+
+                if reference_params is None:
+                    # All approaches crashed — no params available; skip.
+                    continue
+
+                result.task_results.append(
+                    TaskResult(
+                        task_name=task_type.display_name,
+                        params=reference_params,
+                        approach_results=approach_results,
+                    )
+                )
 
         return result

@@ -759,6 +759,15 @@ def _js() -> str:
         slidersHtml += '<label class="filter-chip"><input type="checkbox" class="sb-task-cb" value="' + t + '" checked> ' + taskDisplayName(t) + '</label>';
       });
       slidersHtml += '</div></div>';
+      var sbMethodVals = SCORES.methods || [];
+      slidersHtml += '<div class="filter-row"><span class="fr-label">Methods:</span><div class="filter-chips">';
+      sbMethodVals.forEach(function(m) {
+        var color = methodColor(m);
+        slidersHtml += '<label class="filter-chip" style="border-color:' + color + ';color:' + color + '">' +
+          '<input type="checkbox" class="sb-method-cb" value="' + m + '" checked style="accent-color:' + color + '"> ' +
+          methodLabel(m) + '</label>';
+      });
+      slidersHtml += '</div></div>';
       slidersHtml += '<div class="filter-row"><label class="remove-fast-wrap"><input type="checkbox" id="sb-remove-fast"> Runtime &gt; 10s</label></div>';
       slidersHtml += '<div id="sb-filtered-score" class="sb-filtered-score"></div>';
 
@@ -847,11 +856,16 @@ def _js() -> str:
         document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
           if (cb.checked) selTasks.push(cb.value);
         });
+        var selMethods = [];
+        document.querySelectorAll('.sb-method-cb').forEach(function(cb) {
+          if (cb.checked) selMethods.push(cb.value);
+        });
         var rmFastEl = document.getElementById('sb-remove-fast');
         var removeFast = rmFastEl ? rmFastEl.checked : false;
         var filtered = DATA.filter(function(r) {
           return r.n >= nLo && r.n <= nHi && r.m >= mLo && r.m <= mHi && r.D >= dLo && r.D <= dHi &&
-                 (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1);
+                 (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1) &&
+                 (selMethods.length === 0 || selMethods.indexOf(r.method) !== -1);
         });
         var result = computeScoreFromRows(filtered, removeFast);
         var el2 = document.getElementById('sb-filtered-score');
@@ -898,6 +912,9 @@ def _js() -> str:
       });
 
       document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
+        cb.addEventListener('change', updateFilteredScore);
+      });
+      document.querySelectorAll('.sb-method-cb').forEach(function(cb) {
         cb.addEventListener('change', updateFilteredScore);
       });
       var sbRmFastEl = document.getElementById('sb-remove-fast');

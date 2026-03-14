@@ -50,7 +50,9 @@ class WoodelfApproach(Approach):
         feature_perturbation: str,
         use_interactions: bool,
     ) -> ApproachOutput:
-        if memory_crash_depth is not None and trained_model.params.D >= memory_crash_depth:
+        D, T = trained_model.params.D, trained_model.params.T
+
+        if memory_crash_depth is not None and D >= memory_crash_depth:
             return ApproachOutput(elapsed_s=0.0, memory_crash=True)
 
         if feature_perturbation == "interventional":
@@ -67,9 +69,7 @@ class WoodelfApproach(Approach):
                 feature_perturbation="tree_path_dependent",
             )
 
-        T = trained_model.params.T
-
-        if tree_limit_depth is not None and trained_model.params.D > tree_limit_depth:
+        if tree_limit_depth is not None and D > tree_limit_depth:
             t0 = time.perf_counter()
             if use_interactions:
                 explainer.shap_interaction_values(
@@ -82,7 +82,7 @@ class WoodelfApproach(Approach):
                 elapsed_s=elapsed * T,
                 is_estimated=True,
                 estimation_description=(
-                    f"D={trained_model.params.D} > {tree_limit_depth}: "
+                    f"D={D} > {tree_limit_depth}: "
                     f"ran with tree_limit=1, extrapolated ×{T} trees"
                 ),
             )
@@ -135,4 +135,3 @@ class WoodelfApproach(Approach):
     ) -> ApproachOutput:
         return self._run(trained_model, X_explain, X_background,
                          self._IV_TREE_LIMIT_DEPTH, self._IV_CRASH_DEPTH, "interventional", True)
-
