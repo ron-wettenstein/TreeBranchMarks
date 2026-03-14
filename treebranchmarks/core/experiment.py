@@ -37,12 +37,15 @@ from __future__ import annotations
 
 import json
 import shutil
+from copy import copy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 from treebranchmarks.cache.method_cache import MethodResultCache
-from treebranchmarks.core.mission import Mission, MissionResult
+from treebranchmarks.core.mission import ControlledMission, Mission, MissionResult
+from treebranchmarks.core.params import EnsembleType, TreeParameters
+from treebranchmarks.core.task import ApproachResult, TaskResult
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +107,8 @@ class Experiment:
         delete_dataset_cache: bool = False,
         delete_model_cache: bool = False,
         delete_results: bool = False,
+        method_filter: Optional[list[str]] = None,
+        extra_result_paths: Optional[list[Path]] = None,
     ) -> None:
         self.name = name
         self.missions = missions
@@ -115,6 +120,8 @@ class Experiment:
         self.delete_dataset_cache = delete_dataset_cache
         self.delete_model_cache = delete_model_cache
         self.delete_results = delete_results
+        self.method_filter: list[str] = [m.lower() for m in (method_filter or [])]
+        self.extra_result_paths: list[Path] = list(extra_result_paths or [])
 
     # ------------------------------------------------------------------
     # Run
@@ -152,10 +159,11 @@ class Experiment:
 
         result = ExperimentResult(experiment_name=self.name)
         for mission in self.missions:
-            mission_result = mission.run(method_cache=method_cache)
+            filtered = self._filter_mission(mission)
+            mission_result = filtered.run(method_cache=method_cache)
             result.mission_results.append(mission_result)
+            self._persist(result)
 
-        self._persist(result)
         print(f"\n[experiment:{self.name}] Results saved to {results_path}")
         return result
 
@@ -232,9 +240,53 @@ class Experiment:
         self.results_dir.mkdir(parents=True, exist_ok=True)
         return self.results_dir / f"{self.name}.json"
 
+    def _filter_mission(self, mission):
+        """
+        Return a (possibly shallow-copied) mission with approaches filtered to
+        those whose ``method.name`` is in ``self.method_filter``.
+
+        If ``method_filter`` is empty, the original mission is returned unchanged.
+        Works for both ``Mission`` and ``ControlledMission``.
+        """
+        if not self.method_filter:
+            return mission
+
+        def _method_matches(approach) -> bool:
+            name = getattr(getattr(approach, "method", None), "name", "")
+            return name.lower() in self.method_filter
+
+        if isinstance(mission, ControlledMission):
+            filtered_overrides = [
+                ao for ao in mission.approach_overrides
+                if _method_matches(ao.approach)
+            ]
+            new_mission = copy(mission)
+            new_mission.approach_overrides = filtered_overrides
+            return new_mission
+
+        # Standard Mission — filter tasks
+        filtered_tasks = []
+        for task in mission.config.tasks:
+            filtered_approaches = [a for a in task.approaches if _method_matches(a)]
+            if filtered_approaches:
+                new_task = copy(task)
+                new_task.approaches = filtered_approaches
+                filtered_tasks.append(new_task)
+
+        new_config = copy(mission.config)
+        new_config.tasks = filtered_tasks
+        new_mission = copy(mission)
+        new_mission.config = new_config
+        return new_mission
+
     def _persist(self, result: ExperimentResult) -> None:
+        data = json.dumps(result.as_dict(), indent=2)
         with open(self._results_path(), "w") as f:
-            json.dump(result.as_dict(), f, indent=2)
+            f.write(data)
+        for path in self.extra_result_paths:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                f.write(data)
 
     def _deserialize(self, raw: dict) -> ExperimentResult:
         """
@@ -244,10 +296,6 @@ class Experiment:
         ApproachResult / TreeParameters) — we do NOT reload the trained
         models or dataset objects.
         """
-        from treebranchmarks.core.task import TaskResult, ApproachResult
-        from treebranchmarks.core.params import TreeParameters, EnsembleType
-        from treebranchmarks.core.mission import MissionResult
-
         mission_results = []
         for mission_dict in raw.get("missions", []):
             task_results = []

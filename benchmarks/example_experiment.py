@@ -11,6 +11,7 @@ The HTML report is written to results/shap_comparison_v1.html.
 
 from pathlib import Path
 
+from treebranchmarks.core.cli import run_experiment_cli
 from treebranchmarks import (
     Experiment,
     Mission,
@@ -128,9 +129,4 @@ def build_experiment() -> Experiment:
 
 
 if __name__ == "__main__":
-    experiment = build_experiment()
-
-    experiment.run()
-
-    report_path = experiment.generate_html()
-    print(f"\nOpen the report in your browser:\n  {report_path.resolve()}")
+    run_experiment_cli(build_experiment)

@@ -87,3 +87,9 @@ LINEAR_TREESHAP_V6 = Method(
     label="Linear TreeSHAP V6",
     description="Path-dependent SHAP via telescoping + Gauss-Legendre quadrature (woodelf tree API).",
 )
+
+TREEGRAD = Method(
+    name="treegrad",
+    label="TreeGrad",
+    description="Path-dependent SHAP via TreeGrad (https://github.com/watml/TreeGrad). sklearn models only.",
+)

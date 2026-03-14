@@ -35,6 +35,7 @@ class WoodelfApproach(Approach):
     _BG_SHAP_CRASH_DEPTH       = 20   # background_shap: crash when D >= this
     _IV_TREE_LIMIT_DEPTH       = 15   # PD/BG interactions: extrapolate when D > this
     _IV_CRASH_DEPTH            = 18   # PD/BG interactions: crash when D >= this
+    GPU                        = False
 
     # ------------------------------------------------------------------
     # Private helper
@@ -62,11 +63,13 @@ class WoodelfApproach(Approach):
                 trained_model.raw_model,
                 data=X_background,
                 feature_perturbation="interventional",
+                GPU=self.GPU,
             )
         else:
             explainer = WoodelfExplainer(
                 trained_model.raw_model,
                 feature_perturbation="tree_path_dependent",
+                GPU=self.GPU,
             )
 
         if tree_limit_depth is not None and D > tree_limit_depth:
@@ -135,3 +138,15 @@ class WoodelfApproach(Approach):
     ) -> ApproachOutput:
         return self._run(trained_model, X_explain, X_background,
                          self._IV_TREE_LIMIT_DEPTH, self._IV_CRASH_DEPTH, "interventional", True)
+
+
+# ---------------------------------------------------------------------------
+# GPU variant
+# ---------------------------------------------------------------------------
+
+class WoodelfGPUApproach(WoodelfApproach):
+    """WoodelfApproach with GPU=True (requires CuPy: pip install cupy)."""
+
+    name = "Woodelf GPU"
+    description = "Woodelf TreeExplainer implementation accelerated on GPU (CuPy required)."
+    GPU = True

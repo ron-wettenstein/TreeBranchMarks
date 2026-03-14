@@ -11,7 +11,9 @@
       "Bash(python3 -c \"from woodelf.high_depth_woodelf import woodelf_for_high_depth; help\\(woodelf_for_high_depth\\)\")",
       "Bash(py -c \":*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(grep -n \"if __name__\" c:/university/decision_trees/code_and_work/treebranchmarks/benchmarks/*.py)",
+      "Bash(python -:*)"
     ]
   }
 }

@@ -2,7 +2,7 @@
 
 A benchmarking framework for comparing SHAP algorithms on decision tree ensembles.
 
-treebranchmarks measures and visualises how the runtime of different SHAP implementations scales across the six parameters that govern their complexity:
+Measures and visualises how runtime scales across the six complexity parameters:
 
 | Parameter | Meaning |
 |---|---|
@@ -13,7 +13,7 @@ treebranchmarks measures and visualises how the runtime of different SHAP implem
 | `L` | average leaves per tree |
 | `F` | number of features |
 
-Results are summarised in a self-contained, interactive HTML report with log-scale line charts, a sortable all-results table, and a head-to-head scoreboard comparing **SHAP** vs **Woodelf**.
+Results are summarised in a self-contained interactive HTML report with log-scale charts, a full results table, and a head-to-head scoreboard.
 
 ---
 
@@ -21,14 +21,7 @@ Results are summarised in a self-contained, interactive HTML report with log-sca
 
 ```bash
 pip install -e .
-```
-
-Optional extras:
-
-```bash
-pip install -e ".[kaggle]"   # Kaggle dataset support
-pip install -e ".[openml]"   # OpenML dataset support
-pip install -e ".[dev]"      # pytest
+pip install -e ".[dev]"   # include pytest
 ```
 
 Python 3.10+ required.
@@ -37,149 +30,159 @@ Python 3.10+ required.
 
 ## Quick start
 
+```bash
+python -m benchmarks.example_experiment
+```
+
+Or build your own:
+
 ```python
-from pathlib import Path
 from treebranchmarks import Experiment, Mission, MissionConfig
-from treebranchmarks.core.params import EnsembleType
 from treebranchmarks.core.model import ModelConfig
+from treebranchmarks.core.params import EnsembleType
+from treebranchmarks.core.task import Task, TaskType
 from treebranchmarks.datasets import CaliforniaHousingDataset
 from treebranchmarks.models import LightGBMWrapper
-from treebranchmarks.tasks import PathDependentSHAPTask, BackgroundSHAPTask
-
-dataset = CaliforniaHousingDataset()
-model   = {ModelConfig(EnsembleType.LIGHTGBM, {"n_estimators": 100, "max_depth": 6}): LightGBMWrapper()}
+from treebranchmarks.methods import SHAPApproach, WoodelfApproach
 
 experiment = Experiment(
     name="my_benchmark",
     missions=[
-        # Sweep n — how does runtime grow with the number of rows to explain?
         Mission(MissionConfig(
-            name="path-dep: sweep n",
-            dataset=dataset,
-            model_wrappers=model,
-            tasks=[PathDependentSHAPTask()],
+            dataset=CaliforniaHousingDataset(),
+            model_wrappers={
+                ModelConfig(EnsembleType.LIGHTGBM, {"n_estimators": 100, "max_depth": 6}):
+                LightGBMWrapper()
+            },
+            tasks=[Task(TaskType.PATH_DEPENDENT_SHAP, [SHAPApproach(), WoodelfApproach()])],
             n_values=[10, 100, 1_000, 10_000],
             m_values=[0],
         )),
-        # Sweep m — how does runtime grow with the background size?
-        Mission(MissionConfig(
-            name="background: sweep m",
-            dataset=dataset,
-            model_wrappers=model,
-            tasks=[BackgroundSHAPTask()],
-            n_values=[200],
-            m_values=[1, 10, 100, 1_000, 10_000],
-        )),
     ],
 )
-
 experiment.run()
-report = experiment.generate_html()
-print(f"Report: {report.resolve()}")
+experiment.generate_html()
 ```
-
-See [`benchmarks/example_experiment.py`](benchmarks/example_experiment.py) for a fuller example.
 
 ---
 
-## How it works
-
-### Key concepts
+## Execution hierarchy
 
 ```
 Experiment
-└── Mission[]          — one free parameter swept (n, m, or D)
-    └── Task[]         — one algorithmic problem (e.g. Background SHAP)
-        └── Approach[] — one concrete implementation (SHAP / Woodelf)
+└── Mission[]           — one free parameter swept (n, m, or D)
+    └── Task[]          — one algorithmic problem (TaskType enum)
+        └── Approach[]  — one concrete implementation
 ```
 
-**Mission** — a single parameter sweep. Each mission varies exactly one dimension (e.g. `n_values=[1, 10, 100, 1000]`) while keeping everything else fixed. Missions are run smallest-to-largest; if the linearly-extrapolated runtime for an approach exceeds the timeout (default 10 min), that point is skipped and marked as estimated.
+**Task types** (`TaskType` enum):
 
-**Task** — groups one or more Approach objects under a shared problem definition. Built-in tasks:
-
-| Task | Complexity |
+| TaskType | Complexity |
 |---|---|
-| `PathDependentSHAPTask` | O(T · L² · n) |
-| `BackgroundSHAPTask` | O(T · L · n · m) |
-
-**Approach** — one implementation. Each approach has a `method` tag (`"shap"` or `"woodelf"`) used by the scorer.
-
-### Timeout and estimation
-
-Missions iterate `n_values` in ascending order. After each successfully measured run the time is stored. Before the next (larger) `n`, the runtime is linearly extrapolated. If the extrapolated time exceeds `timeout_s`, the run is skipped and its result is flagged `is_estimated=True`. Estimated times appear as open circles in the chart.
-
-### Scoring
-
-For each `(dataset, mission, task, n, m, D, ensemble)` group the two methods are compared:
-
-- **Winner** (lower time) → 100 points
-- **Loser** → `(winner_time / loser_time) × 100` points
-
-The scoreboard shows the average score across all groups, and can be filtered interactively by `n`, `m`, and `D` range.
+| `PATH_DEPENDENT_SHAP` | O(T · L² · n) |
+| `PATH_DEPENDENT_INTERACTIONS` | O(T · L² · n) |
+| `BACKGROUND_SHAP` | O(T · L · n · m) |
+| `BACKGROUND_SHAP_INTERACTIONS` | O(T · L · n · m) |
 
 ---
 
-## Project structure
+## Built-in approaches
 
-```
-treebranchmarks/
-├── core/
-│   ├── params.py        # TreeParameters dataclass, EnsembleType enum
-│   ├── dataset.py       # Dataset ABC
-│   ├── model.py         # ModelWrapper ABC, ModelConfig, TrainedModel
-│   ├── approach.py      # Approach ABC, ApproachOutput
-│   ├── task.py          # Task, TaskResult, ApproachResult
-│   ├── mission.py       # Mission, MissionConfig, MissionResult
-│   └── experiment.py    # Experiment, ExperimentResult
-├── datasets/
-│   ├── california_housing.py
-│   ├── covertype.py
-│   └── synthetic.py
-├── models/
-│   ├── xgboost_model.py
-│   ├── lightgbm_model.py
-│   └── random_forest_model.py
-├── tasks/
-│   ├── path_dependent_shap.py
-│   └── background_shap.py
-└── report/
-    └── html_generator.py   # Plotly-based self-contained HTML report
-benchmarks/
-└── example_experiment.py
-cache/                      # gitignored — dataset & model cache
-results/                    # gitignored — JSON results & HTML reports
-```
+| Class | Method tag | Notes |
+|---|---|---|
+| `SHAPApproach` | `shap` | `shap.TreeExplainer` reference |
+| `WoodelfApproach` | `woodelf` | All 4 task types; auto tree-limit extrapolation at high depth |
+| `WoodelfGPUApproach` | `woodelf` | Same as above with `GPU=True` (requires CuPy) |
+| `TreeGradApproach` | `treegrad` | Path-dependent SHAP via [TreeGrad](https://github.com/watml/TreeGrad); sklearn only |
+| `LinearTreeSHAPV6Approach` | `linear_treeshap_v6` | Path-dependent SHAP via telescoping + Gauss-Legendre quadrature |
+| `VectorizedLinearTreeSHAPRecursiveNLTApproach` | `woodelf_vec_recursive_nlt` | Vectorized linear TreeSHAP with neighbor-leaf trick |
+| `WoodelfECAIApproach` / `WoodelfAAAIApproach` / `WoodelfHDApproach` | `woodelf_*` | Historical algorithm versions |
+
+All approaches implement any subset of the four task methods. Unsupported tasks automatically return `not_supported=True`.
 
 ---
 
-## Adding your own approach
+## Mission types
 
-Subclass `Approach`, set `method`, implement `run()`, and optionally `complexity_formula()`:
+### `Mission` — standard parameter sweep
 
-```python
-from treebranchmarks.core.approach import Approach, ApproachOutput
-from treebranchmarks.core.params import TreeParameters
-import time
+Sweeps `n_values`, `m_values`, or a set of model configs (varying `D`). Iterates smallest-to-largest; if the linearly-extrapolated runtime exceeds `timeout_s` (default 600 s) the run is skipped and flagged `is_estimated=True`.
 
-class MyFastApproach(Approach):
-    name    = "my_fast_approach"
-    method  = "woodelf"          # or "shap" — used by the scorer
-    description = "My optimised implementation."
+### `ControlledMission` — per-approach, per-D model
 
-    def run(self, trained_model, X_explain, X_background):
-        t0 = time.perf_counter()
-        # ... your implementation ...
-        return ApproachOutput(elapsed_s=time.perf_counter() - t0)
-
-    def complexity_formula(self, params: TreeParameters):
-        return params.n * params.T * params.D   # unscaled theoretical cost
-```
-
-Then pass it to a task factory:
+For D-sweep experiments where different approaches need different models at each depth (e.g. one approach uses 1 tree at D=30, another crashes):
 
 ```python
-BackgroundSHAPTask(extra_approaches=[MyFastApproach()])
+from treebranchmarks.core.mission import (
+    ControlledMission, ApproachDOverride, ModelSpec, MEMORY_CRASH, PrerecordedTime
+)
+
+mission = ControlledMission(
+    name="D sweep",
+    dataset=FraudDetectionDataset(),
+    D_values=[6, 9, 12, 20],
+    approach_overrides=[
+        ApproachDOverride(
+            approach=WoodelfApproach(),
+            full_T=100,
+            model_by_D={
+                6:  ModelSpec(lgbm_d6_100t, LightGBMWrapper()),
+                9:  ModelSpec(lgbm_d9_10t,  LightGBMWrapper()),  # scaled ×10
+                12: ModelSpec(lgbm_d12_1t,  LightGBMWrapper()),  # scaled ×100
+                20: MEMORY_CRASH,
+            },
+        ),
+        ApproachDOverride(
+            approach=SHAPApproach(),
+            full_T=100,
+            model_by_D={
+                6:  ModelSpec(lgbm_d6_100t, LightGBMWrapper()),
+                20: PrerecordedTime(elapsed_s=3600.0, estimation_description="pre-run"),
+            },
+        ),
+    ],
+    task_types=[TaskType.PATH_DEPENDENT_SHAP],
+    n=1000, m=0,
+)
 ```
+
+- `MEMORY_CRASH` → records a memory-crash result for that D.
+- `PrerecordedTime` → injects a known elapsed time without re-running.
+- When `actual_T < full_T`, elapsed time is scaled by `full_T / actual_T` and `is_estimated=True`.
+
+---
+
+## CLI runner
+
+Every experiment supports CLI flags via `run_experiment_cli`:
+
+```bash
+# Run only Woodelf approaches
+python -m benchmarks.fraud_depth_experiment --method woodelf
+
+# Run multiple methods, save results to an extra path
+python -m benchmarks.fraud_depth_experiment --method woodelf --method shap \
+    --result_location /tmp/partial_results.json
+```
+
+- `--method` filters by `approach.method.name` (case-insensitive, repeatable).
+- `--result_location` dual-writes the results JSON after every completed mission, so partial results are preserved if the run is interrupted.
+
+Results are also written incrementally to `results/{name}.json` after each mission regardless of these flags.
+
+---
+
+## Datasets
+
+| Class | Source |
+|---|---|
+| `CaliforniaHousingDataset` | sklearn built-in |
+| `SyntheticDataset` | sklearn `make_classification` |
+| `CovertypeDataset` | sklearn built-in |
+| `BreastCancerDataset` | sklearn built-in |
+| `FraudDetectionDataset` | Kaggle IEEE-CIS |
+| `IntrustionDetectionDataset` | Kaggle |
+| `HIGGSDataset` | UCI (downloaded automatically) |
 
 ---
 
@@ -189,18 +192,37 @@ BackgroundSHAPTask(extra_approaches=[MyFastApproach()])
 |---|---|---|
 | Dataset | `cache/datasets/` | `delete_dataset_cache=True` |
 | Trained model | `cache/models/` | `delete_model_cache=True` |
-| Experiment results | `results/{name}.json` | `delete_results=True` or `force_rerun=True` |
+| Per-method results | `cache/method_results/` | `force_rerun_methods=[...]` |
+| Experiment results | `results/{name}.json` | `force_rerun=True` or `delete_results=True` |
+
+Per-method caching means re-running a single approach (e.g. after adding a new one) does not re-time the others.
+
+---
+
+## Adding a new approach
+
+Subclass `Approach`, set `method`, implement the task methods you support:
+
+```python
+from treebranchmarks.core.approach import Approach, ApproachOutput
+from treebranchmarks.core.method import Method
+import time
+
+MY_METHOD = Method(name="my_method", label="My Method", description="...")
+
+class MyApproach(Approach):
+    name        = "My Approach"
+    method      = MY_METHOD
+    description = "My optimised implementation."
+
+    def path_dependent_shap(self, trained_model, X_explain, X_background):
+        t0 = time.perf_counter()
+        # ... your implementation ...
+        return ApproachOutput(elapsed_s=time.perf_counter() - t0)
+```
 
 ---
 
 ## Dependencies
 
-| Package | Purpose |
-|---|---|
-| `numpy`, `pandas` | Data handling |
-| `scikit-learn` | Random Forest, synthetic datasets |
-| `xgboost`, `lightgbm` | Tree ensemble models |
-| `shap>=0.46` | Reference SHAP implementation |
-| `woodelf_explainer` | Woodelf SHAP implementation |
-| `plotly` | Interactive HTML report |
-| `joblib` | Model serialisation |
+`numpy`, `pandas`, `scikit-learn`, `xgboost`, `lightgbm`, `shap>=0.46`, `woodelf_explainer`, `plotly`, `joblib`
