@@ -144,6 +144,10 @@ class Mission:
         self.config = config
         self.name: str = config.name or _auto_name(config)
 
+    @property
+    def cache_root(self) -> Path:
+        return self.config.cache_root
+
     def run(
         self,
         method_cache: Optional[MethodResultCache] = None,

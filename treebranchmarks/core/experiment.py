@@ -140,7 +140,7 @@ class Experiment:
 
         # Build the method cache (shared across all missions).
         cache_root = (
-            self.missions[0].config.cache_root
+            self.missions[0].cache_root
             if self.missions
             else Path("cache")
         )
