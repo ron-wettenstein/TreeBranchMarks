@@ -159,7 +159,7 @@ def _fraud_specs(cache_root: Path) -> _Specs:
     w = LightGBMWrapper(task_type="classification")
     return _build_specs(
         D_100=[6, 9, 12, 15, 18, 21],
-        D_10 =[12, 18, 21],
+        D_10 =[12, 15, 18, 21],
         D_1  =[15, 18, 21],
         objective="classification",
         wrapper=w,
@@ -185,7 +185,7 @@ def _fraud_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]
         shap = {6: s100[6], 9: s100[9], 12: s100[12], 15: s100[15], 18: s100[18], 21: s100[21]}   # not_supported
 
     else:  # PATH_DEPENDENT_INTERACTIONS
-        hd   = {6: s100[6], 9: s100[9], 12: s100[12], 15: s100[15], 18: s10[18], 21: MEMORY_CRASH}
+        hd   = {6: s100[6], 9: s100[9], 12: s100[12], 15: s10[15], 18: s10[18], 21: MEMORY_CRASH}
         aaai = {6: s100[6], 9: s100[9], 12: s10[12],  15: MEMORY_CRASH, 18: MEMORY_CRASH, 21: MEMORY_CRASH}
         shap = {6: s100[6], 9: s100[9], 12: s10[12],  15: s1[15],  18: s1[18], 21: s1[21]}
 
@@ -235,7 +235,7 @@ def _higgs_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]
 
     else:  # PATH_DEPENDENT_INTERACTIONS
         # WoodelfHD PD IV: D=9,12,15: T=10; D=18: T=1; D=21: MEMORY_CRASH
-        hd   = {6: s100[6], 9: s10[9], 12: s10[12], 15: s10[15], 18: s1[18], 21: MEMORY_CRASH}
+        hd   = {6: s100[6], 9: s10[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: MEMORY_CRASH}
         shap = {6: s100[6], 9: s10[9], 12: s1[12],  15: s1[15],  18: s1[18], 21: s1[21]}
 
     return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
@@ -287,7 +287,7 @@ def _kdd_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]:
 
     else:  # PATH_DEPENDENT_INTERACTIONS
         # WoodelfHD IV: D=18: T=10; D=21: MEMORY_CRASH
-        hd   = {6: s100[6], 9: s100[9], 12: s10[12], 15: s10[15], 18: s10[18], 21: MEMORY_CRASH}
+        hd   = {6: s100[6], 9: s100[9], 12: s10[12], 15: s10[15], 18: s1[18], 21: MEMORY_CRASH}
         aaai = {6: s100[6], 9: s100[9], 12: s1[12],  15: MEMORY_CRASH, 18: MEMORY_CRASH, 21: MEMORY_CRASH}
         shap = {6: s10[6],  9: s10[9],  12: s10[12], 15: s10[15], 18: s10[18], 21: s10[21]}
 
