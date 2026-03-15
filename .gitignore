@@ -13,7 +13,7 @@ dist/
 venv/
 
 # treebranchmarks runtime output
-cache/
-results/
+/cache/
+/results/
 *.html
 !benchmarks/*.html
