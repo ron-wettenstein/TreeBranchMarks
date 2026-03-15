@@ -111,7 +111,7 @@ class Task:
     approaches : list[Approach]
         The algorithm implementations to benchmark.
     n_repeats : int
-        How many timed repetitions per approach (default 3).
+        How many timed repetitions per approach (default 1).
     cache_root : Path
         Reserved for future calibration lookup.
     name : str | None
@@ -122,7 +122,7 @@ class Task:
         self,
         task_type: TaskType,
         approaches: list[Approach],
-        n_repeats: int = 3,
+        n_repeats: int = 1,
         cache_root: Path = Path("cache"),
         name: Optional[str] = None,
     ) -> None:
