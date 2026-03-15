@@ -149,8 +149,8 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
 
     # LightGBM missions: n in [1, 100, 1000, 10_000, 100_000]
     for label, models in [("medium depth", medium_models), ("high depth", high_models)]:
-        for n in [1, 100, 1000, 10_000]:
-            n_label = {1: "n=1", 100: "n=100", 1000: "n=1k", 10_000: "n=10k"}[n]
+        for n in [1, 100, 1000, 10_000, 20_000]:
+            n_label = {1: "n=1", 100: "n=100", 1000: "n=1k", 10_000: "n=10k", 20_000: "n=20k"}[n]
             missions.append(Mission(MissionConfig(
                 name=f"fraud vec PD SHAP {n_label} ({label})",
                 dataset=fraud,
@@ -173,35 +173,17 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
 
     # XGBoost missions
     xgb_task = Task(TaskType.PATH_DEPENDENT_SHAP, _VEC_APPROACHES, n_repeats=1, cache_root=cache_root)
-    missions.append(Mission(MissionConfig(
-        name="fraud vec PD SHAP n=1 (XGBoost T=10)",
-        dataset=fraud,
-        model_wrappers=xgb_models,
-        tasks=[xgb_task],
-        n_values=[1],
-        m_values=[0],
-        cache_root=cache_root,
-    )))
-
-    missions.append(Mission(MissionConfig(
-        name="fraud vec PD SHAP n=1k (XGBoost T=10)",
-        dataset=fraud,
-        model_wrappers=xgb_models,
-        tasks=[xgb_task],
-        n_values=[1_000],
-        m_values=[0],
-        cache_root=cache_root,
-    )))
-
-    missions.append(Mission(MissionConfig(
-        name="fraud vec PD SHAP n=10k (XGBoost T=10)",
-        dataset=fraud,
-        model_wrappers=xgb_models,
-        tasks=[xgb_task],
-        n_values=[10_000],
-        m_values=[0],
-        cache_root=cache_root,
-    )))
+    for n in [1, 1_000, 10_000, 20_000]:
+        n_label = {1: "n=1", 1_000: "n=1k", 10_000: "n=10k", 20_000: "n=20k"}[n]
+        missions.append(Mission(MissionConfig(
+            name=f"fraud vec PD SHAP {n_label} (XGBoost T=10)",
+            dataset=fraud,
+            model_wrappers=xgb_models,
+            tasks=[xgb_task],
+            n_values=[n],
+            m_values=[0],
+            cache_root=cache_root,
+        )))
 
     # XGBoost mission: n=100k, T=1 depth sweep
     missions.append(Mission(MissionConfig(

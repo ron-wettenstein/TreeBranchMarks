@@ -31,6 +31,7 @@ class EnsembleType(str, Enum):
     RANDOM_FOREST = "random_forest"
     DECISION_TREE = "decision_tree"
     HIST_GRADIENT_BOOSTING = "hist_gradient_boosting"
+    GRADIENT_BOOSTING = "gradient_boosting"
 
 
 @dataclass(frozen=True)

@@ -51,9 +51,18 @@ class GoogleDriveDataset(Dataset):
         return X, y
 
     def dump_details(self) -> dict:
-        return {
+        result = {
             "name": self.name,
             "target": self._TARGET_COL,
             "task": self._TASK,
             "source": "Google Drive (pre-processed parquet)",
         }
+        x_path = self._cache_dir() / "X.parquet"
+        if x_path.exists():
+            import pyarrow.parquet as pq
+            meta   = pq.read_metadata(x_path)
+            schema = pq.read_schema(x_path)
+            result["n_samples"]  = meta.num_rows
+            result["n_features"] = len(schema.names)
+            result["columns"]    = schema.names
+        return result

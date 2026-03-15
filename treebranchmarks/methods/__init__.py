@@ -16,11 +16,11 @@ from treebranchmarks.methods.builtin import (
     TREEGRAD,
 )
 from treebranchmarks.methods.shap_method import SHAPApproach
-from treebranchmarks.methods.woodelf_method import WoodelfApproach, WoodelfGPUApproach
+from treebranchmarks.methods.woodelf_explainer_method import WoodelfApproach, WoodelfGPUApproach
 from treebranchmarks.methods.woodelf_historical_methods import (
     WoodelfECAIApproach,
     WoodelfAAAIApproach,
-    WoodelfHDApproach,
+    WoodelfHDHistoricalApproach,
 )
 from treebranchmarks.methods.linear_treeshap_v6_method import LinearTreeSHAPV6Approach
 from treebranchmarks.methods.treegrad_method import TreeGradApproach
@@ -47,7 +47,7 @@ __all__ = [
     "LINEAR_TREESHAP_V6", "TREEGRAD",
     # Approach classes
     "SHAPApproach",
-    "WoodelfApproach", "WoodelfGPUApproach", "WoodelfHDApproach",
+    "WoodelfApproach", "WoodelfGPUApproach", "WoodelfHDHistoricalApproach",
     "WoodelfECAIApproach",
     "WoodelfAAAIApproach",
     "VectorizedLinearTreeSHAPApproach",

@@ -29,11 +29,19 @@ class SHAPApproach(Approach):
     method = SHAP
     description = "Reference implementation from the shap library (shap.TreeExplainer)."
 
-    # shap.TreeExplainer internally uses only the first 100 background rows.
-    # When m > 100 we cap at 100, measure real time, then scale by m/100.
-    _BG_SHAP_LIMIT    = 100
     _BG_DEPTH_THRESHOLD = 18
     _BG_SAMPLE_LIMIT  = 10_000
+
+    def __init__(self, bg_shap_limit: int = 100) -> None:
+        """
+        Parameters
+        ----------
+        bg_shap_limit : int
+            Maximum number of background rows passed to shap.TreeExplainer.
+            Elapsed time is scaled by m / bg_shap_limit when m > bg_shap_limit.
+            Default: 100.
+        """
+        self._BG_SHAP_LIMIT = bg_shap_limit
 
     # ---------------------------------------------------------------------------
     # Task methods

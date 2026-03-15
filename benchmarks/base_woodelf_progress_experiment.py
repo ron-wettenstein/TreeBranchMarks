@@ -7,7 +7,7 @@ Woodelf algorithm family against the shap reference:
   - Woodelf (WoodelfApproach)
   - Woodelf ECAI (WoodelfECAIApproach)
   - Woodelf AAAI (WoodelfAAAIApproach)
-  - WoodelfHD (WoodelfHDApproach)
+  - WoodelfHD (WoodelfHDHistoricalApproach)
 
 Sources
 -------
@@ -25,11 +25,11 @@ from pathlib import Path
 from treebranchmarks.core.cli import run_experiment_cli
 from treebranchmarks import Experiment, Mission
 from treebranchmarks.methods.shap_method import SHAPApproach
-from treebranchmarks.methods.woodelf_method import WoodelfApproach
+from treebranchmarks.methods.woodelf_explainer_method import WoodelfApproach
 from treebranchmarks.methods.woodelf_historical_methods import (
     WoodelfECAIApproach,
     WoodelfAAAIApproach,
-    WoodelfHDApproach,
+    WoodelfHDHistoricalApproach,
 )
 from benchmarks.fraud_detection_experiment import build_missions as fraud_detection_missions
 from benchmarks.fraud_depth_experiment import build_missions as fraud_depth_missions
@@ -44,7 +44,7 @@ _APPROACHES = [
     WoodelfApproach(),
     WoodelfECAIApproach(),
     WoodelfAAAIApproach(),
-    WoodelfHDApproach(),
+    WoodelfHDHistoricalApproach(),
 ]
 
 

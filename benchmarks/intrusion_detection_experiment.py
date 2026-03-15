@@ -26,7 +26,7 @@ from treebranchmarks.datasets import IntrusionDetectionDataset
 from treebranchmarks.models import HistGradientBoostingWrapper
 from treebranchmarks.core.task import Task, TaskType
 from treebranchmarks.methods.shap_method import SHAPApproach
-from treebranchmarks.methods.woodelf_method import WoodelfApproach
+from treebranchmarks.methods.woodelf_explainer_method import WoodelfApproach
 
 CACHE_ROOT  = Path("cache")
 RESULTS_DIR = Path("results")

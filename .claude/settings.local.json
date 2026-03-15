@@ -13,7 +13,10 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
       "Bash(grep -n \"if __name__\" c:/university/decision_trees/code_and_work/treebranchmarks/benchmarks/*.py)",
-      "Bash(python -:*)"
+      "Bash(python -:*)",
+      "Bash(python -c \"from benchmarks.aaai_depth_sweep_experiment import build_missions, build_experiment; print\\(''import OK''\\); ms = build_missions\\(\\); print\\(f''{len\\(ms\\)} missions built''\\)\")",
+      "Bash(python -c \"from treebranchmarks.models.lightgbm_model import LightGBMWrapper; import inspect; print\\(inspect.signature\\(LightGBMWrapper.__init__\\)\\)\")",
+      "Bash(xargs sed:*)"
     ]
   }
 }

@@ -33,7 +33,7 @@ from treebranchmarks.core.model import ModelConfig
 from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import XGBoostWrapper
 from treebranchmarks.core.task import Task, TaskType
-from treebranchmarks.methods.woodelf_historical_methods import WoodelfHDApproach
+from treebranchmarks.methods.woodelf_historical_methods import WoodelfHDHistoricalApproach
 from treebranchmarks.methods.linear_tree_shap_method import VectorizedLinearTreeSHAPApproach
 
 CACHE_ROOT  = Path("cache")
@@ -55,7 +55,7 @@ _XGB_BASE = {
 
 DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
-_APPROACHES = [WoodelfHDApproach(), VectorizedLinearTreeSHAPApproach()]
+_APPROACHES = [WoodelfHDHistoricalApproach(), VectorizedLinearTreeSHAPApproach()]
 
 # ---------------------------------------------------------------------------
 # Helpers

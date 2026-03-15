@@ -11,7 +11,7 @@ WoodelfECAIApproach
 WoodelfAAAIApproach
     AAAI cube-based algorithm. MAX_SUPPORTED_DEPTH=10.
 
-WoodelfHDApproach
+WoodelfHDHistoricalApproach
     woodelf_for_high_depth. Per-task depth limits:
       SHAP tasks (PD + BG):     extrapolate when D > 18, BG crashes at D >= 20
       IV tasks (PD + BG):       extrapolate when D > 15, BG crashes at D >= 18
@@ -182,7 +182,7 @@ class WoodelfAAAIApproach(_WoodelfAlgorithmApproach):
 # WoodelfHDApproach
 # ---------------------------------------------------------------------------
 
-class WoodelfHDApproach(Approach):
+class WoodelfHDHistoricalApproach(Approach):
     """
     woodelf_for_high_depth implementation covering all 4 task types.
 
