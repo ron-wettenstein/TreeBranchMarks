@@ -22,7 +22,7 @@ from woodelf.high_depth_woodelf import woodelf_for_high_depth
 
 from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
-from treebranchmarks.methods.builtin import WOODELF_HD, WOODELF_AAAI
+from treebranchmarks.methods.builtin import WOODELF_HD, ORIGINAL_WOODELF
 
 
 class WoodelfHDApproach(Approach):
@@ -86,7 +86,7 @@ class OriginalWoodelfApproach(Approach):
     """Calls woodelf.simple_woodelf for all 4 task types."""
 
     name = "OriginalWoodelf"
-    method = WOODELF_AAAI
+    method = ORIGINAL_WOODELF
     description = "woodelf.simple_woodelf — calculate_path_dependent_metric / calculate_background_metric."
     GPU = False
 

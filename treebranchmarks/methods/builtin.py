@@ -70,6 +70,12 @@ WOODELF_AAAI = Method(
     description="Woodelf AAAI algorithm (cube-based path-dependent/background SHAP).",
 )
 
+ORIGINAL_WOODELF = Method(
+    name="original_woodelf",
+    label="OriginalWoodelf",
+    description="Woodelf original algorithm (woodelf.simple_woodelf cube-based SHAP).",
+)
+
 WOODELF_HD = Method(
     name="woodelf_hd",
     label="WoodelfHD",
