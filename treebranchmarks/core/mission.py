@@ -606,9 +606,10 @@ class ControlledMission:
                     elif ar.is_estimated:
                         print(f"  [approach:{approach.name}] ESTIMATED={ar.running_time:.3f}s")
                     else:
+                        std_part = f" ± {ar.std_time_s:.3f}s" if ar.std_time_s > 0 else ""
                         print(
                             f"  [approach:{approach.name}] "
-                            f"mean={ar.running_time:.3f}s ± {ar.std_time_s:.3f}s"
+                            f"mean={ar.running_time:.3f}s{std_part}"
                         )
 
                 if reference_params is None:

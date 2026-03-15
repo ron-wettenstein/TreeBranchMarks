@@ -17,9 +17,10 @@ CLI flags
     If omitted, all methods run.
 
 --result_location PATH
-    Extra path to write the results JSON.  The JSON is written to both the
-    normal ``results/{name}.json`` **and** PATH after every completed
-    mission, so partial results are preserved if the run is interrupted.
+    Extra path to write the method cache file.  Written after every
+    approach result, so partial progress is preserved if the run is
+    interrupted.  To resume, copy this file to
+    ``cache/method_results/{experiment_name}/{method_name}.json``.
 """
 
 from __future__ import annotations
@@ -55,8 +56,8 @@ def run_experiment_cli(build_fn: Callable) -> None:
         type=Path,
         default=None,
         help=(
-            "Extra path to write the results JSON "
-            "(dual-write after every mission)."
+            "Extra path to write the method cache file "
+            "(dual-write after every approach result)."
         ),
     )
     args = parser.parse_args()
@@ -66,8 +67,6 @@ def run_experiment_cli(build_fn: Callable) -> None:
     if args.methods:
         experiment.method_filter = [m.lower() for m in args.methods]
     if args.result_location is not None:
-        experiment.extra_result_paths = [args.result_location]
+        experiment.extra_method_cache_paths = [args.result_location]
 
     experiment.run()
-    report_path = experiment.generate_html()
-    print(f"\nOpen the report in your browser:\n  {report_path.resolve()}")

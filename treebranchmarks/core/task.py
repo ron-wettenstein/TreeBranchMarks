@@ -190,9 +190,10 @@ class Task:
                     f"ESTIMATED={result.running_time:.3f}s"
                 )
             else:
+                std_part = f" ± {result.std_time_s:.3f}s" if self.n_repeats > 1 else ""
                 print(
                     f"  [approach:{approach.name}] "
-                    f"mean={result.running_time:.3f}s ± {result.std_time_s:.3f}s"
+                    f"mean={result.running_time:.3f}s{std_part}"
                 )
 
         return TaskResult(task_name=self.name, params=params, approach_results=approach_results)

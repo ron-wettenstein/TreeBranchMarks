@@ -108,7 +108,6 @@ class Experiment:
         delete_model_cache: bool = False,
         delete_results: bool = False,
         method_filter: Optional[list[str]] = None,
-        extra_result_paths: Optional[list[Path]] = None,
     ) -> None:
         self.name = name
         self.missions = missions
@@ -121,7 +120,7 @@ class Experiment:
         self.delete_model_cache = delete_model_cache
         self.delete_results = delete_results
         self.method_filter: list[str] = [m.lower() for m in (method_filter or [])]
-        self.extra_result_paths: list[Path] = list(extra_result_paths or [])
+        self.extra_method_cache_paths: list[Path] = []
 
     # ------------------------------------------------------------------
     # Run
@@ -147,6 +146,7 @@ class Experiment:
         method_cache = MethodResultCache(
             experiment_name=self.name,
             cache_root=cache_root,
+            extra_paths=self.extra_method_cache_paths or None,
         )
         for method_name in self.force_rerun_methods:
             method_cache.clear_method(method_name)
@@ -280,13 +280,8 @@ class Experiment:
         return new_mission
 
     def _persist(self, result: ExperimentResult) -> None:
-        data = json.dumps(result.as_dict(), indent=2)
         with open(self._results_path(), "w") as f:
-            f.write(data)
-        for path in self.extra_result_paths:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "w") as f:
-                f.write(data)
+            json.dump(result.as_dict(), f, indent=2)
 
     def _deserialize(self, raw: dict) -> ExperimentResult:
         """

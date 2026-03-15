@@ -72,9 +72,15 @@ class MethodResultCache:
         Root cache directory (default ``cache/``).
     """
 
-    def __init__(self, experiment_name: str, cache_root: Path = Path("cache")) -> None:
+    def __init__(
+        self,
+        experiment_name: str,
+        cache_root: Path = Path("cache"),
+        extra_paths: Optional[list[Path]] = None,
+    ) -> None:
         self._dir = cache_root / "method_results" / experiment_name
         self._dir.mkdir(parents=True, exist_ok=True)
+        self._extra_paths: list[Path] = list(extra_paths or [])
         # In-memory store:  method_name → { key: ApproachResult-dict }
         self._data: dict[str, dict[str, dict]] = {}
 
@@ -166,9 +172,13 @@ class MethodResultCache:
         return self._data[method_name]
 
     def _flush(self, method_name: str, store: dict) -> None:
-        path = self._path(method_name)
-        with open(path, "w") as f:
-            json.dump(store, f, indent=2)
+        data = json.dumps(store, indent=2)
+        with open(self._path(method_name), "w") as f:
+            f.write(data)
+        for extra in self._extra_paths:
+            extra.parent.mkdir(parents=True, exist_ok=True)
+            with open(extra, "w") as f:
+                f.write(data)
 
     @staticmethod
     def _deserialize(raw: dict) -> "ApproachResult":
