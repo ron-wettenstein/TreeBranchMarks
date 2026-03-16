@@ -95,6 +95,10 @@ class Experiment:
         Delete the model cache before running.
     delete_results : bool
         Delete the top-level results JSON and HTML before running.
+    summary_html_path : Path | None
+        Optional path to an HTML file whose content is embedded as the first
+        section ("About this Experiment") in the generated HTML report.
+        If None (default), no summary section is included.
     """
 
     def __init__(
@@ -108,6 +112,7 @@ class Experiment:
         delete_model_cache: bool = False,
         delete_results: bool = False,
         method_filter: Optional[list[str]] = None,
+        summary_html_path: Optional[Path] = None,
     ) -> None:
         self.name = name
         self.missions = missions
@@ -121,6 +126,7 @@ class Experiment:
         self.delete_results = delete_results
         self.method_filter: list[str] = [m.lower() for m in (method_filter or [])]
         self.extra_method_cache_paths: list[Path] = []
+        self.summary_html_path: Optional[Path] = summary_html_path
 
     # ------------------------------------------------------------------
     # Run
@@ -194,9 +200,13 @@ class Experiment:
         if output_path is None:
             output_path = self.results_dir / f"{self.name}.html"
 
+        summary_html: Optional[str] = None
+        if self.summary_html_path is not None:
+            summary_html = self.summary_html_path.read_text(encoding="utf-8")
+
         result = self.load_results()
         generator = HtmlGenerator()
-        generator.generate(result, output_path)
+        generator.generate(result, output_path, summary_html=summary_html)
         print(f"[experiment:{self.name}] HTML report written to {output_path}")
         return output_path
 

@@ -473,6 +473,9 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[ControlledMission]:
     return missions
 
 
+_SUMMARY_HTML = Path(__file__).parent.parent / "treebranchmarks" / "report" / "benchmark_summaries" / "woodelfhd_depth_sweep_summary.html"
+
+
 def build_experiment() -> Experiment:
     return Experiment(
         name="woodelfhd_depth_sweep_simple_experiment",
@@ -482,6 +485,7 @@ def build_experiment() -> Experiment:
         delete_dataset_cache=False,
         delete_model_cache=False,
         delete_results=False,
+        summary_html_path=_SUMMARY_HTML,
     )
 
 

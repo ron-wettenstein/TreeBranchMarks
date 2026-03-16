@@ -517,8 +517,34 @@ class ControlledMission:
                 "columns": details.get("columns", []),
             }
 
+        # Collect unique ModelConfigs across all overrides/D-values for the report.
+        seen_configs: dict[str, "ModelConfig"] = {}
+        for override in self.approach_overrides:
+            for spec in override.model_by_D.values():
+                if spec is MEMORY_CRASH or isinstance(spec, PrerecordedTime):
+                    continue
+                seen_configs.setdefault(spec.config.cache_key(), spec.config)
+
         meta = {
             "dataset": dataset_meta,
+            "models": [
+                {
+                    "ensemble_type": mc.ensemble_type.value,
+                    "hyperparams": mc.hyperparams,
+                    "random_state": mc.random_state,
+                }
+                for mc in seen_configs.values()
+            ],
+            "tasks": [
+                {
+                    "name": tt.display_name,
+                    "approaches": [
+                        {"name": ov.approach.name, "description": ov.approach.description}
+                        for ov in self.approach_overrides
+                    ],
+                }
+                for tt in self.task_types
+            ],
             "n_values": [self.n],
             "m_values": [self.m],
         }

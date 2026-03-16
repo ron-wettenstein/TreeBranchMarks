@@ -15,7 +15,7 @@ n / m / D has more than one distinct value in that mission's data is used.
 If none (or multiple) vary, defaults to n.
 
 Below the chart a table is rendered: rows = approaches, columns = x-axis tick
-values.  Estimated times are shown with a trailing * and in italic.
+values.  Estimated times are shown with a trailing *.
 """
 
 from __future__ import annotations
@@ -207,7 +207,12 @@ class HtmlGenerator:
     >>> gen.generate(result, Path("results/report.html"))
     """
 
-    def generate(self, result: ExperimentResult, output_path: Path) -> None:
+    def generate(
+        self,
+        result: ExperimentResult,
+        output_path: Path,
+        summary_html: str | None = None,
+    ) -> None:
         rows = _collect_rows(result)
         if not rows:
             raise ValueError("ExperimentResult contains no successful approach results.")
@@ -216,7 +221,7 @@ class HtmlGenerator:
         meta_js    = json.dumps(_collect_mission_meta(result), separators=(",", ":"))
         scores_js  = json.dumps(_compute_scores(rows), separators=(",", ":"))
         methods_js = json.dumps(_collect_methods(result), separators=(",", ":"))
-        html = _build_html(result.experiment_name, data_js, meta_js, scores_js, methods_js)
+        html = _build_html(result.experiment_name, data_js, meta_js, scores_js, methods_js, summary_html)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(html, encoding="utf-8")
 
@@ -225,7 +230,7 @@ class HtmlGenerator:
 # HTML assembly — use concatenation so JS braces need no escaping
 # ---------------------------------------------------------------------------
 
-def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str, methods_js: str) -> str:
+def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str, methods_js: str, summary_html: str | None = None) -> str:
     head = (
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"
@@ -239,7 +244,8 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "<body>\n"
         "  <h1>Treebranchmarks</h1>\n"
         f"  <div class=\"subtitle\">Experiment: <strong>{experiment_name}</strong></div>\n"
-        "  <div id=\"scoreboard\"></div>\n"
+        + (_summary_html(summary_html) if summary_html is not None else "")
+        + "  <div id=\"scoreboard\"></div>\n"
         + _controls_html() +
         "  <details id=\"mission-details\" class=\"details-panel\">\n"
         "    <summary>Details: dataset, model &amp; approaches</summary>\n"
@@ -274,6 +280,18 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "</html>\n"
     )
     return head + _js() + tail
+
+
+def _summary_html(content: str) -> str:
+    """Wrap caller-provided HTML content in the summary <details> panel."""
+    return (
+        "  <details class=\"details-panel summary-panel\" open>\n"
+        "    <summary>About this Experiment</summary>\n"
+        "    <div class=\"summary-content\">\n"
+        + content + "\n"
+        "    </div>\n"
+        "  </details>\n"
+    )
 
 
 def _controls_html() -> str:
@@ -370,8 +388,29 @@ def _css() -> str:
       border-bottom: 1px solid #e2e8f0;
     }
     td.app-name { font-weight: 600; white-space: nowrap; color: #1f3a5f; }
-    td.estimated { color: #888; font-style: italic; }
-    td.missing { color: #bbb; }
+    td.estimated { }
+    td.missing { }
+
+    .summary-panel summary { font-size: 0.95rem; padding: 12px 20px; }
+    .summary-content {
+      padding: 6px 24px 20px;
+      border-top: 1px solid #e9ecef;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      max-width: 1100px;
+    }
+    .summary-content p { margin: 0 0 0.7em; }
+    .summary-content h3 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+      margin: 1.2em 0 0.5em;
+    }
+    .summary-content a { color: #1f77b4; }
+    .summary-table { margin-bottom: 1em; }
+    .summary-table td:first-child { font-weight: 600; white-space: nowrap; }
+    .summary-table td.param-detail { color: #495057; }
 
     .details-panel {
       background: white;
@@ -1168,7 +1207,7 @@ def _js() -> str:
           var cell = (index[app] || {})[v];
           if (cell !== undefined) {
             if (cell.ns || cell.mc || cell.re) {
-              html += '<td class="missing" style="color:#aaa;font-style:italic">N/A</td>';
+              html += '<td class="missing">N/A</td>';
             } else {
               var val = fmtTime(cell.t);
               html += '<td class="' + (cell.est ? 'estimated' : '') + '">'
@@ -1656,7 +1695,7 @@ def _js() -> str:
           if (!cell) {
             html += '<td class="missing">\u2014</td>';
           } else if (cell.ns || cell.mc || cell.re) {
-            html += '<td class="missing" style="color:#aaa;font-style:italic">N/A</td>';
+            html += '<td class="missing">N/A</td>';
           } else {
             html += '<td class="time-cell' + (cell.est ? ' estimated' : '') + '">'
                   + fmtTime(cell.t) + (cell.est ? '*' : '') + '</td>';
