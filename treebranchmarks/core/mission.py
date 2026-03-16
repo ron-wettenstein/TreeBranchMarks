@@ -447,15 +447,61 @@ class ControlledMission:
         print(f"  tasks     : {[t.display_name for t in self.task_types]}")
         print(f"{'='*60}")
 
-        X, y = self.dataset.load()
+        # Mirror Mission.run(): for each (override, D) pair, use load_params_only
+        # to read the lightweight meta.json and check the method cache without
+        # loading the model artifact or the dataset.
+        # cached_params[(override, D)] → ref_params for the cache-hit fast path.
+        cached_params: dict[tuple, TreeParameters] = {}
+        needs_data = method_cache is None
 
-        meta = {
-            "dataset": {
+        if method_cache is not None:
+            for override in self.approach_overrides:
+                for D in self.D_values:
+                    spec = override.model_by_D.get(D, MEMORY_CRASH)
+                    if spec is MEMORY_CRASH or isinstance(spec, PrerecordedTime):
+                        continue
+                    bp = spec.wrapper.load_params_only(
+                        self.cache_root, self.dataset.name, spec.config
+                    )
+                    if bp is None:
+                        needs_data = True
+                        continue
+                    rp = TreeParameters(
+                        T=override.full_T,
+                        D=bp.D, L=bp.L, F=bp.F,
+                        ensemble_type=bp.ensemble_type,
+                        n=self.n, m=self.m if self.m > 0 else 0,
+                    )
+                    cached_params[(id(override), D)] = rp
+                    if any(
+                        method_cache.get(override.approach, self.name, tt.display_name, rp) is None
+                        for tt in self.task_types
+                    ):
+                        needs_data = True
+
+        X = y = None
+        if needs_data:
+            X, y = self.dataset.load()
+
+        if X is not None:
+            dataset_meta = {
                 "name": self.dataset.name,
                 "n_samples": len(X),
                 "n_features": X.shape[1],
                 "columns": list(X.columns),
-            },
+            }
+        else:
+            details = self.dataset.dump_details()
+            F = next((rp.F for rp in cached_params.values()), None)
+            dataset_meta = {
+                "name": self.dataset.name,
+                "n_samples": details.get("n_samples"),
+                "n_features": F,
+                "columns": details.get("columns", []),
+            }
+
+        meta = {
+            "dataset": dataset_meta,
             "n_values": [self.n],
             "m_values": [self.m],
         }
@@ -490,7 +536,9 @@ class ControlledMission:
             return X_exp, X_bg
 
         for D in self.D_values:
-            X_explain, X_background = _sample(D)
+            X_explain = X_background = None
+            if X is not None:
+                X_explain, X_background = _sample(D)
             print(f"\n  > D={D}  n={self.n}  m={self.m}")
 
             for task_type in self.task_types:
@@ -529,6 +577,20 @@ class ControlledMission:
                         print(f"  [approach:{approach.name}] PRERECORDED={ar.running_time:.3f}s")
                         continue
 
+                    # Fast path: use pre-computed ref_params from load_params_only
+                    # to serve cache hits without loading the model.
+                    precomputed_rp = cached_params.get((id(override), D))
+                    if precomputed_rp is not None and method_cache is not None:
+                        cached = method_cache.get(
+                            approach, self.name, task_type.display_name, precomputed_rp
+                        )
+                        if cached is not None:
+                            approach_results[approach.name] = cached
+                            if reference_params is None:
+                                reference_params = precomputed_rp
+                            print(f"  [approach:{approach.name}] CACHED={cached.running_time:.3f}s")
+                            continue
+
                     trained = _get_trained(model_spec)
                     actual_T = trained.params.T
                     full_T = override.full_T
@@ -550,7 +612,6 @@ class ControlledMission:
                     if reference_params is None:
                         reference_params = ref_params
 
-                    # Check method cache.
                     if method_cache is not None:
                         cached = method_cache.get(
                             approach, self.name, task_type.display_name, ref_params
