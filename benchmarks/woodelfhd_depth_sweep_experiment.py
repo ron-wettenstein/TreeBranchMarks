@@ -334,7 +334,7 @@ def _housing_overrides(task_type: TaskType, sp: _Specs, D_values: list[int]) -> 
     def _pre(t): return PrerecordedTime(t, estimation_description=_desc)
 
     if task_type == TaskType.BACKGROUND_SHAP:
-        aaai = {6: s100[6], 9: s10[9], 12: _pre(152460),  15: s1[15], **_AAAI_CRASH_18_25}
+        aaai = {6: s100[6], 9: s10[9], 12: _pre(85229),  15: _pre(1609358), **_AAAI_CRASH_18_25}
         shap = shap_models
 
     elif task_type == TaskType.PATH_DEPENDENT_SHAP:
