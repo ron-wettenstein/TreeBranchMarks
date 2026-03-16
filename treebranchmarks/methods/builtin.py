@@ -76,10 +76,22 @@ ORIGINAL_WOODELF = Method(
     description="Woodelf original algorithm (woodelf.simple_woodelf cube-based SHAP).",
 )
 
+ORIGINAL_WOODELF_GPU = Method(
+    name="original_woodelf_gpu",
+    label="OriginalWoodelf GPU",
+    description="Woodelf original algorithm (woodelf.simple_woodelf cube-based SHAP) accelerated on GPU (CuPy).",
+)
+
 WOODELF_HD = Method(
     name="woodelf_hd",
     label="WoodelfHD",
     description="Woodelf high-depth algorithm (woodelf_for_high_depth).",
+)
+
+WOODELF_HD_GPU = Method(
+    name="woodelf_hd_gpu",
+    label="WoodelfHD GPU",
+    description="Woodelf high-depth algorithm (woodelf_for_high_depth) accelerated on GPU (CuPy).",
 )
 
 WOODELF_VEC_RECURSIVE_NLT = Method(

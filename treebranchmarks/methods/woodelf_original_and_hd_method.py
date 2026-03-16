@@ -22,7 +22,7 @@ from woodelf.high_depth_woodelf import woodelf_for_high_depth
 
 from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
-from treebranchmarks.methods.builtin import WOODELF_HD, ORIGINAL_WOODELF
+from treebranchmarks.methods.builtin import WOODELF_HD, WOODELF_HD_GPU, ORIGINAL_WOODELF, ORIGINAL_WOODELF_GPU
 
 
 class WoodelfHDApproach(Approach):
@@ -78,6 +78,7 @@ class WoodelfHDGPUApproach(WoodelfHDApproach):
     """WoodelfHDApproach with GPU=True (requires CuPy: pip install cupy)."""
 
     name = "WoodelfHD GPU"
+    method = WOODELF_HD_GPU
     description = "woodelf_for_high_depth accelerated on GPU (CuPy required)."
     GPU = True
 
@@ -143,5 +144,6 @@ class OriginalWoodelfGPUApproach(OriginalWoodelfApproach):
     """OriginalWoodelfApproach with GPU=True (requires CuPy: pip install cupy)."""
 
     name = "OriginalWoodelf GPU"
+    method = ORIGINAL_WOODELF_GPU
     description = "woodelf.simple_woodelf accelerated on GPU (CuPy required)."
     GPU = True

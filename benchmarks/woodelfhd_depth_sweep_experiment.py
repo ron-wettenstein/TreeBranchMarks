@@ -66,6 +66,7 @@ from treebranchmarks.datasets import (
 from treebranchmarks.methods.shap_method import SHAPApproach
 from treebranchmarks.methods.woodelf_original_and_hd_method import (
     WoodelfHDApproach,
+    WoodelfHDGPUApproach,
     OriginalWoodelfApproach,
 )
 from treebranchmarks.models.lightgbm_model import LightGBMWrapper
@@ -85,9 +86,10 @@ _D_HOUSING  = [6, 9, 12, 15, 18, 21, 25]
 # Shared stateless approach instances
 # ---------------------------------------------------------------------------
 
-_WOODELF_AAAI = OriginalWoodelfApproach()
-_WOODELF_HD   = WoodelfHDApproach()
-_SHAP         = SHAPApproach(bg_shap_limit=10)
+_WOODELF_AAAI  = OriginalWoodelfApproach()
+_WOODELF_HD    = WoodelfHDApproach()
+_WOODELF_HD_GPU = WoodelfHDGPUApproach()
+_SHAP          = SHAPApproach(bg_shap_limit=10)
 
 # ---------------------------------------------------------------------------
 # LightGBM hyperparameter templates (from notebooks)
@@ -189,7 +191,7 @@ def _fraud_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]
         aaai = {6: s100[6], 9: s100[9], 12: s10[12],  15: MEMORY_CRASH, 18: MEMORY_CRASH, 21: MEMORY_CRASH}
         shap = {6: s100[6], 9: s100[9], 12: s10[12],  15: s1[15],  18: s1[18], 21: s1[21]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
@@ -238,7 +240,7 @@ def _higgs_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]
         hd   = {6: s100[6], 9: s10[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: MEMORY_CRASH}
         shap = {6: s100[6], 9: s10[9], 12: s1[12],  15: s1[15],  18: s1[18], 21: s1[21]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +349,7 @@ def _housing_overrides(task_type: TaskType, sp: _Specs, D_values: list[int]) -> 
         aaai = {6: s100[6], 9: _pre(1143),  12: _pre(123291),  15: MEMORY_CRASH, **_AAAI_CRASH_18_25}
         shap = {6: s100[6], 9: s100[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: s1[21], 25: s1[25]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
