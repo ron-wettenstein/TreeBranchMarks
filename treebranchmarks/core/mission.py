@@ -464,7 +464,24 @@ class ControlledMission:
                         self.cache_root, self.dataset.name, spec.config
                     )
                     if bp is None:
-                        needs_data = True
+                        # Model meta not cached locally (e.g. fresh Colab session).
+                        # Try to recover params from the method cache entries themselves.
+                        rp = None
+                        for tt in self.task_types:
+                            recovered = method_cache.recover_params(
+                                override.approach, self.name, tt.display_name,
+                                D=D, T=override.full_T,
+                                n=self.n, m=self.m if self.m > 0 else 0,
+                                ensemble=spec.config.ensemble_type.value,
+                            )
+                            if recovered is None:
+                                needs_data = True
+                                rp = None
+                                break
+                            if rp is None:
+                                rp = recovered
+                        if rp is not None:
+                            cached_params[(id(override), D)] = rp
                         continue
                     rp = TreeParameters(
                         T=override.full_T,

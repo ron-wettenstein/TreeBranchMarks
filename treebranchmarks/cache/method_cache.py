@@ -122,6 +122,13 @@ class MethodResultCache:
         key = _group_key(approach.name, mission_name, task_name, params)
         entry = result.as_dict()
         entry["_label"] = f"{task_name} n={params.n} m={params.m} D={params.D} T={params.T}"
+        entry["_mission"] = mission_name
+        entry["_task"] = task_name
+        entry["_params"] = {
+            "n": params.n, "m": params.m, "D": params.D, "T": params.T,
+            "L": round(params.L, 4), "F": params.F,
+            "ensemble": params.ensemble_type.value,
+        }
         store[key] = entry
         self._flush(method_name, store)
 
@@ -137,6 +144,49 @@ class MethodResultCache:
             self.get(approach, mission_name, task_name, params) is not None
             for approach in approaches
         )
+
+    def recover_params(
+        self,
+        approach: "Approach",
+        mission_name: str,
+        task_name: str,
+        D: int,
+        T: int,
+        n: int,
+        m: int,
+        ensemble: str,
+    ) -> "Optional[TreeParameters]":
+        """
+        Find TreeParameters for a cached entry by identity fields (D, T, n, m, ensemble),
+        without needing the model files.  Returns None if no matching entry is found or
+        if the entry was written before the _params field was added.
+
+        Used by ControlledMission when load_params_only() returns None (model not yet
+        cached locally, e.g. after a Colab session restart).
+        """
+        from treebranchmarks.core.params import EnsembleType, TreeParameters
+
+        method_name = self._method_name(approach)
+        if method_name is None:
+            return None
+        store = self._load(method_name)
+        for raw in store.values():
+            p = raw.get("_params")
+            if (
+                p is None
+                or raw.get("_mission") != mission_name
+                or raw.get("_task") != task_name
+                or p["D"] != D or p["T"] != T
+                or p["n"] != n or p["m"] != m
+                or p["ensemble"] != ensemble
+            ):
+                continue
+            return TreeParameters(
+                n=p["n"], m=p["m"], F=p["F"],
+                T=p["T"], D=p["D"], L=p["L"],
+                ensemble_type=EnsembleType(p["ensemble"]),
+            )
+        return None
 
     def clear_method(self, method_name: str) -> None:
         """Delete the cache file for one method and evict from memory."""
