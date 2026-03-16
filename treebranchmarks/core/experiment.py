@@ -153,7 +153,7 @@ class Experiment:
 
         results_path = self._results_path()
 
-        if not self.force_rerun and not self.force_rerun_methods and results_path.exists():
+        if not self.force_rerun and not self.force_rerun_methods and not self.method_filter and results_path.exists():
             print(f"[experiment:{self.name}] Loading cached results from {results_path}")
             return self.load_results()
 
