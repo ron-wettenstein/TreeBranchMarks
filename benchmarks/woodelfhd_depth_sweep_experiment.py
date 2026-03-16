@@ -15,7 +15,7 @@ Datasets / D sweeps
 - Fraud Detection  [6, 9, 12, 15, 18, 21]
 - HIGGS            [6, 9, 12, 15, 18, 21]
 - KDD Cup          [6, 9, 12, 15, 18, 21]
-- California Housing [6, 9, 12, 15, 18, 21, 25, 30, 40, 50, 60]
+- California Housing [6, 9, 12, 15, 18, 21, 25]
 
 OriginalWoodelf
 ---------------
@@ -79,7 +79,7 @@ RESULTS_DIR = Path("results")
 _FULL_T     = 100
 
 _D_STANDARD = [6, 9, 12, 15, 18, 21]
-_D_HOUSING  = [6, 9, 12, 15, 18, 21, 25, 30, 40, 50, 60]
+_D_HOUSING  = [6, 9, 12, 15, 18, 21, 25]
 
 # ---------------------------------------------------------------------------
 # Shared stateless approach instances
@@ -298,7 +298,7 @@ def _kdd_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]:
 # California Housing overrides
 # Source: background_and_path_dependent_housing_data.ipynb
 #
-# WoodelfHD      — all tasks: T=100 for D=6-60 (small dataset, no crash)
+# WoodelfHD      — all tasks: T=100 for D=6-25 (small dataset, no crash)
 # WoodelfAAAI BG SHAP    — D=6:T100; D=9:T10; D=12,15:T1; D=18+: CRASH
 # WoodelfAAAI BG/PD IV   — D=6,9:T100; D=12:T1; D=15+: CRASH
 # WoodelfAAAI PD SHAP    — D=6,9:T100; D=12,15:T1; D=18+: CRASH
@@ -311,43 +311,41 @@ def _kdd_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]:
 def _housing_specs(cache_root: Path) -> _Specs:
     w = LightGBMWrapper(task_type="regression")
     return _build_specs(
-        D_100=[6, 9, 12, 15, 18, 21, 25, 30, 40, 50, 60],
-        D_10 =[9, 12, 25, 30, 40, 50, 60],
-        D_1  =[15, 18, 21, 25, 30, 40, 50, 60],
+        D_100=[6, 9, 12, 15, 18, 21, 25],
+        D_10 =[9, 12, 25],
+        D_1  =[15, 18, 21, 25],
         objective="regression",
         wrapper=w,
     )
 
 
-_AAAI_CRASH_18_60 = {18: MEMORY_CRASH, 21: MEMORY_CRASH, 25: MEMORY_CRASH, 30: MEMORY_CRASH, 40: MEMORY_CRASH, 50: MEMORY_CRASH, 60: MEMORY_CRASH}
+_AAAI_CRASH_18_25 = {18: MEMORY_CRASH, 21: MEMORY_CRASH, 25: MEMORY_CRASH}
 
 
 def _housing_overrides(task_type: TaskType, sp: _Specs, D_values: list[int]) -> list[ApproachDOverride]:
     s100, s10, s1 = sp.s100, sp.s10, sp.s1
     # hd: T=100 for all depths (housing is small, no crashes)
     hd = {D: s100[D] for D in D_values}
-    shap_models = {6: s100[6], 9: s100[9], 12: s100[12], 15: s100[15], 18: s100[18], 21: s100[21], 
-                25: s10[25], 30: s10[30], 40: s10[40], 50: s10[50], 60: s10[60]}
+    shap_models = {6: s100[6], 9: s100[9], 12: s100[12], 15: s100[15], 18: s100[18], 21: s100[21], 25: s10[25]}
 
     _desc = "run in a jupyter notebook beforehand, for depth>9 used T=10 or T=1 was extrapolated to T=100"
     def _pre(t): return PrerecordedTime(t, estimation_description=_desc)
 
     if task_type == TaskType.BACKGROUND_SHAP:
-        aaai = {6: s100[6], 9: s10[9], 12: _pre(152460),  15: s1[15], **_AAAI_CRASH_18_60}
+        aaai = {6: s100[6], 9: s10[9], 12: _pre(152460),  15: s1[15], **_AAAI_CRASH_18_25}
         shap = shap_models
 
     elif task_type == TaskType.PATH_DEPENDENT_SHAP:
-        aaai = {6: s100[6], 9: _pre(864),   12: _pre(106798),  15: _pre(1532740), **_AAAI_CRASH_18_60}
+        aaai = {6: s100[6], 9: _pre(864),   12: _pre(106798),  15: _pre(1532740), **_AAAI_CRASH_18_25}
         shap = shap_models
 
     elif task_type == TaskType.BACKGROUND_SHAP_INTERACTIONS:
-        aaai = {6: s100[6], 9: _pre(993),   12: _pre(112663),  15: MEMORY_CRASH, **_AAAI_CRASH_18_60}
+        aaai = {6: s100[6], 9: _pre(993),   12: _pre(112663),  15: MEMORY_CRASH, **_AAAI_CRASH_18_25}
         shap = shap_models  # not_supported
 
     else:  # PATH_DEPENDENT_INTERACTIONS
-        aaai = {6: s100[6], 9: _pre(1143),  12: _pre(123291),  15: MEMORY_CRASH, **_AAAI_CRASH_18_60}
-        shap = {6: s100[6], 9: s100[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: s1[21], 
-                25: s1[25], 30: s1[30], 40: s1[40], 50: s1[50], 60: s1[60]}
+        aaai = {6: s100[6], 9: _pre(1143),  12: _pre(123291),  15: MEMORY_CRASH, **_AAAI_CRASH_18_25}
+        shap = {6: s100[6], 9: s100[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: s1[21], 25: s1[25]}
 
     return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_SHAP, shap)]
 
