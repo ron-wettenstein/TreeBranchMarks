@@ -15,5 +15,3 @@ venv/
 # treebranchmarks runtime output
 /cache/
 /results/
-*.html
-!benchmarks/*.html
