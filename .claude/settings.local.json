@@ -16,7 +16,9 @@
       "Bash(python -:*)",
       "Bash(python -c \"from benchmarks.aaai_depth_sweep_experiment import build_missions, build_experiment; print\\(''import OK''\\); ms = build_missions\\(\\); print\\(f''{len\\(ms\\)} missions built''\\)\")",
       "Bash(python -c \"from treebranchmarks.models.lightgbm_model import LightGBMWrapper; import inspect; print\\(inspect.signature\\(LightGBMWrapper.__init__\\)\\)\")",
-      "Bash(xargs sed:*)"
+      "Bash(xargs sed:*)",
+      "Bash(grep -n \"^def _css\\\\|^def _js\\\\|^\"\"\"\"\"\"$\\\\|^\"\"\"\"\"\"\" \"c:/university/decision_trees/code_and_work/treebranchmarks/treebranchmarks/report/html_generator.py\")",
+      "Bash(python -c \"from treebranchmarks.report.html_generator import HtmlGenerator, _details_panel, _summary_html, _framework_html; print\\(''OK''\\)\")"
     ]
   }
 }
