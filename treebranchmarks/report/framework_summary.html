@@ -1,0 +1,40 @@
+<p>This is an interactive benchmarking report comparing the runtime
+of different SHAP algorithms across a range of decision tree ensembles and dataset configurations.
+The sections below explain each part of the report.</p>
+
+<p><strong>Score.</strong>
+Each run compares all methods on the same task and parameters.
+The fastest method of each run scores 100; every other method scores
+<em>(winner&thinsp;time / its&thinsp;time)&thinsp;&times;&thinsp;100</em>,
+so a method that took twice as long scores 50.
+Methods that crashed or are not supported for that task score 0.
+The overall score is the average across all runs.</p>
+
+<p><strong>Filtered score.</strong>
+The filter bar lets you narrow the score to a specific subset of runs by task type
+and parameter range. The key parameters are:
+<em>n</em>&thinsp;&mdash;&thinsp;the number of explained samples,
+<em>m</em>&thinsp;&mdash;&thinsp;the background dataset size (relevant for Background SHAP), and
+<em>D</em>&thinsp;&mdash;&thinsp;the maximum tree depth.
+The score updates instantly to reflect only the selected runs.</p>
+
+<p><strong>Experiment Analysis.</strong>
+The report contains many experiments. Each experiment changes one parameter while keeping the others fixed 
+(for example, changing the tree depth D while keeping n and m fixed, or changing n while keeping D and m fixed).
+
+Use the <em>Dataset</em> and <em>Mission</em> dropdowns to choose an experiment.
+The plot will then show the runtime of each method in any value of the swept parameter.
+This makes it easy to compare methods and see how the parameter affects performance.</p>
+
+Open the <em>Details: dataset, model &amp; approaches</em> panel below the controls
+to inspect the exact configuration of the selected experiment.</p>
+
+<p><strong>All Results.</strong>
+A full table of every individual run, including measured and extrapolated runtimes,
+the task type, and all parameter values.
+Times marked with * were extrapolated from runs with fewer trees and/or fewer samples.
+
+<p><strong>Analytics.</strong>
+Summary statistics and method win-rate charts aggregated over all runs.
+Use the filters in this section to focus on a specific task type or a narrower
+parameter range.</p>

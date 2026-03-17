@@ -1,0 +1,103 @@
+<p>This report presents the experimental results from the paper
+<em>&ldquo;WOODELF-HD: Efficient Background SHAP for High-Depth Decision Trees&rdquo;</em>
+(arXiv link: ___).
+The paper introduces a new algorithm for computing Shapley values on decision tree models.
+As shown in this report, the method is significantly faster than existing approaches,
+especially for Background (Interventional) SHAP.</p>
+
+<p>In these experiments we compare the runtime of several SHAP algorithms across different
+tree depths. For each dataset we trained LightGBM models with maximum depths 6, 9, 12, 15,
+18, and 21. We then used each algorithm to compute Shapley values and Shapley interaction
+values using both the Path-Dependent and Background approaches. This report compares the
+running time of the different algorithms on these tasks.</p>
+
+<h3>Experiment Summary</h3>
+<p><strong>SHAP Algorithms evaluated</strong> include the widely used
+<a href="https://github.com/shap/shap" target="_blank">shap</a> package,
+<a href="https://ojs.aaai.org/index.php/AAAI/article/view/26322" target="_blank">PLTreeSHAP</a>,
+<a href="https://arxiv.org/abs/2109.09847" target="_blank">FastTreeSHAP</a>,
+the original <a href="https://arxiv.org/abs/2511.09376" target="_blank">Woodelf</a> algorithm,
+and WoodelfHD.</p>
+
+<p><strong>Running Environment:</strong> All experiments were run on Google Colab using the
+CPU runtime with high memory enabled (50&thinsp;GB memory). The notebooks used to run the
+experiments can be found here: ___.</p>
+
+<h3>Datasets</h3>
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Train Size (m)</th>
+      <th>Test Size (n)</th>
+      <th>Number of Features</th>
+      <th>Source</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Intrusion Detection (KDD 99)</td>
+      <td>4,898,431</td>
+      <td>2,984,154</td>
+      <td>127</td>
+      <td><a href="https://kdd.ics.uci.edu/databases/kddcup99/kddcup99" target="_blank">link</a></td>
+    </tr>
+    <tr>
+      <td>Fraud Detection (IEEE-CIS)</td>
+      <td>472,432</td>
+      <td>118,108</td>
+      <td>41</td>
+      <td><a href="https://www.kaggle.com/c/ieee-fraud-detection" target="_blank">link</a></td>
+    </tr>
+    <tr>
+      <td>HIGGS</td>
+      <td>8,800,000</td>
+      <td>2,200,000</td>
+      <td>28</td>
+      <td><a href="https://archive.ics.uci.edu/dataset/280/higgs" target="_blank">link</a></td>
+    </tr>
+    <tr>
+      <td>California Housing</td>
+      <td>4,128</td>
+      <td>16,512</td>
+      <td>8</td>
+      <td><code>sklearn.datasets.fetch_california_housing</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Parameters</h3>
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Values</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Max Depth</td>
+      <td>D = 6, 9, 12, 15, 18, 21</td>
+      <td class="param-detail">We trained models with increasing tree depth. The graphs show how runtime changes as depth grows.</td>
+    </tr>
+    <tr>
+      <td>Number of trees</td>
+      <td>T = 100</td>
+      <td class="param-detail">LightGBM models were trained with 100 trees. In some cases where running all trees was too expensive,
+      results were computed on 10 trees or a single tree and then extrapolated.</td>
+    </tr>
+    <tr>
+      <td>Explained samples</td>
+      <td>n = test&thinsp;set size</td>
+      <td class="param-detail">SHAP values were computed on the entire test set.
+      For SHAP interaction values we used n&thinsp;=&thinsp;10,000 samples.</td>
+    </tr>
+    <tr>
+      <td>Background data size</td>
+      <td>m = train&thinsp;set size</td>
+      <td class="param-detail">For Background SHAP the entire training set was used as the background dataset.
+      For the shap package we used m&thinsp;=&thinsp;10 and extrapolated the runtime.</td>
+    </tr>
+  </tbody>
+</table>

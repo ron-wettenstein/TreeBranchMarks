@@ -245,15 +245,19 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "  <h1>Treebranchmarks</h1>\n"
         f"  <div class=\"subtitle\">Experiment: <strong>{experiment_name}</strong></div>\n"
         + (_summary_html(summary_html) if summary_html is not None else "")
+        + _framework_html()
         + "  <div id=\"scoreboard\"></div>\n"
+        "  <h2 class=\"all-results-heading\">Experiment Analysis</h2>\n"
+        "  <div id=\"experiment-panel\">\n"
         + _controls_html() +
-        "  <details id=\"mission-details\" class=\"details-panel\">\n"
-        "    <summary>Details: dataset, model &amp; approaches</summary>\n"
-        "    <div id=\"mission-details-content\"></div>\n"
-        "  </details>\n"
-        "  <div id=\"mission-score-banner\"></div>\n"
-        "  <div id=\"chart\"></div>\n"
-        "  <div id=\"data-table\"></div>\n"
+        "    <details id=\"mission-details\" class=\"details-panel\">\n"
+        "      <summary>Details: dataset, model &amp; approaches</summary>\n"
+        "      <div id=\"mission-details-content\"></div>\n"
+        "    </details>\n"
+        "    <div id=\"mission-score-banner\"></div>\n"
+        "    <div id=\"chart\"></div>\n"
+        "    <div id=\"data-table\"></div>\n"
+        "  </div>\n"
         "  <h2 class=\"all-results-heading\">All Results</h2>\n"
         "  <div id=\"all-results-wrapper\">\n"
         "    <div class=\"ar-filters\" id=\"ar-filters\"></div>\n"
@@ -283,10 +287,26 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
 
 
 def _summary_html(content: str) -> str:
-    """Wrap caller-provided HTML content in the summary <details> panel."""
+    """Wrap caller-provided experiment summary HTML in a closed <details> panel."""
     return (
-        "  <details class=\"details-panel summary-panel\" open>\n"
+        "  <details class=\"details-panel summary-panel\">\n"
         "    <summary>About this Experiment</summary>\n"
+        "    <div class=\"summary-content\">\n"
+        + content + "\n"
+        "    </div>\n"
+        "  </details>\n"
+    )
+
+
+_FRAMEWORK_SUMMARY_PATH = Path(__file__).parent / "framework_summary.html"
+
+
+def _framework_html() -> str:
+    """Mandatory closed <details> panel explaining the report structure and scoring."""
+    content = _FRAMEWORK_SUMMARY_PATH.read_text(encoding="utf-8")
+    return (
+        "  <details class=\"details-panel summary-panel\">\n"
+        "    <summary>How to Use This Report</summary>\n"
         "    <div class=\"summary-content\">\n"
         + content + "\n"
         "    </div>\n"
@@ -427,6 +447,30 @@ def _css() -> str:
       color: #1f3a5f;
       cursor: pointer;
       user-select: none;
+    }
+    #experiment-panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 16px 20px;
+      margin-bottom: 14px;
+    }
+    #experiment-panel > .controls { margin-bottom: 14px; }
+    #experiment-panel #chart {
+      background: none;
+      box-shadow: none;
+      border-top: 1px solid #e9ecef;
+      border-radius: 0;
+      margin: 0 -8px;
+      padding: 8px 8px 4px;
+    }
+    #experiment-panel #data-table {
+      background: none;
+      box-shadow: none;
+      border-top: 1px solid #e9ecef;
+      border-radius: 0;
+      margin: 0 -20px -16px;
+      padding: 12px 20px 16px;
     }
     #mission-details-content {
       padding: 4px 20px 16px;
