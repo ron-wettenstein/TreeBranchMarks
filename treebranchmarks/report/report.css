@@ -121,7 +121,7 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.09);
       padding: 16px 20px;
       margin-bottom: 14px;
-      overflow: hidden;
+      min-width: 0;
     }
     #experiment-panel > .controls { margin-bottom: 14px; }
     #experiment-panel #chart {
@@ -129,16 +129,16 @@
       box-shadow: none;
       border-top: 1px solid #e9ecef;
       border-radius: 0;
-      margin: 0 -20px;
-      padding: 8px 20px 4px;
+      margin: 0;
+      padding: 8px 0 4px;
     }
     #experiment-panel #data-table {
       background: none;
       box-shadow: none;
       border-top: 1px solid #e9ecef;
       border-radius: 0;
-      margin: 0 -20px -16px;
-      padding: 12px 20px 16px;
+      margin: 0;
+      padding: 12px 0 0;
     }
     #mission-details-content {
       padding: 4px 20px 16px;

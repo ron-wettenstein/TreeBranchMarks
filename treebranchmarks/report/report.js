@@ -120,7 +120,7 @@
         '<div class="sb-left">' + leftHtml + '</div>' +
         '<div class="sb-divider"></div>' +
         '<div class="sb-right">' + slidersHtml + '</div>' +
-        '<div class="sb-note">\u2605\u2009Score for each run: (winner\u2009time\u00a0/\u00a0my\u2009time)\u00a0\u00d7\u00a0100. The overall score is the average across all runs.</div>';
+        '<div class="sb-note">\u2605\u2009The score for each run is: (winner\u2009time\u00a0/\u00a0my\u2009time)\u00a0\u00d7\u00a0100. The overall score is the average across all runs.</div>';
 
       // --- Wire up slider logic ---
       var sbVals = {}, sbState = {};
@@ -480,8 +480,13 @@
         margin: { t: 30, r: 20, l: 70, b: 55 },
         height: 460,
       };
-      Plotly.react('chart', traces, layout);
+      Plotly.react('chart', traces, layout, { displayModeBar: false });
     }
+
+    window.addEventListener('resize', function() {
+      var el = document.getElementById('chart');
+      if (el && el.data) { Plotly.Plots.resize(el); }
+    });
 
     // -----------------------------------------------------------------------
     // Table
@@ -716,7 +721,7 @@
       renderMissionScore(state.mission);
 
       if (rows.length === 0) {
-        Plotly.react('chart', [], { title: 'No data for this selection', template: 'plotly_white' });
+        Plotly.react('chart', [], { title: 'No data for this selection', template: 'plotly_white' }, { displayModeBar: false });
         document.getElementById('data-table').innerHTML = '<p>No data matches the current selection.</p>';
         return;
       }

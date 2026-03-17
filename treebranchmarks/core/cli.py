@@ -70,3 +70,6 @@ def run_experiment_cli(build_fn: Callable) -> None:
         experiment.extra_method_cache_paths = [args.result_location]
 
     experiment.run()
+
+    if not args.methods:
+        experiment.generate_html()
