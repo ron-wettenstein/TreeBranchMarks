@@ -66,42 +66,6 @@ experiment.generate_html()
 
 ---
 
-## Execution hierarchy
-
-```
-Experiment
-└── Mission[]           — one free parameter swept (n, m, or D)
-    └── Task[]          — one algorithmic problem (TaskType enum)
-        └── Approach[]  — one concrete implementation
-```
-
-**Task types** (`TaskType` enum):
-
-| TaskType | Complexity |
-|---|---|
-| `PATH_DEPENDENT_SHAP` | O(T · L² · n) |
-| `PATH_DEPENDENT_INTERACTIONS` | O(T · L² · n) |
-| `BACKGROUND_SHAP` | O(T · L · n · m) |
-| `BACKGROUND_SHAP_INTERACTIONS` | O(T · L · n · m) |
-
----
-
-## Built-in approaches
-
-| Class | Method tag | Notes |
-|---|---|---|
-| `SHAPApproach` | `shap` | `shap.TreeExplainer` reference |
-| `WoodelfApproach` | `woodelf` | All 4 task types; auto tree-limit extrapolation at high depth |
-| `WoodelfGPUApproach` | `woodelf` | Same as above with `GPU=True` (requires CuPy) |
-| `TreeGradApproach` | `treegrad` | Path-dependent SHAP via [TreeGrad](https://github.com/watml/TreeGrad); sklearn only |
-| `LinearTreeSHAPV6Approach` | `linear_treeshap_v6` | Path-dependent SHAP via telescoping + Gauss-Legendre quadrature |
-| `VectorizedLinearTreeSHAPRecursiveNLTApproach` | `woodelf_vec_recursive_nlt` | Vectorized linear TreeSHAP with neighbor-leaf trick |
-| `WoodelfECAIApproach` / `WoodelfAAAIApproach` / `WoodelfHDApproach` | `woodelf_*` | Historical algorithm versions |
-
-All approaches implement any subset of the four task methods. Unsupported tasks automatically return `not_supported=True`.
-
----
-
 ## Mission types
 
 ### `Mission` — standard parameter sweep
