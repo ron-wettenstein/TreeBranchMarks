@@ -12,7 +12,7 @@ Missions (2 total — one per task type)
   2. BG SHAP IV n=10 000,  m=400 000, D-sweep
 
 Run from the project root:
-    python -m benchmarks.fraud_woodelfhd_vs_original_depth_experiment
+    python -m benchmarks.woodelfhd_vs_original_woodelf_experiment
 """
 
 from pathlib import Path
@@ -97,7 +97,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[Mission]:
 
 def build_experiment() -> Experiment:
     return Experiment(
-        name="fraud_woodelfhd_vs_original_depth_experiment",
+        name="woodelfhd_vs_original_woodelf_experiment",
         missions=build_missions(),
         results_dir=RESULTS_DIR,
         force_rerun=False,

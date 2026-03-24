@@ -18,7 +18,15 @@
       "Bash(python -c \"from treebranchmarks.models.lightgbm_model import LightGBMWrapper; import inspect; print\\(inspect.signature\\(LightGBMWrapper.__init__\\)\\)\")",
       "Bash(xargs sed:*)",
       "Bash(grep -n \"^def _css\\\\|^def _js\\\\|^\"\"\"\"\"\"$\\\\|^\"\"\"\"\"\"\" \"c:/university/decision_trees/code_and_work/treebranchmarks/treebranchmarks/report/html_generator.py\")",
-      "Bash(python -c \"from treebranchmarks.report.html_generator import HtmlGenerator, _details_panel, _summary_html, _framework_html; print\\(''OK''\\)\")"
+      "Bash(python -c \"from treebranchmarks.report.html_generator import HtmlGenerator, _details_panel, _summary_html, _framework_html; print\\(''OK''\\)\")",
+      "Bash(mkdir -p \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\wip\")",
+      "Bash(mv \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\fraud_woodelf_vs_vectorized_linear_tree_shap.py\" \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\wip/\")",
+      "Bash(mv \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\fraud_vec_pd_shap_experiment.py\" \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\wip/\")",
+      "Bash(mv \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\fraud_pd_shap_experiment.py\" \"c:\\\\university\\\\decision_trees\\\\code_and_work\\\\treebranchmarks\\\\benchmarks\\\\wip/\")",
+      "Bash(mv \"results/fraud_woodelfhd_vs_original_depth_experiment.html\" \"results/woodelfhd_vs_original_woodelf_experiment.html\")",
+      "Bash(mv \"results/fraud_woodelfhd_vs_original_depth_experiment.json\" \"results/woodelfhd_vs_original_woodelf_experiment.json\")",
+      "Bash(mv \"cache/method_results/fraud_woodelfhd_vs_original_depth_experiment\" \"cache/method_results/woodelfhd_vs_original_woodelf_experiment\")",
+      "Bash(mv \"benchmarks/reports/fraud_woodelfhd_vs_original_depth_experiment.html\" \"benchmarks/reports/woodelfhd_vs_original_woodelf_experiment.html\")"
     ]
   }
 }
