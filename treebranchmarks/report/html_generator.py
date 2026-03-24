@@ -263,12 +263,12 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "<head>\n"
         "  <meta charset=\"utf-8\">\n"
         "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-        f"  <title>Treebranchmarks \u2014 {experiment_name}</title>\n"
+        f"  <title>TreeBranchMarks \u2014 {experiment_name}</title>\n"
         "  <script src=\"https://cdn.plot.ly/plotly-2.35.2.min.js\"></script>\n"
         "  <style>\n" + css + "\n  </style>\n"
         "</head>\n"
         "<body>\n"
-        "  <h1>Treebranchmarks</h1>\n"
+        "  <h1>TreeBranchMarks</h1>\n"
         f"  <div class=\"subtitle\">Experiment: <strong>{experiment_name}</strong></div>\n"
         + (_summary_html(summary_html) if summary_html is not None else "")
         + _framework_html()
