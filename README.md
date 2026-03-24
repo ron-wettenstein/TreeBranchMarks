@@ -145,7 +145,7 @@ Results are also written incrementally to `results/{name}.json` after each missi
 | `CovertypeDataset` | sklearn built-in |
 | `BreastCancerDataset` | sklearn built-in |
 | `FraudDetectionDataset` | Kaggle IEEE-CIS |
-| `IntrustionDetectionDataset` | Kaggle |
+| `IntrustionDetectionDataset` | KDD-99 |
 | `HIGGSDataset` | UCI (downloaded automatically) |
 
 ---

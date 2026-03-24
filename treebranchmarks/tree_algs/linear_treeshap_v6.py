@@ -40,7 +40,7 @@ DTYPE = np.longdouble
 Q_EPS = 1e-15
 
 # Gauss-Legendre quadrature nodes and weights on [0, 1]
-N_QUAD = 12
+N_QUAD = 16
 _nodes_11, _weights_11 = np.polynomial.legendre.leggauss(N_QUAD)
 QUAD_NODES = DTYPE(0.5) * (_nodes_11.astype(DTYPE) + DTYPE(1.0))   # (n_quad,)
 QUAD_WEIGHTS = DTYPE(0.5) * _weights_11.astype(DTYPE)               # (n_quad,)
@@ -144,11 +144,14 @@ def _shap_single_tree(
             w_e: float = child.cover / node.cover
             satisfies  = goes_left if is_left else ~goes_left  # (N,) bool
 
+            # Get the old shapley values of the current node's feature
             p_old = p_vals[:, f_idx].copy()
             is_unseen = (p_old == _UNSEEN)
             is_normal = ~is_unseen & (np.abs(p_old) >= Q_EPS)
 
+            # (1 if we encounter this feature for the first time, else its old shapley value or 0 if old shapley value numerically tinny, less than 10e-15) 
             p_up       = is_unseen + is_normal * p_old
+            # (1 if we encounter this feature for the first time, else its old shapley value) 
             safe_p_old = is_unseen + (~is_unseen) * p_old
             p_e_pre    = (is_unseen | is_normal) * (safe_p_old / w_e)
             p_e        = satisfies * p_e_pre
