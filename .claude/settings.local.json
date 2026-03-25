@@ -26,7 +26,8 @@
       "Bash(mv \"results/fraud_woodelfhd_vs_original_depth_experiment.html\" \"results/woodelfhd_vs_original_woodelf_experiment.html\")",
       "Bash(mv \"results/fraud_woodelfhd_vs_original_depth_experiment.json\" \"results/woodelfhd_vs_original_woodelf_experiment.json\")",
       "Bash(mv \"cache/method_results/fraud_woodelfhd_vs_original_depth_experiment\" \"cache/method_results/woodelfhd_vs_original_woodelf_experiment\")",
-      "Bash(mv \"benchmarks/reports/fraud_woodelfhd_vs_original_depth_experiment.html\" \"benchmarks/reports/woodelfhd_vs_original_woodelf_experiment.html\")"
+      "Bash(mv \"benchmarks/reports/fraud_woodelfhd_vs_original_depth_experiment.html\" \"benchmarks/reports/woodelfhd_vs_original_woodelf_experiment.html\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }

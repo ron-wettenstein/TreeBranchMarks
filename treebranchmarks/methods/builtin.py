@@ -111,3 +111,9 @@ TREEGRAD = Method(
     label="TreeGrad",
     description="Path-dependent SHAP via TreeGrad (https://github.com/watml/TreeGrad). sklearn models only.",
 )
+
+PLTREESHAP_FASTTREESHAP = Method(
+    name="pltreeshap_fasttreeshap",
+    label="PLTreeSHAP + FastTreeSHAP",
+    description="PLTreeSHAP (pltreeshap.PLTreeExplainer) for background tasks; FastTreeSHAP (fasttreeshap.TreeExplainer) for path-dependent tasks.",
+)
