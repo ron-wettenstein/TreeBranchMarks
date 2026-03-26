@@ -100,6 +100,18 @@ WOODELF_VEC_RECURSIVE_NLT = Method(
     description="vectorized_linear_tree_shap with LinearTreeShapPathToMatricesSimpleNeighborTrickAbstract + improved_linear_tree_shap_magic.",
 )
 
+WOODELF_VEC_V6 = Method(
+    name="woodelf_vec_v6",
+    label="Woodelf Vec V6",
+    description="vectorized_linear_tree_shap with LinearTreeShapV6PathToMatrices.",
+)
+
+WOODELF_VEC_V6_SIMPLE = Method(
+    name="woodelf_vec_v6_simple",
+    label="Woodelf Vec V6 Simple",
+    description="vectorized_linear_tree_shap with LinearTreeShapPathToMatricesV6Simple (SimpleNeighborTrickAbstract + linear_tree_shap_v6).",
+)
+
 LINEAR_TREESHAP_V6 = Method(
     name="linear_treeshap_v6",
     label="Linear TreeSHAP V6",

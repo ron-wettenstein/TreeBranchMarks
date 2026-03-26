@@ -19,7 +19,8 @@ dependencies = [
     "requests>=2.31",
     "woodelf_explainer",
     "pyarrow",
-    "fastparquet"
+    "fastparquet",
+    "gdown"
 ]
 
 [project.optional-dependencies]

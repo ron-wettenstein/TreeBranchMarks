@@ -35,17 +35,22 @@ from treebranchmarks.methods.builtin import (
     WOODELF_VEC_DEFAULT,
     WOODELF_VEC_DEFAULT_NLT,
     WOODELF_VEC_RECURSIVE_NLT,
+    WOODELF_VEC_V6,
+    WOODELF_VEC_V6_SIMPLE,
 )
 from woodelf.lts_vectorized import (
+    LinearTreeShapPathToMatricesSimpleNeighborTrickAbstract,
     vectorized_linear_tree_shap,
     LinearTreeShapPathToMatrices,
     LinearTreeShapPathToMatricesImproved,
     LinearTreeShapPathToMatricesSimple,
+    LinearTreeShapV6PathToMatrices,
 )
 from woodelf.lts_polynomial_multiplication import (
     improved_linear_tree_shap_magic,
     improved_linear_tree_shap_magic_for_neighbors,
     linear_tree_shap_magic_for_banzhaf,
+    linear_tree_shap_v6
 )
 
 
@@ -191,3 +196,29 @@ class VectorizedLinearTreeSHAPRecursiveNLTApproach(VectorizedLinearTreeSHAPBase)
     description = "vectorized_linear_tree_shap(p2m=RecursiveNLT, neighbor_leaf_trick=True)"
     _use_neighbor_leaf_trick = True
     _p2m_class = _LinearTreeShapPathToMatricesRecursiveNLT
+
+
+class VectorizedLinearTreeSHAPV6Approach(VectorizedLinearTreeSHAPBase):
+    """vectorized_linear_tree_shap with LinearTreeShapV6PathToMatrices."""
+
+    name = "Woodelf Vec V6"
+    method = WOODELF_VEC_V6
+    description = "vectorized_linear_tree_shap(p2m=LinearTreeShapV6PathToMatrices, neighbor_leaf_trick=False)"
+    _use_neighbor_leaf_trick = False
+    _p2m_class = LinearTreeShapV6PathToMatrices
+
+
+class LinearTreeShapPathToMatricesV6Simple(LinearTreeShapPathToMatricesSimpleNeighborTrickAbstract):
+
+    def poly_mult_shap_func(self, covers: np.array, consumer_patterns: np.array, f_w: np.array, w: float):
+        return linear_tree_shap_v6(covers, consumer_patterns, w)
+
+
+class VectorizedLinearTreeSHAPV6SimpleApproach(VectorizedLinearTreeSHAPBase):
+    """vectorized_linear_tree_shap with LinearTreeShapPathToMatricesV6Simple."""
+
+    name = "Woodelf Vec V6 Simple"
+    method = WOODELF_VEC_V6_SIMPLE
+    description = "vectorized_linear_tree_shap(p2m=V6Simple, neighbor_leaf_trick=False)"
+    _use_neighbor_leaf_trick = False
+    _p2m_class = LinearTreeShapPathToMatricesV6Simple
