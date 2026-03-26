@@ -76,7 +76,8 @@ class WoodelfApproach(Approach):
             t0 = time.perf_counter()
             if use_interactions:
                 explainer.shap_interaction_values(
-                    X_explain, tree_limit=1, include_interaction_with_itself=False
+                    X_explain, tree_limit=1, include_interaction_with_itself=False,
+                    as_df=True, exclude_zero_contribution_features=True
                 )
             else:
                 explainer.shap_values(X_explain, tree_limit=1)
@@ -93,7 +94,8 @@ class WoodelfApproach(Approach):
         t0 = time.perf_counter()
         if use_interactions:
             explainer.shap_interaction_values(
-                X_explain, include_interaction_with_itself=False
+                X_explain, include_interaction_with_itself=False,
+                as_df=True, exclude_zero_contribution_features=True
             )
         else:
             explainer.shap_values(X_explain)

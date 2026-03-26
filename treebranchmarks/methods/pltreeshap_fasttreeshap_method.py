@@ -38,10 +38,10 @@ class PLTreeSHAPFastTreeSHAPApproach(Approach):
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
         import fasttreeshap
+        t0 = time.perf_counter()
         explainer = fasttreeshap.TreeExplainer(
             trained_model.raw_model, algorithm="v2", n_jobs=1
         )
-        t0 = time.perf_counter()
         explainer(X_explain, check_additivity=False).values
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)
 
@@ -52,10 +52,10 @@ class PLTreeSHAPFastTreeSHAPApproach(Approach):
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
         import fasttreeshap
+        t0 = time.perf_counter()
         explainer = fasttreeshap.TreeExplainer(
             trained_model.raw_model, algorithm="v1", n_jobs=1
         )
-        t0 = time.perf_counter()
         explainer(X_explain, check_additivity=False, interactions=True).values
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)
 
@@ -68,9 +68,9 @@ class PLTreeSHAPFastTreeSHAPApproach(Approach):
         from pltreeshap import PLTreeExplainer
         if X_background is None:
             raise ValueError("PLTreeSHAPFastTreeSHAPApproach.background_shap requires X_background.")
+        t0 = time.perf_counter()
         explainer = PLTreeExplainer(trained_model.raw_model)
         explainer.aggregate(X_background)
-        t0 = time.perf_counter()
         explainer.shap_values(X_explain)
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)
 
@@ -83,8 +83,8 @@ class PLTreeSHAPFastTreeSHAPApproach(Approach):
         from pltreeshap import PLTreeExplainer
         if X_background is None:
             raise ValueError("PLTreeSHAPFastTreeSHAPApproach.background_shap_interactions requires X_background.")
+        t0 = time.perf_counter()
         explainer = PLTreeExplainer(trained_model.raw_model)
         explainer.aggregate(X_background)
-        t0 = time.perf_counter()
         explainer.shap_interaction_values(X_explain)
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)
