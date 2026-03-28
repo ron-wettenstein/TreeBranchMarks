@@ -53,7 +53,7 @@ For each `(dataset, mission, task, n, m, D, ensemble)` group the two methods are
 
 ```
 cache/
-  datasets/{name}/X.npy, y.npy
+  datasets/{name}/X.parquet, y.npy
   models/{dataset}/{config_md5}.joblib
   calibration/{approach_name}.json
 results/

@@ -37,7 +37,7 @@ BG IV / SHAP: shap package does not support background SHAP interactions.
   SHAP receives real models (same as WoodelfHD for that task); approach returns not_supported.
 
 Run from project root:
-    python -m benchmarks.woodelfhd_depth_sweep_experiment
+    python -m benchmarks.woodelfhd_main_experiment
 """
 
 from __future__ import annotations
@@ -66,7 +66,6 @@ from treebranchmarks.datasets import (
 from treebranchmarks.methods.shap_method import SHAPApproach
 from treebranchmarks.methods.woodelf_original_and_hd_method import (
     WoodelfHDApproach,
-    WoodelfHDGPUApproach,
     OriginalWoodelfApproach,
 )
 from treebranchmarks.methods.pltreeshap_fasttreeshap_method import PLTreeSHAPFastTreeSHAPApproach
@@ -89,7 +88,6 @@ _D_HOUSING  = [6, 9, 12, 15, 18, 21, 25]
 
 _WOODELF_AAAI      = OriginalWoodelfApproach()
 _WOODELF_HD        = WoodelfHDApproach()
-_WOODELF_HD_GPU    = WoodelfHDGPUApproach()
 _SHAP              = SHAPApproach(bg_shap_limit=10)
 _PLTREESHAP_FTS    = PLTreeSHAPFastTreeSHAPApproach()
 
@@ -193,7 +191,7 @@ def _fraud_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]
         aaai = {6: s100[6], 9: s100[9], 12: s10[12],  15: MEMORY_CRASH, 18: MEMORY_CRASH, 21: MEMORY_CRASH}
         shap = {6: s100[6], 9: s100[9], 12: s10[12],  15: s1[15],  18: s1[18], 21: s1[21]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +240,7 @@ def _higgs_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]
         hd   = {6: s100[6], 9: s10[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: MEMORY_CRASH}
         shap = {6: s100[6], 9: s10[9], 12: s1[12],  15: s1[15],  18: s1[18], 21: s1[21]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
@@ -295,7 +293,7 @@ def _kdd_overrides(task_type: TaskType, sp: _Specs) -> list[ApproachDOverride]:
         aaai = {6: s100[6], 9: s100[9], 12: s1[12],  15: MEMORY_CRASH, 18: MEMORY_CRASH, 21: MEMORY_CRASH}
         shap = {6: s10[6],  9: s10[9],  12: s10[12], 15: s10[15], 18: s10[18], 21: s10[21]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
@@ -351,7 +349,7 @@ def _housing_overrides(task_type: TaskType, sp: _Specs, D_values: list[int]) -> 
         aaai = {6: s100[6], 9: _pre(1143),  12: _pre(123291),  15: MEMORY_CRASH, **_AAAI_CRASH_18_25}
         shap = {6: s100[6], 9: s100[9], 12: s10[12], 15: s1[15], 18: s1[18], 21: s1[21], 25: s1[25]}
 
-    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_HD_GPU, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
+    return [_ov(_WOODELF_HD, hd), _ov(_WOODELF_AAAI, aaai), _ov(_PLTREESHAP_FTS, aaai), _ov(_SHAP, shap)]
 
 
 # ---------------------------------------------------------------------------
@@ -482,7 +480,7 @@ _SUMMARY_HTML = Path(__file__).parent.parent / "treebranchmarks" / "report" / "b
 
 def build_experiment() -> Experiment:
     return Experiment(
-        name="woodelfhd_depth_sweep_experiment",
+        name="woodelfhd_main_experiment",
         missions=build_missions(),
         results_dir=RESULTS_DIR,
         force_rerun=False,

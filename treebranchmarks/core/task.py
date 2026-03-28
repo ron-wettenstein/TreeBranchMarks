@@ -126,6 +126,10 @@ class Task:
         cache_root: Path = Path("cache"),
         name: Optional[str] = None,
     ) -> None:
+        names = [a.name for a in approaches]
+        duplicates = {n for n in names if names.count(n) > 1}
+        if duplicates:
+            raise ValueError(f"Duplicate approach names in Task: {sorted(duplicates)}")
         self.task_type = task_type
         self.approaches = approaches
         self.n_repeats = n_repeats

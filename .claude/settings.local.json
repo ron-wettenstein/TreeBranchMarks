@@ -28,7 +28,15 @@
       "Bash(mv \"cache/method_results/fraud_woodelfhd_vs_original_depth_experiment\" \"cache/method_results/woodelfhd_vs_original_woodelf_experiment\")",
       "Bash(mv \"benchmarks/reports/fraud_woodelfhd_vs_original_depth_experiment.html\" \"benchmarks/reports/woodelfhd_vs_original_woodelf_experiment.html\")",
       "Bash(xargs grep:*)",
-      "Bash(pip index:*)"
+      "Bash(pip index:*)",
+      "Bash(find /c/university/decision_trees/code_and_work/treebranchmarks/tests -type f -name *.py)",
+      "Bash(wc -l /c/university/decision_trees/code_and_work/treebranchmarks/treebranchmarks/report/*.js /c/university/decision_trees/code_and_work/treebranchmarks/treebranchmarks/report/*.css)",
+      "Bash(wc -l /c/university/decision_trees/code_and_work/treebranchmarks/treebranchmarks/datasets/*.py)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest tests/test_scoring.py -v)",
+      "WebSearch",
+      "Bash(python -m pytest tests/ -v --collect-only)"
     ]
   }
 }

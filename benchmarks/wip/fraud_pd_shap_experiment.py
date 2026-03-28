@@ -45,7 +45,6 @@ from treebranchmarks.methods.linear_tree_shap_method import (
     VectorizedLinearTreeSHAPDefaultNLTApproach,
     VectorizedLinearTreeSHAPRecursiveNLTApproach,
     VectorizedLinearTreeSHAPV6Approach,
-    VectorizedLinearTreeSHAPV6SimpleApproach,
 )
 from treebranchmarks.methods.linear_treeshap_v6_method import LinearTreeSHAPV6Approach
 
@@ -104,7 +103,6 @@ _VEC_APPROACHES = [
     SHAPApproach(),
     VectorizedLinearTreeSHAPRecursiveNLTApproach(),
     VectorizedLinearTreeSHAPV6Approach(),
-    VectorizedLinearTreeSHAPV6SimpleApproach(),
     LinearTreeSHAPV6Approach(),
 ]
 
