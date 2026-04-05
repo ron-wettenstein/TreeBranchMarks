@@ -255,6 +255,17 @@
       font-weight: 600;
       padding: 0 1px;
     }
+    .csv-download-btn {
+      margin-bottom: 12px;
+      padding: 5px 14px;
+      font-size: 0.83rem;
+      background: #f8f9fa;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #495057;
+    }
+    .csv-download-btn:hover { background: #e9ecef; }
     #all-results-table { overflow-x: auto; }
     #all-results-table table { font-size: 0.83rem; }
     #all-results-table td { color: #333; }

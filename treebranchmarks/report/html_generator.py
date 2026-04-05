@@ -296,6 +296,7 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "  <h2 class=\"all-results-heading\">All Results</h2>\n"
         "  <div id=\"all-results-wrapper\">\n"
         "    <div class=\"ar-filters\" id=\"ar-filters\"></div>\n"
+        "    <button class=\"csv-download-btn\" onclick=\"downloadAllResultsCSV()\">&#11123; Download CSV</button>\n"
         "    <div id=\"all-results-table\"></div>\n"
         "  </div>\n"
         "  <script>\n"

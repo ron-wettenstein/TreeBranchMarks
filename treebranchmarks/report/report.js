@@ -905,6 +905,50 @@
       fill.style.width = ((arState[p].hi - arState[p].lo) * pct) + '%';
     }
 
+    var _arRunKeys = [];
+    var _arRunMap  = {};
+    var _arMethods = [];
+
+    function downloadAllResultsCSV() {
+      var BASE_COLS = ['Dataset', 'Task', 'Mission', 'n', 'm', 'D', 'T', 'L', 'F', 'Ensemble'];
+      var headers = BASE_COLS.concat(_arMethods.map(function(m) { return methodLabel(m); }));
+
+      function csvCell(val) {
+        var s = String(val == null ? '' : val);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      }
+
+      var lines = [headers.map(csvCell).join(',')];
+      _arRunKeys.forEach(function(k) {
+        var run = _arRunMap[k];
+        var row = [run.dataset, run.task, run.mission,
+                   run.n, run.m, run.D, run.T,
+                   run.L != null ? run.L.toFixed(1) : '',
+                   run.F, run.ensemble];
+        _arMethods.forEach(function(m) {
+          var cell = run.methods[m];
+          if (!cell) row.push('');
+          else if (cell.ns || cell.mc || cell.re) row.push('N/A');
+          else row.push(cell.est ? cell.t.toFixed(4) + '*' : cell.t.toFixed(4));
+        });
+        lines.push(row.map(csvCell).join(','));
+      });
+
+      var csv = lines.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'results.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     function renderAllResultsTable() {
       var selArTasks = [];
       document.querySelectorAll('.ar-task-cb').forEach(function(cb) {
@@ -1016,6 +1060,9 @@
       });
       html += '</tbody></table>';
       document.getElementById('all-results-table').innerHTML = html;
+      _arRunKeys = runKeys;
+      _arRunMap  = runMap;
+      _arMethods = methods;
     }
 
     buildDualSliders();

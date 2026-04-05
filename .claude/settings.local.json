@@ -36,7 +36,11 @@
       "Bash(pip install:*)",
       "Bash(python -m pytest tests/test_scoring.py -v)",
       "WebSearch",
-      "Bash(python -m pytest tests/ -v --collect-only)"
+      "Bash(python -m pytest tests/ -v --collect-only)",
+      "Bash(python -c \"from benchmarks.sklearn_workloads_experiment import build_experiment; e = build_experiment\\(\\); print\\(f'{len\\(e.missions\\)} missions'\\); [print\\(f'  {m.config.name}'\\) for m in e.missions]\")",
+      "Bash(python -c \"from treebranchmarks.datasets import BreastCancerDataset, DiabetesDataset, DigitsDataset; print\\('OK'\\)\")",
+      "Bash(python -c ':*)",
+      "Bash(python -c \"from treebranchmarks.datasets import CaliforniaHousingDataset; print\\('CaliforniaHousingDataset OK'\\)\")"
     ]
   }
 }
