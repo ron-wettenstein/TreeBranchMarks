@@ -40,7 +40,15 @@
       "Bash(python -c \"from benchmarks.sklearn_workloads_experiment import build_experiment; e = build_experiment\\(\\); print\\(f'{len\\(e.missions\\)} missions'\\); [print\\(f'  {m.config.name}'\\) for m in e.missions]\")",
       "Bash(python -c \"from treebranchmarks.datasets import BreastCancerDataset, DiabetesDataset, DigitsDataset; print\\('OK'\\)\")",
       "Bash(python -c ':*)",
-      "Bash(python -c \"from treebranchmarks.datasets import CaliforniaHousingDataset; print\\('CaliforniaHousingDataset OK'\\)\")"
+      "Bash(python -c \"from treebranchmarks.datasets import CaliforniaHousingDataset; print\\('CaliforniaHousingDataset OK'\\)\")",
+      "Bash(curl -s https://raw.githubusercontent.com/PlantedML/glex/master/src/path_dependent_explain_tree.cpp)",
+      "Bash(pip show:*)",
+      "Bash(python -c \"import shapiq; print\\(shapiq.__version__\\)\")",
+      "Bash(python -c \"import shapiq; help\\(shapiq.TreeExplainer.__init__\\)\")",
+      "Bash(python -c \"import shapiq; import os; print\\(os.path.dirname\\(shapiq.__file__\\)\\)\")",
+      "Bash(python -c \"import shap; print\\(shap.__version__\\)\")",
+      "Bash(python -c \"import woodelf.hybrid_woodelf; help\\(woodelf.hybrid_woodelf.hybrid_woodelf\\)\")",
+      "Bash(python -c \"import woodelf; print\\(dir\\(woodelf\\)\\)\")"
     ]
   }
 }

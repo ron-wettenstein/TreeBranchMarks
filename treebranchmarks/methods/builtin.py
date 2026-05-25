@@ -129,3 +129,21 @@ PLTREESHAP_FASTTREESHAP = Method(
     label="PLTreeSHAP + FastTreeSHAP",
     description="PLTreeSHAP (pltreeshap.PLTreeExplainer) for background tasks; FastTreeSHAP (fasttreeshap.TreeExplainer) for path-dependent tasks.",
 )
+
+WOODELF_HYBRID_SPARSE = Method(
+    name="woodelf_hybrid_sparse",
+    label="HybridWoodelf (Sparse)",
+    description="hybrid_woodelf with use_sparse_approaches=True: always uses MN/LTS sparse path.",
+)
+
+WOODELF_HYBRID_SPARSE_NO_FAST_MN = Method(
+    name="woodelf_hybrid_sparse_no_fast_mn",
+    label="HybridWoodelf (Sparse, slow MN)",
+    description="hybrid_woodelf with use_sparse_approaches=True, use_faster_mn_p2s=False: sparse path with MNBackgroundPathToSVectors.",
+)
+
+WOODELF_HYBRID_AUTO = Method(
+    name="woodelf_hybrid_auto",
+    label="HybridWoodelf (Auto)",
+    description="hybrid_woodelf with use_sparse_approaches=False: auto-selects strategy per leaf based on depth and data size.",
+)
