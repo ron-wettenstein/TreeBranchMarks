@@ -13,7 +13,7 @@ from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
 from treebranchmarks.methods.builtin import LINEAR_TREESHAP_V6
 from treebranchmarks.tree_algs.linear_treeshap_v6 import linear_treeshap_v6_woodelf
-from woodelf.parse_models import load_decision_tree_ensemble_model
+from woodelf.core.trees.parse_models import load_decision_tree_ensemble_model
 
 
 class LinearTreeSHAPV6Approach(Approach):

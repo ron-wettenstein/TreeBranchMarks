@@ -33,8 +33,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from woodelf.decision_trees_ensemble import DecisionTreeNode, DecisionTreesEnsemble
-from woodelf.parse_models import load_decision_tree_ensemble_model  # noqa: F401
+from woodelf.core.trees.decision_trees_ensemble import DecisionTreeNode, DecisionTreesEnsemble
+from woodelf.core.trees.parse_models import load_decision_tree_ensemble_model  # noqa: F401
 
 DTYPE = np.longdouble
 Q_EPS = 1e-15

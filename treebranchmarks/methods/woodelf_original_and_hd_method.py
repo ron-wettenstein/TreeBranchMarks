@@ -17,7 +17,7 @@ from typing import Optional
 
 import pandas as pd
 import woodelf
-from woodelf.cube_metric import ShapleyValues, ShapleyInteractionValues
+from woodelf.core.cube_metric import ShapleyValues, ShapleyInteractionValues
 from woodelf.high_depth_woodelf import woodelf_for_high_depth
 
 from treebranchmarks.core.approach import Approach, ApproachOutput

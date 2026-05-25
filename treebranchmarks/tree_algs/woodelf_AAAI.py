@@ -9,7 +9,7 @@ from copy import copy
 from tqdm import tqdm
 import scipy
 
-from woodelf.parse_models import load_decision_tree_ensemble_model
+from woodelf.core.trees.parse_models import load_decision_tree_ensemble_model
 
 class DecisionTreeNode:
     """

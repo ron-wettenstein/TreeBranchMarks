@@ -35,7 +35,7 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-from woodelf.parse_models import load_decision_tree_ensemble_model
+from woodelf.core.trees.parse_models import load_decision_tree_ensemble_model
 
 from treebranchmarks.core.params import EnsembleType, TreeParameters, partial_tree_params
 

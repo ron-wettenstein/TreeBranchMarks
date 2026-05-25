@@ -36,17 +36,8 @@ from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import LightGBMWrapper, XGBoostWrapper
 from treebranchmarks.core.task import Task, TaskType
 from treebranchmarks.methods.shap_method import SHAPApproach
-from treebranchmarks.methods.linear_tree_shap_method import (
-    VectorizedLinearTreeSHAPSimpleApproach,
-    VectorizedLinearTreeSHAPSimpleNLTApproach,
-    VectorizedLinearTreeSHAPImprovedApproach,
-    VectorizedLinearTreeSHAPImprovedNLTApproach,
-    VectorizedLinearTreeSHAPDefaultApproach,
-    VectorizedLinearTreeSHAPDefaultNLTApproach,
-    VectorizedLinearTreeSHAPRecursiveNLTApproach,
-    VectorizedLinearTreeSHAPV6Approach,
-)
 from treebranchmarks.methods.linear_treeshap_v6_method import LinearTreeSHAPV6Approach
+from treebranchmarks.methods.woodelf_hybrid_method import HybridWoodelfSparseApproach
 
 CACHE_ROOT  = Path("cache")
 RESULTS_DIR = Path("results")
@@ -101,8 +92,7 @@ XGB_DEPTHS     = [9, 12, 18, 21, 24]
 
 _VEC_APPROACHES = [
     SHAPApproach(),
-    VectorizedLinearTreeSHAPRecursiveNLTApproach(),
-    VectorizedLinearTreeSHAPV6Approach(),
+    HybridWoodelfSparseApproach(),
     LinearTreeSHAPV6Approach(),
 ]
 

@@ -40,12 +40,12 @@ from treebranchmarks.tree_algs.woodelf_AAAI import (
     ShapleyInteractionValues as AAAIShapleyInteractionValues,
 )
 from woodelf.high_depth_woodelf import woodelf_for_high_depth
-from woodelf.cube_metric import (
+from woodelf.core.cube_metric import (
     ShapleyValues as HDShapleyValues,
     ShapleyInteractionValues as HDShapleyInteractionValues,
 )
-from woodelf.parse_models import load_decision_tree_ensemble_model
-from woodelf.decision_trees_ensemble import DecisionTreesEnsemble
+from woodelf.core.trees.parse_models import load_decision_tree_ensemble_model
+from woodelf.core.trees.decision_trees_ensemble import DecisionTreesEnsemble
 
 
 # ---------------------------------------------------------------------------

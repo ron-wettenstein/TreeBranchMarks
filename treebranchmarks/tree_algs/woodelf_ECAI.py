@@ -11,7 +11,7 @@ from collections import defaultdict
 from sklearn.metrics import accuracy_score, f1_score
 
 from shap.explainers._tree import XGBTreeModelLoader # Use the shap package's XGBoost loading. this is cheating, I know...
-from woodelf.parse_models import load_decision_tree_ensemble_model
+from woodelf.core.trees.parse_models import load_decision_tree_ensemble_model
 
 class DecisionTreeNode:
     """
