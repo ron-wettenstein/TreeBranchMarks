@@ -1,9 +1,9 @@
 """
 WoodelfHD vs VectorizedLinearTreeSHAP — Fraud Detection depth sweep.
 
-Compares two path-dependent SHAP implementations across tree depths 1–11:
+Compares two path-dependent SHAP implementations across tree depths 1–14:
   - WoodelfHD (woodelf_for_high_depth)
-  - VectorizedLinearTreeSHAP (vectorized_linear_tree_shap, NLT on, default p2m)
+  - HybridWoodelf (Sparse) (hybrid_woodelf, use_sparse_approaches=True)
 
 Dataset / models
 ----------------
@@ -34,7 +34,7 @@ from treebranchmarks.datasets import FraudDetectionDataset
 from treebranchmarks.models import XGBoostWrapper
 from treebranchmarks.core.task import Task, TaskType
 from treebranchmarks.methods.woodelf_historical_methods import WoodelfHDHistoricalApproach
-from treebranchmarks.methods.linear_tree_shap_method import VectorizedLinearTreeSHAPApproach
+from treebranchmarks.methods.woodelf_hybrid_method import HybridWoodelfSparseApproach
 
 CACHE_ROOT  = Path("cache")
 RESULTS_DIR = Path("results")
@@ -55,7 +55,7 @@ _XGB_BASE = {
 
 DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
-_APPROACHES = [WoodelfHDHistoricalApproach(), VectorizedLinearTreeSHAPApproach()]
+_APPROACHES = [WoodelfHDHistoricalApproach(), HybridWoodelfSparseApproach()]
 
 # ---------------------------------------------------------------------------
 # Helpers
