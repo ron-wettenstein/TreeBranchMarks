@@ -21,6 +21,14 @@ CLI flags
     approach result, so partial progress is preserved if the run is
     interrupted.  To resume, copy this file to
     ``cache/method_results/{experiment_name}/{method_name}.json``.
+
+--report_from_json PATH [PATH ...]
+    Generate an HTML report from one or more partial method-cache JSON files
+    (e.g. files written by --result_location during parallel runs) without
+    executing any benchmarks.  Approaches that do not yet have a result in
+    any of the provided JSONs are shown in the report as Error status
+    ("did not run yet").  The report is written to
+    results/{experiment_name}_partial.html.
 """
 
 from __future__ import annotations
@@ -60,9 +68,25 @@ def run_experiment_cli(build_fn: Callable) -> None:
             "(dual-write after every approach result)."
         ),
     )
+    parser.add_argument(
+        "--report_from_json",
+        nargs="+",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Generate an HTML report from partial method-cache JSON files "
+            "without running any benchmarks.  Approaches missing from the "
+            "JSONs are shown as 'did not run yet' errors."
+        ),
+    )
     args = parser.parse_args()
 
     experiment = build_fn()
+
+    if args.report_from_json is not None:
+        experiment.generate_html_from_partial_jsons(args.report_from_json)
+        return
 
     if args.methods:
         experiment.method_filter = [m.lower() for m in args.methods]

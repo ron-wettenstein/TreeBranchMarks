@@ -188,6 +188,158 @@ class Experiment:
     # HTML generation
     # ------------------------------------------------------------------
 
+    def generate_html_from_partial_jsons(
+        self,
+        json_paths: list[Path],
+        output_path: Optional[Path] = None,
+    ) -> Path:
+        """
+        Generate an HTML report from partial method-cache JSON files.
+
+        Each path should be a method-cache JSON written by ``--result_location``
+        (or copied from ``cache/method_results/{exp}/{method}.json``).
+
+        Approach / params combos that are expected (from the experiment's mission
+        definitions) but absent from every provided JSON are shown in the report
+        as a runtime error with the message "did not run yet".
+
+        Parameters
+        ----------
+        json_paths : list[Path]
+            One JSON file per method (or any subset).
+        output_path : Path | None
+            Destination for the HTML file.  Defaults to
+            ``results/{name}_partial.html``.
+        """
+        from collections import defaultdict
+
+        from treebranchmarks.core.params import EnsembleType, TreeParameters
+        from treebranchmarks.core.task import ApproachResult, TaskResult
+        from treebranchmarks.core.mission import MissionResult
+        from treebranchmarks.report.html_generator import HtmlGenerator
+
+        # ── 1. Load every provided JSON (method-cache format) ────────────────
+        # Each entry has: approach_name, method, running_time, ...,
+        #                 _mission, _task, _params {n,m,D,T,L,F,ensemble}
+        all_entries: list[dict] = []
+        for path in json_paths:
+            path = Path(path)
+            if not path.exists():
+                print(f"[experiment:{self.name}] Warning: JSON not found: {path}")
+                continue
+            with open(path) as fh:
+                data = json.load(fh)
+            all_entries.extend(data.values())
+
+        # ── 2. Group entries by (mission, task, params) ───────────────────────
+        # value: {approach_name: raw_entry_dict}
+        grouped: dict[tuple, dict[str, dict]] = defaultdict(dict)
+        for entry in all_entries:
+            p = entry.get("_params", {})
+            key = (
+                entry.get("_mission", ""),
+                entry.get("_task", ""),
+                p.get("n"),
+                p.get("m"),
+                p.get("D"),
+                p.get("T"),
+                p.get("L"),
+                p.get("F"),
+                p.get("ensemble"),
+            )
+            grouped[key][entry["approach_name"]] = entry
+
+        # ── 3. Build expected-approaches map from mission definitions ─────────
+        # {(mission_name, task_name): [Approach]}
+        mission_task_approaches: dict[tuple[str, str], list] = {}
+        for mission in self.missions:
+            for task in mission.config.tasks:
+                mission_task_approaches[(mission.name, task.name)] = list(task.approaches)
+
+        # ── 4. Assemble TaskResults, filling gaps with "did not run yet" ──────
+        # Accumulate per-mission; preserve duplicate-free ordering.
+        mission_task_results: dict[str, list[TaskResult]] = defaultdict(list)
+        mission_task_seen: dict[str, set] = defaultdict(set)
+
+        for group_key, approach_entries in grouped.items():
+            mission_name, task_name, n, m, D, T, L, F, ensemble = group_key
+            if None in (n, m, D, T, L, F, ensemble):
+                continue
+
+            params = TreeParameters(
+                n=n, m=m, D=D, T=T, L=L, F=F,
+                ensemble_type=EnsembleType(ensemble),
+            )
+
+            expected_approaches = mission_task_approaches.get((mission_name, task_name), [])
+            approach_results: dict[str, ApproachResult] = {}
+
+            for approach in expected_approaches:
+                if approach.name in approach_entries:
+                    raw = approach_entries[approach.name]
+                    ar = ApproachResult(
+                        approach_name=raw["approach_name"],
+                        running_time=raw["running_time"],
+                        std_time_s=raw["std_time_s"],
+                        is_estimated=raw["is_estimated"],
+                        error=raw.get("error"),
+                        method=raw.get("method", ""),
+                        not_supported=raw.get("not_supported", False),
+                        memory_crash=raw.get("memory_crash", False),
+                        runtime_error=raw.get("runtime_error", False),
+                        estimation_description=raw.get("estimation_description", ""),
+                    )
+                else:
+                    method_name = getattr(getattr(approach, "method", None), "name", "") or ""
+                    ar = ApproachResult(
+                        approach_name=approach.name,
+                        running_time=0.0,
+                        std_time_s=0.0,
+                        is_estimated=False,
+                        error="did not run yet",
+                        method=method_name,
+                        runtime_error=True,
+                    )
+                approach_results[approach.name] = ar
+
+            dedup = (task_name, n, m, D, T, ensemble)
+            if dedup not in mission_task_seen[mission_name]:
+                mission_task_seen[mission_name].add(dedup)
+                mission_task_results[mission_name].append(
+                    TaskResult(task_name=task_name, params=params, approach_results=approach_results)
+                )
+
+        # ── 5. Build ExperimentResult in original mission order ───────────────
+        mission_results = []
+        for mission in self.missions:
+            if mission.name not in mission_task_results:
+                continue
+            mr = MissionResult.__new__(MissionResult)
+            mr.config = None  # type: ignore[assignment]
+            mr._dataset_name = mission.config.dataset.name
+            mr.mission_name = mission.name
+            mr.meta = {}
+            mr.task_results = mission_task_results[mission.name]
+            mission_results.append(mr)
+
+        result = ExperimentResult(
+            experiment_name=self.name,
+            mission_results=mission_results,
+        )
+
+        # ── 6. Generate HTML ──────────────────────────────────────────────────
+        if output_path is None:
+            output_path = self.results_dir / f"{self.name}_partial.html"
+
+        summary_html: Optional[str] = None
+        if self.summary_html_path is not None:
+            summary_html = self.summary_html_path.read_text(encoding="utf-8")
+
+        generator = HtmlGenerator()
+        generator.generate(result, output_path, summary_html=summary_html)
+        print(f"[experiment:{self.name}] Partial HTML report written to {output_path}")
+        return output_path
+
     def generate_html(self, output_path: Optional[Path] = None) -> Path:
         """
         Generate an interactive HTML report from the persisted results.

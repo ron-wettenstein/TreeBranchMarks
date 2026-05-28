@@ -67,6 +67,7 @@ def _collect_rows(experiment: ExperimentResult) -> list[dict]:
                     "not_supported": ar.not_supported,
                     "memory_crash": ar.memory_crash,
                     "runtime_error": ar.runtime_error,
+                    "error_message": ar.error or "",
                 })
     return rows
 

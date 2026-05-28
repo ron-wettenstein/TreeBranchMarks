@@ -394,7 +394,7 @@
           },
           customdata: appRows.map(function(r) {
             if (r.memory_crash) return 'Memory Crash';
-            if (r.runtime_error) return 'Runtime Error';
+            if (r.runtime_error) return r.error_message ? 'Runtime Error: ' + r.error_message : 'Runtime Error';
             var t = fmtTime(r.running_time);
             if (r.is_estimated) {
               t += '\u2009\u2605\u202festimated';
