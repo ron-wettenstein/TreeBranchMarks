@@ -51,6 +51,7 @@ from treebranchmarks.methods.woodelf_hybrid_method import (
     HybridWoodelfSparseApproach,
     HybridWoodelfSparseNoNeighborTrickApproach,
     HybridWoodelfSparseNoFastMNApproach,
+    HybridWoodelfSparseDirectMNApproach,
 )
 
 CACHE_ROOT  = Path("cache")
@@ -130,6 +131,7 @@ _APPROACHES = [
     HybridWoodelfSparseApproach(),
     HybridWoodelfSparseNoNeighborTrickApproach(),
     HybridWoodelfSparseNoFastMNApproach(),
+    HybridWoodelfSparseDirectMNApproach(),
 ]
 
 # ---------------------------------------------------------------------------

@@ -17,6 +17,10 @@ from typing import Optional
 
 import pandas as pd
 from woodelf.core.cube_metric import ShapleyValues, ShapleyInteractionValues
+from woodelf.core.path_to_s_vectors.mn_background_p2s import (
+    MNBackgroundPathToSVectors,
+    MNBackgroundShapleyDirectPathToSVectors,
+)
 from woodelf.woodelf_sparse import hybrid_woodelf, woodelf_sparse
 
 from treebranchmarks.core.approach import Approach, ApproachOutput
@@ -25,6 +29,7 @@ from treebranchmarks.methods.builtin import (
     WOODELF_HYBRID_SPARSE,
     WOODELF_HYBRID_SPARSE_NO_FAST_MN,
     WOODELF_HYBRID_SPARSE_NO_NEIGHBOR_TRICK,
+    WOODELF_HYBRID_SPARSE_DIRECT_MN,
     WOODELF_HYBRID_AUTO,
 )
 
@@ -33,10 +38,10 @@ class _HybridWoodelfBaseApproach(Approach):
     """
     Base for all hybrid_woodelf variants. Calls woodelf_sparse directly.
 
-    Subclasses may set `_use_faster_mn_p2s` or override `_run` entirely.
+    Subclasses may set `_mn_p2s_class` or `_use_neighbor_leaf_trick`, or override `_run` entirely.
     """
 
-    _use_faster_mn_p2s: bool = True
+    _mn_p2s_class = None  # None → MNBackgroundFasterPathToSVectors (default)
     _use_neighbor_leaf_trick: bool = True
 
     def _run(
@@ -52,8 +57,8 @@ class _HybridWoodelfBaseApproach(Approach):
             X_explain,
             X_background,
             metric,
-            use_faster_mn_p2s=self._use_faster_mn_p2s,
             use_neighbor_leaf_trick=self._use_neighbor_leaf_trick,
+            mn_p2s_class=self._mn_p2s_class,
         )
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)
 
@@ -96,7 +101,6 @@ class HybridWoodelfSparseApproach(_HybridWoodelfBaseApproach):
     name = "HybridWoodelf (Sparse)"
     method = WOODELF_HYBRID_SPARSE
     description = "woodelf_sparse: always uses sparse (MN/LTS) path regardless of depth."
-    _use_faster_mn_p2s = True
 
 
 class HybridWoodelfSparseNoNeighborTrickApproach(_HybridWoodelfBaseApproach):
@@ -113,8 +117,17 @@ class HybridWoodelfSparseNoFastMNApproach(_HybridWoodelfBaseApproach):
 
     name = "HybridWoodelf (Sparse, slow MN)"
     method = WOODELF_HYBRID_SPARSE_NO_FAST_MN
-    description = "woodelf_sparse with use_faster_mn_p2s=False."
-    _use_faster_mn_p2s = False
+    description = "woodelf_sparse with mn_p2s_class=MNBackgroundPathToSVectors."
+    _mn_p2s_class = MNBackgroundPathToSVectors
+
+
+class HybridWoodelfSparseDirectMNApproach(_HybridWoodelfBaseApproach):
+    """woodelf_sparse with MNBackgroundShapleyDirectPathToSVectors and neighbor leaf trick enabled."""
+
+    name = "HybridWoodelf (Sparse, direct MN)"
+    method = WOODELF_HYBRID_SPARSE_DIRECT_MN
+    description = "woodelf_sparse with mn_p2s_class=MNBackgroundShapleyDirectPathToSVectors."
+    _mn_p2s_class = MNBackgroundShapleyDirectPathToSVectors
 
 
 class HybridWoodelfAutoApproach(_HybridWoodelfBaseApproach):
@@ -144,6 +157,5 @@ class HybridWoodelfAutoApproach(_HybridWoodelfBaseApproach):
             X_explain,
             X_background,
             metric,
-            use_faster_mn_p2s=self._use_faster_mn_p2s,
         )
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)

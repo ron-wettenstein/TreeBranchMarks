@@ -148,6 +148,12 @@ WOODELF_HYBRID_SPARSE_NO_NEIGHBOR_TRICK = Method(
     description="woodelf_sparse with use_neighbor_leaf_trick=False.",
 )
 
+WOODELF_HYBRID_SPARSE_DIRECT_MN = Method(
+    name="woodelf_hybrid_sparse_direct_mn",
+    label="HybridWoodelf (Sparse, direct MN)",
+    description="woodelf_sparse with mn_p2s_class=MNBackgroundShapleyDirectPathToSVectors.",
+)
+
 WOODELF_HYBRID_AUTO = Method(
     name="woodelf_hybrid_auto",
     label="HybridWoodelf (Auto)",
