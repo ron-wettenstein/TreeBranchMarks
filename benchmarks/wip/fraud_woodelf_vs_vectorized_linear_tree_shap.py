@@ -3,7 +3,7 @@ WoodelfHD vs VectorizedLinearTreeSHAP — Fraud Detection depth sweep.
 
 Compares two path-dependent SHAP implementations across tree depths 1–14:
   - WoodelfHD (woodelf_for_high_depth)
-  - HybridWoodelf (Sparse) (hybrid_woodelf, use_sparse_approaches=True)
+  - HybridWoodelf (Sparse) (woodelf_sparse, always sparse)
 
 Dataset / models
 ----------------

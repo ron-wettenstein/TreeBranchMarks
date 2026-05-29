@@ -133,17 +133,23 @@ PLTREESHAP_FASTTREESHAP = Method(
 WOODELF_HYBRID_SPARSE = Method(
     name="woodelf_hybrid_sparse",
     label="HybridWoodelf (Sparse)",
-    description="hybrid_woodelf with use_sparse_approaches=True: always uses MN/LTS sparse path.",
+    description="woodelf_sparse: always uses MN/LTS sparse path regardless of depth.",
 )
 
 WOODELF_HYBRID_SPARSE_NO_FAST_MN = Method(
     name="woodelf_hybrid_sparse_no_fast_mn",
     label="HybridWoodelf (Sparse, slow MN)",
-    description="hybrid_woodelf with use_sparse_approaches=True, use_faster_mn_p2s=False: sparse path with MNBackgroundPathToSVectors.",
+    description="woodelf_sparse with use_faster_mn_p2s=False: sparse path with MNBackgroundPathToSVectors.",
+)
+
+WOODELF_HYBRID_SPARSE_NO_NEIGHBOR_TRICK = Method(
+    name="woodelf_hybrid_sparse_no_neighbor_trick",
+    label="HybridWoodelf (Sparse, no NLT)",
+    description="woodelf_sparse with use_neighbor_leaf_trick=False.",
 )
 
 WOODELF_HYBRID_AUTO = Method(
     name="woodelf_hybrid_auto",
     label="HybridWoodelf (Auto)",
-    description="hybrid_woodelf with use_sparse_approaches=False: auto-selects strategy per leaf based on depth and data size.",
+    description="hybrid_woodelf: auto-selects sparse vs woodelf_for_high_depth based on depth thresholds.",
 )

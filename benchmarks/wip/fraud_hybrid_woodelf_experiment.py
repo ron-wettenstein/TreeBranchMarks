@@ -2,9 +2,9 @@
 Hybrid Woodelf comparison — Fraud Detection depth sweep.
 
 Compares 4 implementations across tree depths:
-  - HybridWoodelfSparseApproach         (use_sparse_approaches=True)
-  - HybridWoodelfSparseNoFastMNApproach (use_sparse_approaches=True, use_faster_mn_p2s=False)
-  - HybridWoodelfAutoApproach           (use_sparse_approaches=False, auto per-leaf)
+  - HybridWoodelfSparseApproach         (woodelf_sparse, always sparse)
+  - HybridWoodelfSparseNoFastMNApproach (woodelf_sparse, use_faster_mn_p2s=False)
+  - HybridWoodelfAutoApproach           (hybrid_woodelf, auto-selects based on depth)
   - WoodelfHDApproach                   (baseline: woodelf_for_high_depth directly)
 
 Dataset / models
