@@ -111,6 +111,7 @@ class Experiment:
         delete_dataset_cache: bool = False,
         delete_model_cache: bool = False,
         delete_results: bool = False,
+        delete_method_cache: bool = False,
         method_filter: Optional[list[str]] = None,
         summary_html_path: Optional[Path] = None,
     ) -> None:
@@ -124,6 +125,7 @@ class Experiment:
         self.delete_dataset_cache = delete_dataset_cache
         self.delete_model_cache = delete_model_cache
         self.delete_results = delete_results
+        self.delete_method_cache = delete_method_cache
         self.method_filter: list[str] = [m.lower() for m in (method_filter or [])]
         self.extra_method_cache_paths: list[Path] = []
         self.summary_html_path: Optional[Path] = summary_html_path
@@ -393,6 +395,15 @@ class Experiment:
                 if path.exists():
                     path.unlink()
                     print(f"[experiment:{self.name}] Deleted: {path}")
+
+        if self.delete_method_cache:
+            cache_root = (
+                self.missions[0].cache_root if self.missions else Path("cache")
+            )
+            method_cache_dir = cache_root / "method_results" / self.name
+            if method_cache_dir.exists():
+                shutil.rmtree(method_cache_dir)
+                print(f"[experiment:{self.name}] Deleted method cache: {method_cache_dir}")
 
     # ------------------------------------------------------------------
     # Persistence helpers

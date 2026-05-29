@@ -29,6 +29,11 @@ CLI flags
     any of the provided JSONs are shown in the report as Error status
     ("did not run yet").  The report is written to
     results/{experiment_name}_partial.html.
+
+--clean_cache_and_rerun
+    Delete all caches (dataset, model, method results, results JSON/HTML) and
+    run the experiment from scratch.  Equivalent to setting all delete_* flags
+    and force_rerun=True.
 """
 
 from __future__ import annotations
@@ -80,9 +85,25 @@ def run_experiment_cli(build_fn: Callable) -> None:
             "JSONs are shown as 'did not run yet' errors."
         ),
     )
+    parser.add_argument(
+        "--clean_cache_and_rerun",
+        action="store_true",
+        default=False,
+        help=(
+            "Delete all caches (dataset, model, method results, results JSON/HTML) "
+            "and run the experiment from scratch."
+        ),
+    )
     args = parser.parse_args()
 
     experiment = build_fn()
+
+    if args.clean_cache_and_rerun:
+        experiment.delete_dataset_cache = True
+        experiment.delete_model_cache = True
+        experiment.delete_results = True
+        experiment.delete_method_cache = True
+        experiment.force_rerun = True
 
     if args.report_from_json is not None:
         experiment.generate_html_from_partial_jsons(args.report_from_json)
