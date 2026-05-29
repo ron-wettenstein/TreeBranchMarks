@@ -226,8 +226,9 @@ class MethodResultCache:
         with open(self._path(method_name), "w") as f:
             f.write(data)
         for extra in self._extra_paths:
-            extra.parent.mkdir(parents=True, exist_ok=True)
-            with open(extra, "w") as f:
+            dest = extra / f"{method_name}.json" if extra.suffix == "" else extra
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with open(dest, "w") as f:
                 f.write(data)
 
     @staticmethod
