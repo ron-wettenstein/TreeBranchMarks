@@ -16,12 +16,17 @@ import time
 from typing import Optional
 
 import pandas as pd
-from woodelf.core.cube_metric import ShapleyValues, ShapleyInteractionValues
+from woodelf.core.cube_metric import ShapleyValues, ShapleyInteractionValues, CubeMetric
 from woodelf.core.path_to_s_vectors.mn_background_p2s import (
     MNBackgroundPathToSVectors,
-    MNBackgroundShapleyDirectPathToSVectors,
+    MNBackgroundFasterPathToSVectors,
 )
+from woodelf.core.utils import bits_matrix
 from woodelf.woodelf_sparse import hybrid_woodelf, woodelf_sparse
+
+import numpy as np
+import scipy
+
 
 from treebranchmarks.core.approach import Approach, ApproachOutput
 from treebranchmarks.core.model import TrainedModel
@@ -121,15 +126,6 @@ class HybridWoodelfSparseNoFastMNApproach(_HybridWoodelfBaseApproach):
     _mn_p2s_class = MNBackgroundPathToSVectors
 
 
-class HybridWoodelfSparseDirectMNApproach(_HybridWoodelfBaseApproach):
-    """woodelf_sparse with MNBackgroundShapleyDirectPathToSVectors and neighbor leaf trick enabled."""
-
-    name = "HybridWoodelf (Sparse, direct MN)"
-    method = WOODELF_HYBRID_SPARSE_DIRECT_MN
-    description = "woodelf_sparse with mn_p2s_class=MNBackgroundShapleyDirectPathToSVectors."
-    _mn_p2s_class = MNBackgroundShapleyDirectPathToSVectors
-
-
 class HybridWoodelfAutoApproach(_HybridWoodelfBaseApproach):
     """
     hybrid_woodelf: auto-selects sparse vs woodelf_for_high_depth based on depth thresholds.
@@ -159,3 +155,57 @@ class HybridWoodelfAutoApproach(_HybridWoodelfBaseApproach):
             metric,
         )
         return ApproachOutput(elapsed_s=time.perf_counter() - t0)
+
+
+
+class MNBackgroundShapleyDirectPathToSVectors(MNBackgroundFasterPathToSVectors):
+    """
+    Variant of MNBackgroundPathToSVectors for ShapleyValues that computes pos_weighted and
+    neg_weighted directly via the closed-form Shapley formula, avoiding the precomputed
+    (D+1)x(D+1) contribution tables entirely.
+
+    For a cube with p positive and n negative literals:
+        pos_weighted[c,b] = 1 / (p · C(p+n, p))
+        neg_weighted[c,b] = -1 / (n · C(p+n, n))
+
+    Since C(p+n, p) == C(p+n, n), only one binomial evaluation per (c,b) pair is needed.
+    """
+
+    def __init__(self, metric: CubeMetric, max_depth: int, GPU: bool = False):
+        super().__init__(metric, max_depth, GPU)
+        assert isinstance(metric, ShapleyValues), (
+            f"MNBackgroundShapleyDirectPathToSVectors requires ShapleyValues, got {type(metric).__name__}."
+        )
+
+    def _compute_s_batch(
+        self, consumer_batch: np.ndarray, unique_b: np.ndarray,
+        b_freqs: np.ndarray, D: int, w: float
+    ) -> np.ndarray:
+        diff     = consumer_batch[:, None] ^ unique_b[None, :]       # (batch, U_b)
+        positive = consumer_batch[:, None] & diff                     # s_plus bits per pair
+        negative = unique_b[None, :]       & diff                     # s_minus bits per pair
+        valid = (consumer_batch[:, None] | unique_b[None, :]) == ((1 << D) - 1)  # (batch, U_b)
+
+        p = np.bitwise_count(positive)                                # (batch, U_b)
+        n = np.bitwise_count(negative)                                # (batch, U_b)
+
+        binom_pn_p = scipy.special.comb(p + n, p, exact=False)                   # C(p+n,p) == C(p+n,n)
+        # When p=0 pos_bits=0, so pos_contribs is multiplied away; clamp to avoid div-by-zero.
+        pos_weighted = (1.0 / (np.maximum(p, 1) * binom_pn_p)) * b_freqs * valid  # (batch, U_b)
+        neg_weighted = (-1.0 / (np.maximum(n, 1) * binom_pn_p)) * b_freqs * valid  # (batch, U_b)
+
+        c_bits = bits_matrix(consumer_batch, D).astype(np.float64)    # (D, batch)
+        b_bits = bits_matrix(unique_b, D).astype(np.float64)          # (D, U_b)
+
+        BPW = b_bits @ pos_weighted.T                                  # (D, batch)
+        BNW = b_bits @ neg_weighted.T                                  # (D, batch)
+        total_pos = pos_weighted.sum(axis=1)                           # (batch,)
+        return (BNW + c_bits * (total_pos - BPW - BNW)) * w           # (D, batch)
+    
+class HybridWoodelfSparseDirectMNApproach(_HybridWoodelfBaseApproach):
+    """woodelf_sparse with MNBackgroundShapleyDirectPathToSVectors and neighbor leaf trick enabled."""
+
+    name = "HybridWoodelf (Sparse, direct MN)"
+    method = WOODELF_HYBRID_SPARSE_DIRECT_MN
+    description = "woodelf_sparse with mn_p2s_class=MNBackgroundShapleyDirectPathToSVectors."
+    _mn_p2s_class = MNBackgroundShapleyDirectPathToSVectors
