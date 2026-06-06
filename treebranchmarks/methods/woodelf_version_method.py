@@ -257,14 +257,18 @@ class WoodelfVersionApproach(Approach):
                 f"woodelf runner failed (ref='{self.ref}'):\n{proc.stderr[-2000:]}"
             )
 
-        try:
-            out = json.loads(proc.stdout)
-        except json.JSONDecodeError as exc:
+        _PREFIX = "TREEBRANCHMARKS_RESULT:"
+        result_line = next(
+            (ln[len(_PREFIX):] for ln in proc.stdout.splitlines() if ln.startswith(_PREFIX)),
+            None,
+        )
+        if result_line is None:
             raise RuntimeError(
-                f"woodelf runner produced invalid JSON (ref='{self.ref}').\n"
+                f"woodelf runner produced no result line (ref='{self.ref}').\n"
                 f"stdout: {proc.stdout!r}\n"
                 f"stderr: {proc.stderr[-2000:]}"
-            ) from exc
+            )
+        out = json.loads(result_line)
 
         return ApproachOutput(
             elapsed_s=out["elapsed_s"],

@@ -87,7 +87,7 @@ def main() -> None:
             "estimation_description": "",
         }
 
-    os.write(1, (json.dumps(result) + "\n").encode())
+    os.write(1, ("TREEBRANCHMARKS_RESULT:" + json.dumps(result) + "\n").encode())
 
 
 if __name__ == "__main__":
