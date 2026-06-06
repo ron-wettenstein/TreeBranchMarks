@@ -487,6 +487,35 @@ parameter range.</p>
 
     </div>
   </details>
+  <details class="details-panel summary-panel">
+    <summary>About The Compared Approaches</summary>
+    <div class="summary-content">
+<p>This report compares three woodelf algorithms across the full benchmark suite.
+The central question is whether a sparse algorithm that works at all depths can
+outperform WoodelfHD, and whether automatic selection
+between the two captures the best of both worlds.</p>
+
+<h3>woodelf_hybrid_sparse</h3>
+<p>Always uses <strong>woodelf_sparse</strong> — a sparse SHAP algorithm that
+processes only the non-zero entries of the background dataset via an MN-based
+path-to-S-vectors computation. Uses <code>MNBackgroundFasterPathToSVectors</code>
+(matrix multiplication trick) and the neighbor leaf trick.
+Works at all tree depths without any depth-based fallback.</p>
+
+<h3>woodelf_hybrid_auto</h3>
+<p>Calls <strong>hybrid_woodelf</strong>, which selects the best algorithm
+<em>per leaf</em>. On leaves with depth &lt;&thinsp;18 and where the complexity of
+WoodelfHD is smaller than that of the sparse approach — WoodelfHD is used.
+On all other leaves the sparse approach is used.</p>
+
+<h3>woodelf_hd</h3>
+<p>Uses <strong>WoodelfHD</strong>
+(see <a href="https://arxiv.org/abs/2604.10569" target="_blank">arxiv.org/abs/2604.10569</a>
+for full details). Marked as memory crash at depth&thinsp;&ge;&thinsp;18;
+in practice the algorithm can run up to depth&thinsp;21, but becomes
+slow in the 18&ndash;21 range.</p>
+    </div>
+  </details>
   <div id="scoreboard"></div>
   <h2 class="all-results-heading">Experiment Analysis</h2>
   <div id="experiment-panel">
