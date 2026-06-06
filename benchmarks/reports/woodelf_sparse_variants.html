@@ -487,6 +487,48 @@ parameter range.</p>
 
     </div>
   </details>
+  <details class="details-panel summary-panel">
+    <summary>About The Compared Approaches</summary>
+    <div class="summary-content">
+<p>All four approaches are variants of <strong>woodelf_sparse</strong> — a sparse SHAP
+algorithm that processes only the non-zero entries of the background dataset, working at
+all tree depths. They differ in two internal optimisations that control how the
+per-leaf Shapley weights are computed.</p>
+
+<h3>woodelf_hybrid_sparse</h3>
+<p>The default implementation. Uses <code>MNBackgroundFasterPathToSVectors</code>,
+which precomputes a <em>(D+1)&thinsp;&times;&thinsp;(D+1)</em> table of Shapley
+contribution weights indexed by the number of positive and negative literals,
+then applies it via matrix multiplication. Also enables the
+<strong>neighbor leaf trick</strong>, which reuses computations across leaves that
+share the same parent node to avoid redundant work.</p>
+
+<h3>woodelf_hybrid_sparse_direct_mn</h3>
+<p>Replaces the precomputed contribution table with a <strong>direct closed-form
+evaluation</strong>. For each (consumer, background) pair with <em>p</em> positive
+and <em>n</em> negative literals, the Shapley weight is computed on-the-fly as
+<em>1&thinsp;/&thinsp;(p&thinsp;&middot;&thinsp;C(p+n,&thinsp;p))</em>
+using the binomial coefficient. Skips the (D+1)&thinsp;&times;&thinsp;(D+1) table
+entirely. The neighbor leaf trick remains enabled.
+This approach tests whether the direct formula is competitive with the matrix
+multiplication approach for typical workloads.</p>
+
+<h3>woodelf_hybrid_sparse_no_fast_mn</h3>
+<p>Uses <code>MNBackgroundPathToSVectors</code> — the <strong>reference
+implementation</strong> without the matrix multiplication trick. Weights are applied
+one entry at a time rather than batched. The neighbor leaf trick remains enabled.
+This approach establishes how much of the speedup in the default variant comes from
+the matrix multiplication optimisation alone.</p>
+
+<h3>woodelf_hybrid_sparse_no_neighbor_trick</h3>
+<p>Identical to the default except the <strong>neighbor leaf trick is disabled</strong>
+(<code>use_neighbor_leaf_trick=False</code>). Every leaf is processed independently,
+even when sibling leaves could share intermediate computations.
+Uses <code>MNBackgroundFasterPathToSVectors</code> as normal.
+This approach isolates the contribution of the neighbor leaf trick to overall
+performance.</p>
+    </div>
+  </details>
   <div id="scoreboard"></div>
   <h2 class="all-results-heading">Experiment Analysis</h2>
   <div id="experiment-panel">
