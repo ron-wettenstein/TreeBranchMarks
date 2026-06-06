@@ -10,6 +10,7 @@ subprocess startup and data loading are excluded from the measurement.
 """
 
 import json
+import os
 import pickle
 import sys
 import time
@@ -86,7 +87,7 @@ def main() -> None:
             "estimation_description": "",
         }
 
-    sys.stdout.write(json.dumps(result) + "\n")
+    os.write(1, (json.dumps(result) + "\n").encode())
 
 
 if __name__ == "__main__":

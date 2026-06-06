@@ -257,7 +257,15 @@ class WoodelfVersionApproach(Approach):
                 f"woodelf runner failed (ref='{self.ref}'):\n{proc.stderr[-2000:]}"
             )
 
-        out = json.loads(proc.stdout)
+        try:
+            out = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"woodelf runner produced invalid JSON (ref='{self.ref}').\n"
+                f"stdout: {proc.stdout!r}\n"
+                f"stderr: {proc.stderr[-2000:]}"
+            ) from exc
+
         return ApproachOutput(
             elapsed_s=out["elapsed_s"],
             is_estimated=out.get("is_estimated", False),
