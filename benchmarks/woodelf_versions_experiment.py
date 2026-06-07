@@ -39,6 +39,7 @@ _APPROACHES = [
     WoodelfVersionApproach("v0.4.2",                        cache_root=CACHE_ROOT),
     WoodelfVersionApproach("v0.4.3",                        cache_root=CACHE_ROOT),
     WoodelfVersionApproach("feature/single_pattern_generation", cache_root=CACHE_ROOT),
+    WoodelfVersionApproach("feature/explainer_use_sparse_on_small_data", cache_root=CACHE_ROOT),
 ]
 
 
