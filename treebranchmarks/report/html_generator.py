@@ -72,29 +72,6 @@ def _collect_rows(experiment: ExperimentResult) -> list[dict]:
     return rows
 
 
-def _collect_methods(experiment: ExperimentResult) -> list[dict]:
-    """
-    Return a list of {name, label, description} dicts for every Method found
-    in the experiment's approach results, ordered by first appearance.
-    Preserves full Method metadata so the JS never needs to hardcode labels.
-    """
-    seen: dict[str, dict] = {}
-    for mr in experiment.mission_results:
-        for tr in mr.task_results:
-            for ar in tr.approach_results.values():
-                if ar.method and ar.method not in seen:
-                    seen[ar.method] = {"name": ar.method, "label": ar.method, "description": ""}
-
-    # Overlay rich metadata from actual Method objects when available
-    try:
-        from treebranchmarks.methods.builtin import SHAP, WOODELF
-        for m in (SHAP, WOODELF):
-            if m.name in seen:
-                seen[m.name] = m.as_dict()
-    except ImportError:
-        pass
-
-    return list(seen.values())
 
 
 def _collect_mission_meta(experiment: ExperimentResult) -> dict:
@@ -134,15 +111,15 @@ def _compute_scores(rows: list[dict]) -> dict:
     group_data: dict = defaultdict(lambda: {"_times": defaultdict(list), "_not_supported": set(), "mission": "", "task": ""})
 
     for r in rows:
-        method = r.get("method", "")
-        if not method:
+        approach = r.get("approach", "")
+        if not approach:
             continue
         key = (r["dataset"], r["mission"], r["task"], r["n"], r["m"], r["D"], r["ensemble"])
         g = group_data[key]
         if r.get("not_supported") or r.get("memory_crash") or r.get("runtime_error"):
-            g["_not_supported"].add(method)
+            g["_not_supported"].add(approach)
         else:
-            g["_times"][method].append(r["running_time"])
+            g["_times"][approach].append(r["running_time"])
         g["mission"] = r["mission"]
         g["task"] = r["task"]
 
@@ -217,11 +194,10 @@ class HtmlGenerator:
         if not rows:
             raise ValueError("ExperimentResult contains no successful approach results.")
 
-        data_js    = json.dumps(rows, separators=(",", ":"))
-        meta_js    = json.dumps(_collect_mission_meta(result), separators=(",", ":"))
-        scores_js  = json.dumps(_compute_scores(rows), separators=(",", ":"))
-        methods_js = json.dumps(_collect_methods(result), separators=(",", ":"))
-        html = _build_html(result.experiment_name, data_js, meta_js, scores_js, methods_js, summary_html)
+        data_js   = json.dumps(rows, separators=(",", ":"))
+        meta_js   = json.dumps(_collect_mission_meta(result), separators=(",", ":"))
+        scores_js = json.dumps(_compute_scores(rows), separators=(",", ":"))
+        html = _build_html(result.experiment_name, data_js, meta_js, scores_js, summary_html)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(html, encoding="utf-8")
 
@@ -255,7 +231,7 @@ def _framework_html() -> str:
     return _details_panel("How to Use This Report", _FRAMEWORK_PATH.read_text(encoding="utf-8"))
 
 
-def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str, methods_js: str, summary_html: str | None = None) -> str:
+def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str, summary_html: str | None = None) -> str:
     css = _CSS_PATH.read_text(encoding="utf-8")
     js  = _JS_PATH.read_text(encoding="utf-8")
     head = (
@@ -304,7 +280,6 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         f"    const DATA = {data_js};\n"
         f"    const MISSION_META = {meta_js};\n"
         f"    const SCORES = {scores_js};\n"
-        f"    const METHODS = {methods_js};\n"
     )
     tail = (
         "  </script>\n"

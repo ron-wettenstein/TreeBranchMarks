@@ -1,9 +1,3 @@
-    // -----------------------------------------------------------------------
-    // Method metadata — keyed by method.name, built from METHODS constant.
-    // -----------------------------------------------------------------------
-    var _methodMap = {};
-    METHODS.forEach(function(m) { _methodMap[m.name] = m; });
-
     // Pre-compute unique values across ALL runs (used for conditional pie visibility).
     function _allUnique(key) {
       var seen = {};
@@ -13,9 +7,7 @@
     var _allUniqueM        = _allUnique('m');
     var _allUniqueTask     = _allUnique('task');
     var _allUniqueEnsemble = _allUnique('ensemble');
-    function methodLabel(name) {
-      return (_methodMap[name] && _methodMap[name].label) || name || 'unknown';
-    }
+    function methodLabel(name) { return name || 'unknown'; }
     var _scoreColors = ['#2ca02c','#1f77b4','#ff7f0e','#9467bd','#8c564b','#e377c2'];
     function methodColor(name) {
       var idx = (SCORES.methods || []).indexOf(name);
@@ -141,14 +133,14 @@
       function computeScoreFromRows(rows, removeFast) {
         var groups = {};
         rows.forEach(function(r) {
-          if (!r.method) return;
+          if (!r.approach) return;
           var key = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
           if (!groups[key]) groups[key] = { times: {}, notSupported: {} };
           if (r.not_supported || r.memory_crash || r.runtime_error) {
-            groups[key].notSupported[r.method] = true;
+            groups[key].notSupported[r.approach] = true;
           } else {
-            if (!groups[key].times[r.method]) groups[key].times[r.method] = [];
-            groups[key].times[r.method].push(r.running_time);
+            if (!groups[key].times[r.approach]) groups[key].times[r.approach] = [];
+            groups[key].times[r.approach].push(r.running_time);
           }
         });
         var totals = {}, counts = {}, nGroups = 0;
@@ -210,7 +202,7 @@
         var filtered = DATA.filter(function(r) {
           return r.n >= nLo && r.n <= nHi && r.m >= mLo && r.m <= mHi && r.D >= dLo && r.D <= dHi &&
                  (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1) &&
-                 (selMethods.length === 0 || selMethods.indexOf(r.method) !== -1);
+                 (selMethods.length === 0 || selMethods.indexOf(r.approach) !== -1);
         });
         var result = computeScoreFromRows(filtered, removeFast);
         var el2 = document.getElementById('sb-filtered-score');
@@ -359,8 +351,8 @@
           .sort(function(a, b) { return a[xp] - b[xp]; });
         if (!appRows.length) return null;
 
-        var label = methodLabel(appRows[0].method);
-        var color = methodColor(appRows[0].method);
+        var label = methodLabel(appRows[0].approach);
+        var color = methodColor(appRows[0].approach);
         return {
           x: appRows.map(function(r) { return r[xp]; }),
           y: appRows.map(function(r) {
@@ -419,8 +411,8 @@
           .filter(function(r) { return r.approach === app && r.not_supported; })
           .sort(function(a, b) { return a[xp] - b[xp]; });
         if (!nsRows.length) return;
-        var color = methodColor(nsRows[0].method);
-        var label = methodLabel(nsRows[0].method) + ' \u2014 not supported';
+        var color = methodColor(nsRows[0].approach);
+        var label = methodLabel(nsRows[0].approach) + ' \u2014 not supported';
         traces.push({
           x: nsRows.map(function(r) { return r[xp]; }),
           y: nsRows.map(function() { return yPos; }),
@@ -987,8 +979,8 @@
                         ensemble: r.ensemble, methods: {} };
           runKeys.push(k);
         }
-        runMap[k].methods[r.method] = { t: r.running_time, est: r.is_estimated,
-                                         ns: r.not_supported, mc: r.memory_crash, re: r.runtime_error };
+        runMap[k].methods[r.approach] = { t: r.running_time, est: r.is_estimated,
+                                           ns: r.not_supported, mc: r.memory_crash, re: r.runtime_error };
       });
 
       // Apply winner filter: keep only runs where arWinnerMethod has the lowest valid time
@@ -1213,7 +1205,7 @@
           };
           runKeys.push(k);
         }
-        runMap[k].methods[r.method] = {
+        runMap[k].methods[r.approach] = {
           t: r.running_time,
           ns: r.not_supported,
           mc: r.memory_crash,
