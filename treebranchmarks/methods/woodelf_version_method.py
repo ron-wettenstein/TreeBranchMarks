@@ -212,6 +212,23 @@ class WoodelfVersionApproach(Approach):
         if memory_crash_depth is not None and D >= memory_crash_depth:
             return ApproachOutput(elapsed_s=0.0, memory_crash=True)
 
+        if (
+            feature_perturbation == "interventional"
+            and D >= 20
+            and X_background is not None
+        ):
+            n = len(X_explain)
+            m = len(X_background)
+            if n * m > 10_000_000:
+                return ApproachOutput(
+                    elapsed_s=0.0,
+                    not_supported=True,
+                    estimation_description=(
+                        f"Can not use the sparse approach with n={n} and m={m}, "
+                        f"as the basic complexity is O(mn) which becomes too high here."
+                    ),
+                )
+
         install_dir = self._ensure_install()
 
         with tempfile.TemporaryDirectory() as _tmp:
