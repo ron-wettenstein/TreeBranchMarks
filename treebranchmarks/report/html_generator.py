@@ -114,7 +114,11 @@ def _compute_scores(rows: list[dict]) -> dict:
         approach = r.get("approach", "")
         if not approach:
             continue
-        key = (r["dataset"], r["mission"], r["task"], r["n"], r["m"], r["D"], r["ensemble"])
+        # T is part of the key so a mission that sweeps ensemble size scores each size
+        # separately instead of averaging all of them into one group. For missions where T
+        # is fixed (every Shapley mission) this changes nothing.
+        key = (r["dataset"], r["mission"], r["task"], r["n"], r["m"], r["D"], r.get("T"),
+               r["ensemble"])
         g = group_data[key]
         if r.get("not_supported") or r.get("memory_crash") or r.get("runtime_error"):
             g["_not_supported"].add(approach)

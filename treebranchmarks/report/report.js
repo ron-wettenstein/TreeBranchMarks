@@ -68,7 +68,7 @@
       leftHtml += '</tbody></table>';
 
       // --- Right: filter sliders + live filtered score ---
-      var SB_PARAMS = ['n', 'm', 'D'];
+      var SB_PARAMS = ['n', 'm', 'D', 'T'];
       var slidersHtml = '<div class="scoreboard-title">Filtered Score</div><div class="sb-sliders">';
       SB_PARAMS.forEach(function(p) {
         var vals = getUnique(p);
@@ -326,14 +326,17 @@
       n: 'n \u2014 explain set size',
       m: 'm \u2014 background size',
       D: 'D \u2014 max tree depth',
+      T: 'T \u2014 number of trees',
     };
 
     function detectXParam(rows) {
       var ns = getUnique('n', rows);
       var ms = getUnique('m', rows);
       var ds = getUnique('D', rows);
+      var ts = getUnique('T', rows);
       if (ns.length > 1) return 'n';
       if (ds.length > 1) return 'D';
+      if (ts.length > 1) return 'T';
       if (ms.length > 1) return 'm';
       return 'n';
     }
@@ -769,7 +772,7 @@
     // -----------------------------------------------------------------------
     // All-results table — dual-range slider filters
     // -----------------------------------------------------------------------
-    var AR_PARAMS  = ['n', 'm', 'D'];
+    var AR_PARAMS  = ['n', 'm', 'D', 'T'];
 
     var arVals  = {};   // param -> sorted unique value array
     var arState = {};   // param -> {lo: idx, hi: idx}
@@ -1064,7 +1067,7 @@
     // Analytics section
     // -----------------------------------------------------------------------
     var _anaVals = {}, _anaState = {};
-    var _ANA_PARAMS = ['n', 'm', 'D'];
+    var _ANA_PARAMS = ['n', 'm', 'D', 'T'];
 
     function _anaUpdateFill(p) {
       var n = _anaVals[p].length;
@@ -1259,6 +1262,7 @@
         { key: 'm',        label: 'm — background size',  numeric: true,
           skip: _allUniqueM.length === 1 && _allUniqueM[0] === '0' },
         { key: 'D',        label: 'D — max tree depth',   numeric: true },
+        { key: 'T',        label: 'T — number of trees',   numeric: true },
         { key: 'task',     label: 'Task type',            fmt: taskDisplayName,
           skip: _allUniqueTask.length <= 1 },
         { key: 'ensemble', label: 'Ensemble type',
