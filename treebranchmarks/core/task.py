@@ -37,6 +37,9 @@ class TaskType(str, Enum):
     PATH_DEPENDENT_INTERACTIONS  = "path_dependent_interactions"
     BACKGROUND_SHAP              = "background_shap"
     BACKGROUND_SHAP_INTERACTIONS = "background_shap_interactions"
+    # Not a Shapley task: measures the model -> in-memory-tree parse that every
+    # explainer pays before it computes anything. Ignores X_explain / X_background.
+    MODEL_PARSING                = "model_parsing"
 
     @property
     def display_name(self) -> str:
@@ -45,6 +48,7 @@ class TaskType(str, Enum):
             TaskType.PATH_DEPENDENT_INTERACTIONS:  "Path-Dependent SHAP Interactions",
             TaskType.BACKGROUND_SHAP:              "Background SHAP",
             TaskType.BACKGROUND_SHAP_INTERACTIONS: "Background SHAP Interactions",
+            TaskType.MODEL_PARSING:                "Model Parsing",
         }[self]
 
 

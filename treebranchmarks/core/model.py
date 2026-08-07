@@ -15,7 +15,7 @@ ModelWrapper is an ABC with one key abstract method per ensemble type:
     - train()                  — fit and return a TrainedModel
 
 The base class provides a default _extract_tree_params() via
-woodelf.parse_models.load_decision_tree_ensemble_model, which handles all
+woodelf.core.trees.parse_models.load_decision_tree_ensemble_model, which handles all
 supported model types (XGBoost, LightGBM, Random Forest, HistGradientBoosting).
 
 load_or_train() is the public entry point.  It checks the cache first and

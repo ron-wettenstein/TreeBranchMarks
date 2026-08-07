@@ -74,5 +74,15 @@ class XGBoostWrapper(ModelWrapper):
             else xgb.XGBClassifier()
         )
         model.load_model(str(model_dir / "model.json"))
+
+        # load_model() restores base_score as a one-element list (a freshly fitted model
+        # leaves it None), so a cached model is not interchangeable with a trained one.
+        # Consumers that read it as a scalar break on the round-tripped copy — shapiq's
+        # converter does `intercept /= n_trees` and raises TypeError on the list. Coercing
+        # to a float restores parity; predictions are unchanged either way.
+        base_score = getattr(model, "base_score", None)
+        if isinstance(base_score, (list, tuple, np.ndarray)):
+            model.base_score = float(np.asarray(base_score).ravel()[0])
+
         return model
 

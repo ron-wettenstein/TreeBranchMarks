@@ -97,3 +97,17 @@ class Approach(ABC):
         X_background: Optional[pd.DataFrame],
     ) -> ApproachOutput:
         return ApproachOutput(elapsed_s=0.0, not_supported=True)
+
+    def model_parsing(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        """
+        Time turning ``trained_model.raw_model`` into an in-memory tree structure.
+
+        Unlike the Shapley tasks this measures setup rather than explanation, so it does
+        not use X_background and reads X_explain only for its column names.
+        """
+        return ApproachOutput(elapsed_s=0.0, not_supported=True)
