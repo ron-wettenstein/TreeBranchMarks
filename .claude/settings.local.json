@@ -53,7 +53,9 @@
       "Bash(sed -i 's/combined_bg_pd_shap/woodelf_hd_vs_woodelf_sparse/g' C:/university/decision_trees/code_and_work/treebranchmarks/results/woodelf_hd_vs_woodelf_sparse.json)",
       "Bash(sed -i 's/combined_bg_pd_shap/woodelf_hd_vs_woodelf_sparse/g' C:/university/decision_trees/code_and_work/treebranchmarks/results/woodelf_hd_vs_woodelf_sparse.html)",
       "Bash(python -c ' *)",
-      "Grep(C:/university/decision_trees/code_and_work/**)"
+      "Grep(C:/university/decision_trees/code_and_work/**)",
+      "Bash(cd c:/university/decision_trees/code_and_work/treebranchmarks*)",
+      "Bash(python *)"
     ]
   }
 }

@@ -15,3 +15,4 @@ venv/
 # treebranchmarks runtime output
 /cache/
 /results/
+data/*

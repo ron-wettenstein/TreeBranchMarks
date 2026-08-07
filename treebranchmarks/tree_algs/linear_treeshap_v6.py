@@ -207,7 +207,7 @@ def linear_treeshap_v6_woodelf(
     Parameters
     ----------
     ensemble : DecisionTreesEnsemble
-        Loaded via woodelf.parse_models.load_decision_tree_ensemble_model.
+        Loaded via woodelf.core.trees.parse_models.load_decision_tree_ensemble_model.
     X        : (N, F) pandas DataFrame
 
     Returns
