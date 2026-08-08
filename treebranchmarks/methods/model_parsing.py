@@ -14,8 +14,8 @@ Parsers compared
                                  not an explainer, included as a fast baseline.
 2. ``ShapParser``              — ``shap.explainers._tree.TreeEnsemble(model)``, the parsing
                                  half of ``shap.TreeExplainer``.
-3. ``ShapiqParser``            — ``shapiq.explainer.tree.validation.validate_tree_model``,
-                                 which dispatches to ``shapiq/explainer/tree/conversion/*``.
+3. ``ShapiqParser``            — ``shapiq.tree.validation.validate_tree_model``,
+                                 which dispatches to ``shapiq/tree/conversion/*``.
 4. ``WoodelfShapParser``       — ``woodelf...parse_models_using_shap.load_model_using_shap``.
 5. ``WoodelfTreeliteParser``   — ``woodelf...parse_models_using_treelite.load_model_using_treelite``.
 
@@ -32,12 +32,13 @@ Parsers compared
 
 Why parser 5 is interesting
 ---------------------------
-It is not just a slower route to the same place. It is both faster than shapiq's own
-converter and able to parse models shapiq rejects:
+It is no longer the fast route — shapiq's own booster converters were rewritten around a C
+extension (``shapiq.tree.conversion.cext``) that parses XGBoost's ubjson / LightGBM's text
+dump directly, dropping shapiq's own parse time by ~2-3 orders of magnitude (e.g. a depth-12,
+100-tree XGBoost model: ~63 s before, ~0.07 s now). Parser 5 is a pure-Python per-node loop
+over treelite's arrays and is measurably slower than shapiq's native converter on boosters
+today. It remains useful for one reason:
 
-* **Speed.** shapiq's booster converters go through ``trees_to_dataframe()`` and a chain of
-  ``pandas.replace`` calls. Measured on a 1000-tree XGBoost model: shapiq 13.5 s vs. 0.40 s
-  through treelite — ~34x. The gap widens with depth (52 s vs. 0.25 s at depth 12).
 * **Model coverage.** shapiq's converter accepts a fixed list of sklearn/xgboost/lightgbm
   classes and rejects ``GradientBoosting*`` and ``HistGradientBoosting*`` outright.
 * **Split-less trees.** Boosters emit bare-root-leaf trees once the loss stops improving
@@ -46,8 +47,9 @@ converter and able to parse models shapiq rejects:
   ``ValueError`` on the empty set, so shapiq cannot parse such a model at all — through
   either its own converter or a naive bridge. :func:`treelite_to_shapiq` handles them.
 
-The one place it loses is scikit-learn forests, whose arrays shapiq and shap can already
-consume almost directly; paying for a treelite import there is a 2-6x slowdown.
+So parser 5 now exists purely to widen coverage to model families shapiq's own converter
+rejects, not for speed. On scikit-learn forests, which shapiq and shap can already consume
+almost directly, paying for a treelite import is a straightforward slowdown.
 
 Experiments
 -----------
@@ -122,9 +124,9 @@ def treelite_to_shapiq(tl_model: Any, class_label: int = 1) -> list:
 
     Returns
     -------
-    list[shapiq.explainer.tree.base.TreeModel]
+    list[shapiq.tree.base.TreeModel]
     """
-    from shapiq.explainer.tree.base import TreeModel
+    from shapiq.tree.base import TreeModel
 
     header = tl_model.get_header_accessor()
     leaf_shape = _field(header, "leaf_vector_shape", dtype=np.int64)
@@ -145,6 +147,14 @@ def treelite_to_shapiq(tl_model: Any, class_label: int = 1) -> list:
 
         n_nodes = children_left.size
         leaf_mask = children_left == -1
+
+        # shapiq routes missing-value samples via children_missing, matching whichever of
+        # children_left/children_right the source model's default_left flag points at.
+        default_left = _field(acc, "default_left", dtype=np.int64)
+        children_missing = (
+            np.where(default_left.astype(bool), children_left, children_right)
+            if default_left is not None else children_left
+        )
 
         features = split_index.copy()
         features[leaf_mask] = -2                      # shapiq's leaf sentinel
@@ -168,6 +178,7 @@ def treelite_to_shapiq(tl_model: Any, class_label: int = 1) -> list:
             TreeModel(
                 children_left=children_left,
                 children_right=children_right,
+                children_missing=children_missing,
                 features=features,
                 thresholds=thresholds,
                 values=values,
@@ -295,10 +306,10 @@ class ShapParser(ModelParser):
 class ShapiqParser(ModelParser):
     name = "shapiq"
     label = "shapiq"
-    description = "shapiq.explainer.tree.validation.validate_tree_model."
+    description = "shapiq.tree.validation.validate_tree_model."
 
     def parse(self, model: Any, feature_names: Sequence[str]) -> Any:
-        from shapiq.explainer.tree.validation import validate_tree_model
+        from shapiq.tree.validation import validate_tree_model
         return validate_tree_model(model)
 
     def stats(self, parsed: Any) -> ParsedStats:
@@ -425,9 +436,8 @@ def time_parse(
 
     ``budget_s`` bounds the cost of a single configuration. The warmup pass is timed, and if
     it alone exceeds the budget the repeats are skipped and that one measurement is reported
-    with ``repeats_run=1``. Without this the sweep is unbounded: shapiq needs ~52 s to parse
-    one depth-12 XGBoost model and grows roughly 3.5x per two levels of depth, so six passes
-    at unlimited depth would run for hours.
+    with ``repeats_run=1``. This is a generic safety net against any parser that turns out to
+    scale badly on unlimited-depth trees, rather than a guard tuned to a specific library.
     """
     try:
         t0 = time.perf_counter()

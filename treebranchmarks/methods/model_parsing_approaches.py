@@ -17,7 +17,7 @@ Approaches
 ============================  ===========================================================
 ``TreeliteParsing``           treelite front-end (compiler IR, not an explainer format)
 ``ShapParsing``               ``shap.explainers._tree.TreeEnsemble``
-``ShapiqParsing``             ``shapiq...validate_tree_model``
+``ShapiqParsing``             ``shapiq.tree.validation.validate_tree_model``
 ``WoodelfShapParsing``        woodelf via ``parse_models_using_shap``
 ``WoodelfTreeliteParsing``    woodelf via ``parse_models_using_treelite``
 ``TreeliteToShapiqParsing``   treelite parse -> shapiq ``TreeModel`` (written in-repo)
@@ -67,7 +67,7 @@ SHAP_PARSE = Method(
 )
 SHAPIQ_PARSE = Method(
     name="shapiq_parse", label="shapiq",
-    description="shapiq.explainer.tree.validation.validate_tree_model, which dispatches "
+    description="shapiq.tree.validation.validate_tree_model, which dispatches "
                 "to shapiq's per-library converters.",
 )
 WOODELF_SHAP_PARSE = Method(
@@ -83,8 +83,9 @@ WOODELF_TREELITE_PARSE = Method(
 TREELITE_SHAPIQ = Method(
     name="treelite_shapiq", label="treelite -> shapiq",
     description="Written in this repo: parse with treelite, then convert treelite's arrays "
-                "into shapiq's TreeModel format. Faster than shapiq's own converter on "
-                "boosters, and parses models shapiq rejects.",
+                "into shapiq's TreeModel format. Slower than shapiq's own converter on "
+                "boosters (shapiq's is now a C extension), but still the only way to parse "
+                "GradientBoosting*/HistGradientBoosting* models, which shapiq rejects.",
 )
 
 
@@ -110,9 +111,11 @@ class ModelParsingApproach(Approach):
 
     * **Cannot parse** -> ``not_supported=True``. A permanent library limitation, e.g.
       shapiq rejecting ``GradientBoosting*``, or treelite rejecting a bare ``DecisionTree``.
-    * **Too slow to be usable** -> :class:`ParseTooSlowError`. shapiq needs ~52 s for one
-      depth-12 XGBoost model and grows ~3.5x per two levels of depth, so the deepest
-      configurations would otherwise dominate the entire experiment's wall clock.
+    * **Too slow to be usable** -> :class:`ParseTooSlowError`. A generic safety net: whichever
+      parser is slowest on a given ensemble type is retired once a single parse exceeds
+      ``BUDGET_S``, so a pathological configuration cannot dominate the whole experiment's
+      wall clock. (Historically this is what caught shapiq's old pure-Python converter at
+      depth >= 14; shapiq's converter is now a C extension and no longer trips it.)
 
     The budget can only be enforced *after* the fact — there is no way to know a parse is
     slow without running it. So the first configuration to exceed ``BUDGET_S`` is measured

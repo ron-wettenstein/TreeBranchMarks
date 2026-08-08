@@ -74,10 +74,6 @@ SWEEP_ENSEMBLES = (
 )
 
 TREE_COUNTS = [10, 50, 100, 500, 1000]
-# Runs past the point where shapiq stops being usable on purpose. shapiq needs ~52 s for
-# one depth-12 XGBoost model; at 14 and 16 it is refused by the approach's time budget and
-# recorded as a runtime error, which scores 0 — the honest result for a parser too slow to
-# use, and more informative than leaving the configuration out of the sweep.
 DEPTHS = [2, 4, 6, 8, 10, 12, 14, 16]
 
 _WRAPPERS = {
