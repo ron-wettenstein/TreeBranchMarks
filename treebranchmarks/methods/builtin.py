@@ -20,6 +20,15 @@ WOODELF = Method(
     description="Woodelf TreeExplainer implementation.",
 )
 
+SHAPIQ = Method(
+    name="shapiq",
+    label="shapiq",
+    description=(
+        "shapiq.TreeExplainer in interventional mode "
+        "(shapiq.tree.interventional.InterventionalTreeExplainer)."
+    ),
+)
+
 # Vectorized Linear TreeSHAP variants
 WOODELF_VEC_SIMPLE = Method(
     name="woodelf_vec_simple",

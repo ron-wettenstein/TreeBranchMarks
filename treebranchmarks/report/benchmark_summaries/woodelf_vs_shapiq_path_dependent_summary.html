@@ -1,0 +1,127 @@
+<p>This report compares <strong>Woodelf</strong> against
+<a href="https://github.com/mmschlk/shapiq" target="_blank">shapiq</a>'s
+<code>TreeExplainer</code> on <strong>path-dependent</strong> Shapley values and Shapley
+interaction values. It is the sibling of the interventional report; same datasets, same three
+interaction orders, same question &mdash; <strong>where is the turn-over point?</strong></p>
+
+<p>There is no <em>m</em> here. Path-dependent explainers read coverage off the tree itself
+and take no background set, so <em>n</em> is the only data-size axis.</p>
+
+<h3>What is being compared</h3>
+<table class="summary-table">
+  <thead>
+    <tr><th>Task</th><th>Woodelf</th><th>shapiq</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Path-dependent SHAP (order&nbsp;1)</td>
+      <td><code>ShapleyValues()</code></td>
+      <td><code>mode="pathdependent", max_order=1, index="SV"</code></td>
+    </tr>
+    <tr>
+      <td>Path-dependent interactions (order&nbsp;2)</td>
+      <td><code>ShapleyInteractionValues()</code></td>
+      <td><code>mode="pathdependent", max_order=2, index="SII"</code></td>
+    </tr>
+    <tr>
+      <td>Path-dependent interactions (order&nbsp;3)</td>
+      <td><code>GeneralShapleyInteractionValues(min_order=1, max_order=3)</code></td>
+      <td><code>mode="pathdependent", max_order=3, index="SII"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Both sides compute the <em>same quantity</em>, verified before the benchmark was run
+(XGBoost, California Housing, <code>D=4</code>, <code>T=20</code>, <code>n=3</code>):
+order&nbsp;1 agrees to <code>2.1e-07</code>, order&nbsp;2 to <code>2.5e-08</code> after undoing
+Woodelf's <code>shap</code>-package convention of reporting each pair twice at half value, and
+order&nbsp;3 to <code>1.4e-08</code>.</p>
+
+<p>Both timings include the model parse &mdash; shapiq's <code>TreeExplainer</code>
+construction and Woodelf's <code>load_decision_tree_ensemble_model</code>. That matters more
+here than in the interventional report, for the reason below.</p>
+
+<h3>The two libraries have opposite cost shapes</h3>
+
+<p>Woodelf is dominated by a <strong>fixed</strong> cost &mdash; parse the model, build its tree
+structures &mdash; and is then nearly flat in <em>n</em>. shapiq builds cheaply (usually) and
+pays <strong>per row</strong>. The crossing is therefore just the point where shapiq's per-row
+charge has eaten Woodelf's fixed cost: a single threshold in <em>n</em>, rather than the
+<em>n</em>&nbsp;&times;&nbsp;<em>m</em> curve the interventional report traces.</p>
+
+<p>Measured at <code>D=6</code>, <code>T=100</code>:</p>
+
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>Dataset</th><th>Order</th><th>Woodelf (flat)</th>
+      <th>shapiq build</th><th>shapiq per row</th><th>Crossing <em>n</em></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>California Housing</td><td>1</td><td>1.35 s</td><td>0.08 s</td><td>0.0103 s</td><td><strong>&asymp; 120</strong></td></tr>
+    <tr><td>California Housing</td><td>2</td><td>1.42 s</td><td>0.41 s</td><td>1.56 s</td><td>&lt; 1</td></tr>
+    <tr><td>California Housing</td><td>3</td><td>1.66 s</td><td>0.75 s</td><td>2.33 s</td><td>&lt; 1</td></tr>
+    <tr><td>Breast Cancer</td><td>1</td><td>0.19 s</td><td>0.05 s</td><td>0.0100 s</td><td><strong>&asymp; 14</strong></td></tr>
+    <tr><td>Breast Cancer</td><td>2</td><td>0.19 s</td><td>0.14 s</td><td>0.12 s</td><td>&lt; 1</td></tr>
+    <tr><td>Breast Cancer</td><td>3</td><td>0.21 s</td><td>0.21 s</td><td>0.19 s</td><td>&lt; 1</td></tr>
+    <tr><td>Fraud Detection</td><td>1</td><td>1.50 s</td><td>0.11 s</td><td>0.033 s</td><td><strong>&asymp; 42</strong></td></tr>
+    <tr><td>Fraud Detection</td><td>2</td><td>1.80 s</td><td>6.0 s</td><td>2.0 s</td><td>&lt; 1</td></tr>
+    <tr><td>Fraud Detection</td><td>3</td><td>2.20 s</td><td>105 s</td><td>33 s</td><td>&lt; 1</td></tr>
+  </tbody>
+</table>
+
+<p>Only <strong>order&nbsp;1</strong> has a crossing inside the measurable range. At orders 2
+and 3 Woodelf already leads at <code>n = 1</code> on every dataset &mdash; and on Fraud it
+leads <em>before a single row is explained</em>, because shapiq's TreeSHAP-IQ construction
+over 397 features costs 6&nbsp;s at order&nbsp;2 and 105&nbsp;s at order&nbsp;3, both more
+than Woodelf's entire run.</p>
+
+<h3>Sweeps</h3>
+<ul>
+  <li><strong>n-sweep missions</strong> &mdash; one per (dataset, order) at
+      <code>D&nbsp;=&nbsp;6</code>. Order&nbsp;1 gets a wide <em>n</em> sweep to bracket its
+      crossing; orders 2 and 3 get a short one, enough to show the gap and its direction.
+      Marching to <code>n = 10,000</code> there would only buy a more expensive restatement of
+      the same verdict.</li>
+  <li><strong>Depth missions</strong> &mdash; <code>D &isin; {4, 6, 9, 12}</code> at the
+      <em>n</em> closest to that (dataset, order)'s crossing. Skipped where shapiq's
+      <strong>build cost alone</strong> already exceeds Woodelf's total run: the crossing there
+      sits off the left edge of the <em>n</em> axis, no depth can push it back on, and paying
+      that setup four times over buys nothing. The rule drops Fraud orders 2 and 3 &mdash; the
+      latter would have cost roughly 40&nbsp;minutes to re-confirm a 50&times; Woodelf win. It
+      is deliberately non-strict, so Breast Cancer order&nbsp;3, where build and Woodelf cost
+      the same to two decimals, still runs: a tie is exactly where depth decides the winner.</li>
+</ul>
+
+<h3>How long runs are handled</h3>
+<p>shapiq explains <strong>one row at a time</strong> in both modes &mdash;
+<code>explain_X</code> is a plain Python loop. Path-dependent orders 2 and 3 cost over a second
+per row even on an 8-feature model, so the far end of an n-sweep would run for hours. Instead
+shapiq explains rows until a 45&nbsp;s wall-clock budget is spent and the result is
+extrapolated linearly in <em>n</em>:</p>
+
+<pre><code>total = build_time + (loop_time / rows_done) &times; n</code></pre>
+
+<p>Such cells are marked <strong>estimated</strong> and are still scored &mdash; an extrapolated
+time is real performance data. Per-row cost is stable across rows, and rows are drawn from an
+already-randomised permutation, so the explained prefix is an unbiased sample. Note that the
+budget bounds the per-row <em>loop</em> but not the explainer <strong>build</strong>: on Fraud
+order&nbsp;3 that build is 105&nbsp;s of unavoidable fixed cost per cell, which is precisely
+why those sweeps are kept short.</p>
+
+<p>Woodelf is left uncapped. Its slowest cell in calibration was 7.5&nbsp;s (Fraud,
+<code>n = 10,000</code>, order&nbsp;3).</p>
+
+<h3>Reading the report</h3>
+<p>Per group <code>(dataset, mission, task, n, D, ensemble)</code> the faster method scores 100
+and the slower scores <code>(winner / loser) &times; 100</code>. Each n-sweep crosses at most
+once: read off the smallest <em>n</em> at which Woodelf takes the lead.</p>
+
+<p>One caveat on the trimmed design: the calibration above was used to <em>choose</em> which
+cells to run, so measured crossings will land near the middle of each order-1 sweep by
+construction. That is selection of where to look, not of what is found &mdash; every reported
+time is measured (or extrapolated in <em>n</em>) independently of the numbers that picked the
+cell. What the trimming forfeits is the far field: this report cannot say how large Woodelf's
+margin grows at <code>n = 10,000</code> for orders 2 and 3, only that it is already decisive at
+<code>n = 1</code>.</p>

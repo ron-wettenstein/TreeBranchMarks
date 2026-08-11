@@ -35,8 +35,15 @@ if TYPE_CHECKING:
 class TaskType(str, Enum):
     PATH_DEPENDENT_SHAP          = "path_dependent_shap"
     PATH_DEPENDENT_INTERACTIONS  = "path_dependent_interactions"
+    # Order-3 (triple) path-dependent interactions — the order-3 sibling of
+    # PATH_DEPENDENT_INTERACTIONS, kept separate so both appear in the report.
+    PATH_DEPENDENT_INTERACTIONS_ORDER_3 = "path_dependent_interactions_order_3"
     BACKGROUND_SHAP              = "background_shap"
     BACKGROUND_SHAP_INTERACTIONS = "background_shap_interactions"
+    # Order-3 (triple) interventional interactions. BACKGROUND_SHAP_INTERACTIONS is
+    # the order-2 case; this is its order-3 sibling and is kept as its own task type
+    # so the two appear as separate rows in the report.
+    BACKGROUND_SHAP_INTERACTIONS_ORDER_3 = "background_shap_interactions_order_3"
     # Not a Shapley task: measures the model -> in-memory-tree parse that every
     # explainer pays before it computes anything. Ignores X_explain / X_background.
     MODEL_PARSING                = "model_parsing"
@@ -46,8 +53,12 @@ class TaskType(str, Enum):
         return {
             TaskType.PATH_DEPENDENT_SHAP:          "Path-Dependent SHAP",
             TaskType.PATH_DEPENDENT_INTERACTIONS:  "Path-Dependent SHAP Interactions",
+            TaskType.PATH_DEPENDENT_INTERACTIONS_ORDER_3:
+                                                   "Path-Dependent SHAP Interactions (order 3)",
             TaskType.BACKGROUND_SHAP:              "Background SHAP",
             TaskType.BACKGROUND_SHAP_INTERACTIONS: "Background SHAP Interactions",
+            TaskType.BACKGROUND_SHAP_INTERACTIONS_ORDER_3:
+                                                   "Background SHAP Interactions (order 3)",
             TaskType.MODEL_PARSING:                "Model Parsing",
         }[self]
 

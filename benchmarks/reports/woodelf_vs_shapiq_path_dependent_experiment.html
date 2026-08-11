@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TreeBranchMarks — woodelf_vs_shapiq_path_dependent_experiment</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 20px 32px;
+      background: #f0f2f5;
+      color: #212529;
+    }
+    h1 { font-size: 1.5rem; color: #1f3a5f; margin-bottom: 0.2rem; }
+    .subtitle { color: #6c757d; margin-bottom: 1.2rem; font-size: 0.9rem; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      background: white;
+      border-radius: 8px;
+      padding: 12px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .control-group { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; }
+    .control-group label { font-weight: 600; color: #495057; white-space: nowrap; }
+    .control-group select {
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.87rem;
+      background: #fff;
+      cursor: pointer;
+      min-width: 160px;
+    }
+    .control-group select:focus {
+      outline: none;
+      border-color: #1f77b4;
+      box-shadow: 0 0 0 2px rgba(31,119,180,0.18);
+    }
+
+    #chart {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      margin-bottom: 14px;
+      padding: 8px 8px 4px;
+    }
+
+    #data-table {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 16px 20px;
+      overflow-x: auto;
+    }
+    #data-table p { color: #888; font-size: 0.9rem; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.86rem;
+    }
+    thead th {
+      background: #1f3a5f;
+      color: white;
+      padding: 8px 14px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    thead th:first-child { border-radius: 4px 0 0 0; }
+    thead th:last-child  { border-radius: 0 4px 0 0; }
+    tbody tr:nth-child(even) { background: #f4f7fb; }
+    tbody tr:hover { background: #e8f0fa; }
+    tbody td {
+      padding: 6px 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td.app-name { font-weight: 600; white-space: nowrap; color: #1f3a5f; }
+    td.estimated { }
+    td.missing { }
+
+    .summary-panel summary { font-size: 0.95rem; padding: 12px 20px; }
+    .summary-content {
+      padding: 6px 24px 20px;
+      border-top: 1px solid #e9ecef;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      max-width: 1100px;
+    }
+    .summary-content p { margin: 0 0 0.7em; }
+    .summary-content h3 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+      margin: 1.2em 0 0.5em;
+    }
+    .summary-content a { color: #1f77b4; }
+    .summary-table { margin-bottom: 1em; }
+    .summary-table td:first-child { font-weight: 600; white-space: nowrap; }
+    .summary-table td.param-detail { color: #495057; }
+
+    .details-panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 0;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .details-panel summary {
+      padding: 10px 18px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1f3a5f;
+      cursor: pointer;
+      user-select: none;
+    }
+    #experiment-panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      min-width: 0;
+    }
+    #experiment-panel > .controls { margin-bottom: 14px; }
+    #experiment-panel #chart {
+      background: none;
+      box-shadow: none;
+      border-top: 1px solid #e9ecef;
+      border-radius: 0;
+      margin: 0;
+      padding: 8px 0 4px;
+    }
+    #experiment-panel #data-table {
+      background: none;
+      box-shadow: none;
+      border-top: 1px solid #e9ecef;
+      border-radius: 0;
+      margin: 0;
+      padding: 12px 0 0;
+    }
+    #mission-details-content {
+      padding: 4px 20px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px 24px;
+      border-top: 1px solid #e9ecef;
+    }
+    .detail-card h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+      margin: 12px 0 6px;
+    }
+    .detail-card dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3px 10px;
+      font-size: 0.84rem;
+    }
+    .detail-card dt { color: #6c757d; white-space: nowrap; }
+    .detail-card dd { margin: 0; color: #212529; font-weight: 500; word-break: break-word; }
+    .detail-card .col-list {
+      font-size: 0.78rem;
+      color: #495057;
+      margin: 4px 0 0;
+      line-height: 1.6;
+    }
+    .approach-row { margin-bottom: 6px; }
+    .approach-row .aname { font-weight: 600; color: #1f3a5f; font-size: 0.84rem; }
+    .approach-row .adesc { font-size: 0.79rem; color: #6c757d; margin-left: 4px; }
+
+    .all-results-heading {
+      font-size: 1.1rem;
+      color: #1f3a5f;
+      margin: 24px 0 8px;
+    }
+    #all-results-wrapper {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 16px 20px;
+    }
+    .ar-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 32px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+      font-size: 0.85rem;
+    }
+    .ar-filter-group { display: flex; align-items: center; gap: 10px; }
+    .ar-filter-group > label { font-weight: 600; color: #495057; white-space: nowrap; min-width: 16px; }
+    .dual-range-wrap { display: flex; flex-direction: column; gap: 2px; min-width: 180px; }
+    .dual-range-slider {
+      position: relative;
+      height: 22px;
+    }
+    .dual-range-slider input[type=range] {
+      position: absolute;
+      width: 100%;
+      height: 4px;
+      top: 9px;
+      margin: 0; padding: 0;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      pointer-events: none;
+    }
+    .dual-range-slider input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: #1f77b4;
+      border: 2px solid white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.28);
+      cursor: pointer;
+      pointer-events: all;
+    }
+    .dual-range-slider input[type=range]::-moz-range-thumb {
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: #1f77b4;
+      border: 2px solid white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.28);
+      cursor: pointer;
+      pointer-events: all;
+    }
+    .drs-track {
+      position: absolute;
+      top: 9px; left: 0; right: 0;
+      height: 4px;
+      background: #dee2e6;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .drs-fill {
+      position: absolute;
+      top: 9px;
+      height: 4px;
+      background: #1f77b4;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .drs-vals {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #1f77b4;
+      font-weight: 600;
+      padding: 0 1px;
+    }
+    .csv-download-btn {
+      margin-bottom: 12px;
+      padding: 5px 14px;
+      font-size: 0.83rem;
+      background: #f8f9fa;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #495057;
+    }
+    .csv-download-btn:hover { background: #e9ecef; }
+    #all-results-table { overflow-x: auto; }
+    #all-results-table table { font-size: 0.83rem; }
+    #all-results-table td { color: #333; }
+    #all-results-table td.time-cell { font-variant-numeric: tabular-nums; }
+
+    /* Scoreboard */
+    #scoreboard {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 14px 20px 10px;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 28px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .sb-note {
+      flex-basis: 100%;
+      font-size: 0.76rem;
+      color: #adb5bd;
+      border-top: 1px solid #f0f2f5;
+      padding-top: 6px;
+      margin-top: 2px;
+    }
+    .sb-left  { flex: 0 0 auto; }
+    .sb-divider { width: 1px; background: #dee2e6; align-self: stretch; margin: 4px 0; }
+    .sb-right { flex: 1; min-width: 240px; }
+    .sb-sliders { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 12px; }
+    .sb-filtered-score { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 28px; }
+    .scoreboard-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6c757d;
+      margin-bottom: 10px;
+    }
+    .score-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.87rem;
+      width: auto;
+    }
+    .score-table thead th {
+      background: none;
+      color: #6c757d;
+      font-size: 0.77rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0 20px 6px 4px;
+      border-bottom: 1px solid #dee2e6;
+      white-space: nowrap;
+    }
+    .score-table tbody tr:hover { background: #f8f9fa; }
+    .score-table tbody td {
+      padding: 7px 20px 7px 4px;
+      border-bottom: none;
+    }
+    .score-table .team-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      padding-right: 28px;
+    }
+    .woodelf-color { color: #2ca02c; }
+    .shap-color    { color: #1f77b4; }
+    .score-cell {
+      font-variant-numeric: tabular-nums;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .score-cell.winner { font-size: 1.15rem; }
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .score-bar {
+      height: 6px;
+      border-radius: 3px;
+      min-width: 4px;
+      max-width: 120px;
+    }
+    .score-bar   { background: #2ca02c; } /* default; overridden inline per method */
+
+    /* Mission score banner */
+    #mission-score-banner {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 10px 20px;
+      margin-bottom: 14px;
+      font-size: 0.86rem;
+    }
+    #mission-score-banner:empty { display: none; }
+    .msb-label {
+      color: #6c757d;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      margin-right: 4px;
+    }
+    .msb-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    .msb-badge.woodelf { background: #eafaea; color: #1a7a1a; }
+    .msb-badge.shap    { background: #e8f2fc; color: #1056a0; }
+    .msb-badge.winner  { box-shadow: 0 0 0 2px currentColor; }
+    .msb-sep { color: #ced4da; font-size: 1rem; }
+    .filter-row { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; font-size: 0.82rem; }
+    .fr-label { font-weight: 600; color: #495057; white-space: nowrap; padding-top: 3px; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .filter-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.79rem; padding: 2px 9px; border-radius: 12px; border: 1px solid #ced4da; cursor: pointer; color: #495057; background: white; }
+    .filter-chip input[type=checkbox] { margin: 0; cursor: pointer; accent-color: #1f77b4; width: 12px; height: 12px; }
+    .remove-fast-wrap { display: inline-flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #495057; cursor: pointer; }
+    .remove-fast-wrap input[type=checkbox] { cursor: pointer; accent-color: #e67e22; margin: 0; }
+
+    /* Analytics section */
+    .analytics-heading {
+      font-size: 1.1rem;
+      color: #1f3a5f;
+      margin: 24px 0 8px;
+    }
+    #analytics-section {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.09);
+      padding: 16px 20px 20px;
+    }
+    .analytics-sub-heading {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+      margin: 20px 0 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .ana-pies-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .ana-pie-cell {
+      flex: 0 0 auto;
+      width: 270px;
+    }
+    .ana-pie-cell-wide {
+      flex: 0 0 auto;
+      width: 380px;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>TreeBranchMarks</h1>
+  <div class="subtitle">Experiment: <strong>woodelf_vs_shapiq_path_dependent_experiment</strong></div>
+  <details class="details-panel summary-panel">
+    <summary>About this Experiment</summary>
+    <div class="summary-content">
+<p>This report compares <strong>Woodelf</strong> against
+<a href="https://github.com/mmschlk/shapiq" target="_blank">shapiq</a>'s
+<code>TreeExplainer</code> on <strong>path-dependent</strong> Shapley values and Shapley
+interaction values. It is the sibling of the interventional report; same datasets, same three
+interaction orders, same question &mdash; <strong>where is the turn-over point?</strong></p>
+
+<p>There is no <em>m</em> here. Path-dependent explainers read coverage off the tree itself
+and take no background set, so <em>n</em> is the only data-size axis.</p>
+
+<h3>What is being compared</h3>
+<table class="summary-table">
+  <thead>
+    <tr><th>Task</th><th>Woodelf</th><th>shapiq</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Path-dependent SHAP (order&nbsp;1)</td>
+      <td><code>ShapleyValues()</code></td>
+      <td><code>mode="pathdependent", max_order=1, index="SV"</code></td>
+    </tr>
+    <tr>
+      <td>Path-dependent interactions (order&nbsp;2)</td>
+      <td><code>ShapleyInteractionValues()</code></td>
+      <td><code>mode="pathdependent", max_order=2, index="SII"</code></td>
+    </tr>
+    <tr>
+      <td>Path-dependent interactions (order&nbsp;3)</td>
+      <td><code>GeneralShapleyInteractionValues(min_order=1, max_order=3)</code></td>
+      <td><code>mode="pathdependent", max_order=3, index="SII"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Both sides compute the <em>same quantity</em>, verified before the benchmark was run
+(XGBoost, California Housing, <code>D=4</code>, <code>T=20</code>, <code>n=3</code>):
+order&nbsp;1 agrees to <code>2.1e-07</code>, order&nbsp;2 to <code>2.5e-08</code> after undoing
+Woodelf's <code>shap</code>-package convention of reporting each pair twice at half value, and
+order&nbsp;3 to <code>1.4e-08</code>.</p>
+
+<p>Both timings include the model parse &mdash; shapiq's <code>TreeExplainer</code>
+construction and Woodelf's <code>load_decision_tree_ensemble_model</code>. That matters more
+here than in the interventional report, for the reason below.</p>
+
+<h3>The two libraries have opposite cost shapes</h3>
+
+<p>Woodelf is dominated by a <strong>fixed</strong> cost &mdash; parse the model, build its tree
+structures &mdash; and is then nearly flat in <em>n</em>. shapiq builds cheaply (usually) and
+pays <strong>per row</strong>. The crossing is therefore just the point where shapiq's per-row
+charge has eaten Woodelf's fixed cost: a single threshold in <em>n</em>, rather than the
+<em>n</em>&nbsp;&times;&nbsp;<em>m</em> curve the interventional report traces.</p>
+
+<p>Measured at <code>D=6</code>, <code>T=100</code>:</p>
+
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>Dataset</th><th>Order</th><th>Woodelf (flat)</th>
+      <th>shapiq build</th><th>shapiq per row</th><th>Crossing <em>n</em></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>California Housing</td><td>1</td><td>1.35 s</td><td>0.08 s</td><td>0.0103 s</td><td><strong>&asymp; 120</strong></td></tr>
+    <tr><td>California Housing</td><td>2</td><td>1.42 s</td><td>0.41 s</td><td>1.56 s</td><td>&lt; 1</td></tr>
+    <tr><td>California Housing</td><td>3</td><td>1.66 s</td><td>0.75 s</td><td>2.33 s</td><td>&lt; 1</td></tr>
+    <tr><td>Breast Cancer</td><td>1</td><td>0.19 s</td><td>0.05 s</td><td>0.0100 s</td><td><strong>&asymp; 14</strong></td></tr>
+    <tr><td>Breast Cancer</td><td>2</td><td>0.19 s</td><td>0.14 s</td><td>0.12 s</td><td>&lt; 1</td></tr>
+    <tr><td>Breast Cancer</td><td>3</td><td>0.21 s</td><td>0.21 s</td><td>0.19 s</td><td>&lt; 1</td></tr>
+    <tr><td>Fraud Detection</td><td>1</td><td>1.50 s</td><td>0.11 s</td><td>0.033 s</td><td><strong>&asymp; 42</strong></td></tr>
+    <tr><td>Fraud Detection</td><td>2</td><td>1.80 s</td><td>6.0 s</td><td>2.0 s</td><td>&lt; 1</td></tr>
+    <tr><td>Fraud Detection</td><td>3</td><td>2.20 s</td><td>105 s</td><td>33 s</td><td>&lt; 1</td></tr>
+  </tbody>
+</table>
+
+<p>Only <strong>order&nbsp;1</strong> has a crossing inside the measurable range. At orders 2
+and 3 Woodelf already leads at <code>n = 1</code> on every dataset &mdash; and on Fraud it
+leads <em>before a single row is explained</em>, because shapiq's TreeSHAP-IQ construction
+over 397 features costs 6&nbsp;s at order&nbsp;2 and 105&nbsp;s at order&nbsp;3, both more
+than Woodelf's entire run.</p>
+
+<h3>Sweeps</h3>
+<ul>
+  <li><strong>n-sweep missions</strong> &mdash; one per (dataset, order) at
+      <code>D&nbsp;=&nbsp;6</code>. Order&nbsp;1 gets a wide <em>n</em> sweep to bracket its
+      crossing; orders 2 and 3 get a short one, enough to show the gap and its direction.
+      Marching to <code>n = 10,000</code> there would only buy a more expensive restatement of
+      the same verdict.</li>
+  <li><strong>Depth missions</strong> &mdash; <code>D &isin; {4, 6, 9, 12}</code> at the
+      <em>n</em> closest to that (dataset, order)'s crossing. Skipped where shapiq's
+      <strong>build cost alone</strong> already exceeds Woodelf's total run: the crossing there
+      sits off the left edge of the <em>n</em> axis, no depth can push it back on, and paying
+      that setup four times over buys nothing. The rule drops Fraud orders 2 and 3 &mdash; the
+      latter would have cost roughly 40&nbsp;minutes to re-confirm a 50&times; Woodelf win. It
+      is deliberately non-strict, so Breast Cancer order&nbsp;3, where build and Woodelf cost
+      the same to two decimals, still runs: a tie is exactly where depth decides the winner.</li>
+</ul>
+
+<h3>How long runs are handled</h3>
+<p>shapiq explains <strong>one row at a time</strong> in both modes &mdash;
+<code>explain_X</code> is a plain Python loop. Path-dependent orders 2 and 3 cost over a second
+per row even on an 8-feature model, so the far end of an n-sweep would run for hours. Instead
+shapiq explains rows until a 45&nbsp;s wall-clock budget is spent and the result is
+extrapolated linearly in <em>n</em>:</p>
+
+<pre><code>total = build_time + (loop_time / rows_done) &times; n</code></pre>
+
+<p>Such cells are marked <strong>estimated</strong> and are still scored &mdash; an extrapolated
+time is real performance data. Per-row cost is stable across rows, and rows are drawn from an
+already-randomised permutation, so the explained prefix is an unbiased sample. Note that the
+budget bounds the per-row <em>loop</em> but not the explainer <strong>build</strong>: on Fraud
+order&nbsp;3 that build is 105&nbsp;s of unavoidable fixed cost per cell, which is precisely
+why those sweeps are kept short.</p>
+
+<p>Woodelf is left uncapped. Its slowest cell in calibration was 7.5&nbsp;s (Fraud,
+<code>n = 10,000</code>, order&nbsp;3).</p>
+
+<h3>Reading the report</h3>
+<p>Per group <code>(dataset, mission, task, n, D, ensemble)</code> the faster method scores 100
+and the slower scores <code>(winner / loser) &times; 100</code>. Each n-sweep crosses at most
+once: read off the smallest <em>n</em> at which Woodelf takes the lead.</p>
+
+<p>One caveat on the trimmed design: the calibration above was used to <em>choose</em> which
+cells to run, so measured crossings will land near the middle of each order-1 sweep by
+construction. That is selection of where to look, not of what is found &mdash; every reported
+time is measured (or extrapolated in <em>n</em>) independently of the numbers that picked the
+cell. What the trimming forfeits is the far field: this report cannot say how large Woodelf's
+margin grows at <code>n = 10,000</code> for orders 2 and 3, only that it is already decisive at
+<code>n = 1</code>.</p>
+
+    </div>
+  </details>
+  <details class="details-panel summary-panel">
+    <summary>How to Use This Report</summary>
+    <div class="summary-content">
+<p>This is an interactive benchmarking report comparing the runtime
+of different SHAP algorithms across a range of decision tree ensembles and dataset configurations.
+The sections below explain each part of the report.</p>
+
+<p><strong>Score.</strong>
+Each run compares all methods on the same task and parameters.
+The fastest method of each run scores 100; every other method scores
+<em>(winner&thinsp;time / its&thinsp;time)&thinsp;&times;&thinsp;100</em>,
+so a method that took twice as long scores 50.
+Methods that crashed or are not supported for that task score 0.
+The overall score is the average across all runs.</p>
+
+<p><strong>Filtered score.</strong>
+The filter bar lets you narrow the score to a specific subset of runs by task type
+and parameter range. The key parameters are:
+<em>n</em>&thinsp;&mdash;&thinsp;the number of explained samples,
+<em>m</em>&thinsp;&mdash;&thinsp;the background dataset size (relevant for Background SHAP), and
+<em>D</em>&thinsp;&mdash;&thinsp;the maximum tree depth.
+The score updates instantly to reflect only the selected runs.</p>
+
+<p><strong>Experiment Analysis.</strong>
+The report contains many experiments. Each experiment changes one parameter while keeping the others fixed 
+(for example, changing the tree depth D while keeping n and m fixed, or changing n while keeping D and m fixed).
+
+Use the <em>Dataset</em> and <em>Mission</em> dropdowns to choose an experiment.
+The plot will then show the runtime of each method in any value of the swept parameter.
+This makes it easy to compare methods and see how the parameter affects performance.</p>
+
+Open the <em>Details: dataset, model &amp; approaches</em> panel below the controls
+to inspect the exact configuration of the selected experiment.</p>
+
+<p><strong>All Results.</strong>
+A full table of every individual run, including measured and extrapolated runtimes,
+the task type, and all parameter values.
+Times marked with * were extrapolated from runs with fewer trees and/or fewer samples.
+
+<p><strong>Analytics.</strong>
+Summary statistics and method win-rate charts aggregated over all runs.
+Use the filters in this section to focus on a specific task type or a narrower
+parameter range.</p>
+
+    </div>
+  </details>
+  <div id="scoreboard"></div>
+  <h2 class="all-results-heading">Experiment Analysis</h2>
+  <div id="experiment-panel">
+  <div class="controls">
+    <div class="control-group">
+      <label for="ctrl-dataset">Dataset:</label>
+      <select id="ctrl-dataset"></select>
+    </div>
+    <div class="control-group">
+      <label for="ctrl-mission">Mission:</label>
+      <select id="ctrl-mission"></select>
+    </div>
+  </div>
+    <details id="mission-details" class="details-panel">
+      <summary>Details: dataset, model &amp; approaches</summary>
+      <div id="mission-details-content"></div>
+    </details>
+    <div id="mission-score-banner"></div>
+    <div id="chart"></div>
+    <div id="data-table"></div>
+  </div>
+  <h2 class="analytics-heading">Analytics</h2>
+  <div id="analytics-section">
+    <div class="ar-filters" id="ana-filters"></div>
+    <div id="ana-score" class="sb-filtered-score" style="margin:10px 0 4px"></div>
+    <h3 class="analytics-sub-heading">Missions</h3>
+    <div id="ana-missions-pies"></div>
+    <h3 class="analytics-sub-heading">Methods</h3>
+    <div id="ana-methods-pies"></div>
+  </div>
+  <h2 class="all-results-heading">All Results</h2>
+  <div id="all-results-wrapper">
+    <div class="ar-filters" id="ar-filters"></div>
+    <button class="csv-download-btn" onclick="downloadAllResultsCSV()">&#11123; Download CSV</button>
+    <div id="all-results-table"></div>
+  </div>
+  <script>
+    const DATA = [{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":2.4047101333335377,"std_s":0.9843689065617447,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":0.0944387333333907,"std_s":0.0035295698513756507,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.4555978666667215,"std_s":0.13232664785199924,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":0.14725356666713196,"std_s":0.0032991024329848033,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.3621916666664522,"std_s":0.009680569770582141,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":0.6565851333330102,"std_s":0.00447020617491918,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":1000,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.4454732000000756,"std_s":0.01510247356425727,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":1000,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":5.814656066670675,"std_s":0.016461176563306104,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.5123896666667254,"std_s":0.0500087254265267,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":2.0181259333336734,"std_s":0.0034589807402552572,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.4305088666666659,"std_s":0.019323182738337566,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":16.521625400001085,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.5113140333334438,"std_s":0.07618849152632778,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":162.88480864285006,"std_s":0.0,"is_estimated":true,"estimation_description":"explained 28 of 100 rows in 45.5s (budget 45s), extrapolated linearly in n; explainer build (0.4s) counted once","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.7083373333333232,"std_s":0.005331378983758815,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":3.1673405666667045,"std_s":0.01894321799522041,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.6765173000001898,"std_s":0.06957698879560448,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":24.83101439999973,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.6541887333331335,"std_s":0.0028339836793496247,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":243.3693984526293,"std_s":0.0,"is_estimated":true,"estimation_description":"explained 19 of 100 rows in 46.1s (budget 45s), extrapolated linearly in n; explainer build (0.8s) counted once","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.17448053333328062,"std_s":0.0016278070858142316,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.05638099999987389,"std_s":4.226637735540198e-05,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.17548373333329437,"std_s":0.0032183841974537464,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.12612323333329792,"std_s":0.0012549620557327434,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.1787962333332871,"std_s":0.0008542727797372084,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.5318757666685391,"std_s":0.004279866317567486,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":250,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.17463823333325004,"std_s":0.0004171754732306769,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":250,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":1.2445451666653753,"std_s":0.010940244629944376,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.18462249999978061,"std_s":0.004348828730398029,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.25257556666656455,"std_s":0.0016310296160881319,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.17740736666670878,"std_s":0.0021845006542830676,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":1.3192087000000658,"std_s":0.010527604897746404,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.17812766666672056,"std_s":0.0004677595205224814,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":12.02656419999903,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.1927834333332612,"std_s":0.0024399103703329613,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.3874556333333506,"std_s":0.0006469007358295862,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.20417540000001586,"std_s":0.01091684077968001,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":2.10649420000027,"std_s":0.005682642280107336,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.19180663333327175,"std_s":0.002038984872224024,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":19.289573800000653,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.3912185000000743,"std_s":0.017441568118533143,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":0.13258379999994455,"std_s":0.002552280403984801,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.3896287666666467,"std_s":0.07169370357019123,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":0.41837586666633797,"std_s":0.0031087919201461477,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.4106180000000375,"std_s":0.02278960187555148,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":3.307233833332854,"std_s":0.17509005147925022,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":1000,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.4428708333331695,"std_s":0.05580125897663915,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_n (D=6)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":1000,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":32.37505420000571,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.6360621666667612,"std_s":0.06041032130855027,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":7.708357833333442,"std_s":0.038549678150455895,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.5393307999999404,"std_s":0.041399334245384785,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":24.91847310000003,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.5732480333332812,"std_s":0.03265044705016239,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-2 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":202.5444912608745,"std_s":0.0,"is_estimated":true,"estimation_description":"explained 23 of 100 rows in 45.2s (budget 45s), extrapolated linearly in n; explainer build (5.9s) counted once","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":2.6110223666666266,"std_s":0.3963728029346818,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":125.2684279,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":2.4418983333331803,"std_s":0.14534259186757242,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":434.1123026,"std_s":0.0,"is_estimated":true,"estimation_description":"explained 2 of 10 rows in 66.4s (budget 45s), extrapolated linearly in n; explainer build (101.9s) counted once","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":2.080869699999918,"std_s":0.09185165181211137,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-3 sweep_n (D=6)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":3460.8898296000134,"std_s":0.0,"is_estimated":true,"estimation_description":"explained 2 of 100 rows in 67.2s (budget 45s), extrapolated linearly in n; explainer build (99.6s) counted once","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":4,"T":100,"L":15.89,"F":8,"ensemble":"xgboost","running_time":0.5419642999998663,"std_s":0.05465728196917118,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":4,"T":100,"L":15.89,"F":8,"ensemble":"xgboost","running_time":0.46672136666802544,"std_s":0.02263942120206833,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.6210086666669667,"std_s":0.05953201100068733,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":0.8880356333332505,"std_s":0.05335775365270538,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":9,"T":100,"L":331.97,"F":8,"ensemble":"xgboost","running_time":9.34822559999975,"std_s":0.6111228704313476,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":9,"T":100,"L":331.97,"F":8,"ensemble":"xgboost","running_time":2.1468962666673783,"std_s":0.004914828694509549,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":12,"T":100,"L":1178.66,"F":8,"ensemble":"xgboost","running_time":32.07623560000047,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":12,"T":100,"L":1178.66,"F":8,"ensemble":"xgboost","running_time":6.2346278999996985,"std_s":0.038614372311959994,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":4,"T":100,"L":15.89,"F":8,"ensemble":"xgboost","running_time":0.37512793333310884,"std_s":0.007240590630794635,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":4,"T":100,"L":15.89,"F":8,"ensemble":"xgboost","running_time":0.5371295999999953,"std_s":0.006193622435144263,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":1.5107876000004883,"std_s":0.03049455536757213,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":2.1770917333336306,"std_s":0.0270886358315827,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":9,"T":100,"L":331.97,"F":8,"ensemble":"xgboost","running_time":11.862985699999626,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":9,"T":100,"L":331.97,"F":8,"ensemble":"xgboost","running_time":13.01530189999994,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":12,"T":100,"L":1178.66,"F":8,"ensemble":"xgboost","running_time":39.201446699999906,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":12,"T":100,"L":1178.66,"F":8,"ensemble":"xgboost","running_time":50.115305100000114,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":4,"T":100,"L":15.89,"F":8,"ensemble":"xgboost","running_time":0.4268723666670364,"std_s":0.019196000464757532,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":4,"T":100,"L":15.89,"F":8,"ensemble":"xgboost","running_time":0.9811097333328386,"std_s":0.04853721153086246,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":2.431106566666434,"std_s":0.6258313578687539,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":59.84,"F":8,"ensemble":"xgboost","running_time":3.424955799999831,"std_s":0.06392583112588184,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":9,"T":100,"L":331.97,"F":8,"ensemble":"xgboost","running_time":12.526737999999568,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":9,"T":100,"L":331.97,"F":8,"ensemble":"xgboost","running_time":19.043244700000287,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":12,"T":100,"L":1178.66,"F":8,"ensemble":"xgboost","running_time":46.168670799999745,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"california_housing","mission":"california_housing order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":12,"T":100,"L":1178.66,"F":8,"ensemble":"xgboost","running_time":72.41908739999963,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":4,"T":100,"L":6.45,"F":30,"ensemble":"xgboost","running_time":0.1769814333335186,"std_s":0.004052780137105565,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":4,"T":100,"L":6.45,"F":30,"ensemble":"xgboost","running_time":0.12180793333482143,"std_s":0.0021183636835531705,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.191123066666781,"std_s":0.015209449611404465,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.12536756666607593,"std_s":0.0019422014156908148,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.191123066666781,"std_s":0.015209449611404465,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.12536756666607593,"std_s":0.0019422014156908148,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.191123066666781,"std_s":0.015209449611404465,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-1 sweep_D (n=10)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":10,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.12536756666607593,"std_s":0.0019422014156908148,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":4,"T":100,"L":6.45,"F":30,"ensemble":"xgboost","running_time":0.181991699999647,"std_s":0.00010093651490313624,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":4,"T":100,"L":6.45,"F":30,"ensemble":"xgboost","running_time":0.2521421666669994,"std_s":0.0003783600958422972,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.18321513333315428,"std_s":0.004346560051086742,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.2588431999999254,"std_s":0.0021814548650576494,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.18321513333315428,"std_s":0.004346560051086742,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.2588431999999254,"std_s":0.0021814548650576494,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.18321513333315428,"std_s":0.004346560051086742,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-2 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.2588431999999254,"std_s":0.0021814548650576494,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":4,"T":100,"L":6.45,"F":30,"ensemble":"xgboost","running_time":0.19927259999955518,"std_s":0.005612373029070327,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":4,"T":100,"L":6.45,"F":30,"ensemble":"xgboost","running_time":0.37836346666699683,"std_s":0.006219658047396562,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.20691983333320726,"std_s":0.009182472587255705,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.4369674666665257,"std_s":0.04022438009884463,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.20691983333320726,"std_s":0.009182472587255705,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.4369674666665257,"std_s":0.04022438009884463,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"Woodelf","method":"woodelf","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.20691983333320726,"std_s":0.009182472587255705,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"breast_cancer","mission":"breast_cancer order-3 sweep_D (n=1)","task":"Path-Dependent SHAP Interactions (order 3)","approach":"shapiq","method":"shapiq","n":1,"m":0,"D":6,"T":100,"L":6.57,"F":30,"ensemble":"xgboost","running_time":0.4369674666665257,"std_s":0.04022438009884463,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":4,"T":100,"L":15.14,"F":397,"ensemble":"xgboost","running_time":0.3958859333330717,"std_s":0.004980914355109325,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":4,"T":100,"L":15.14,"F":397,"ensemble":"xgboost","running_time":3.7323719666643833,"std_s":0.07254985693100834,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":1.402592699999938,"std_s":0.011288402467025773,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":6,"T":100,"L":49.33,"F":397,"ensemble":"xgboost","running_time":4.294820766664695,"std_s":0.4056380854899051,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":9,"T":100,"L":197.92,"F":397,"ensemble":"xgboost","running_time":9.551096166666563,"std_s":0.6572851372135511,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":9,"T":100,"L":197.92,"F":397,"ensemble":"xgboost","running_time":5.269272366666276,"std_s":0.076010602682789,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"Woodelf","method":"woodelf","n":100,"m":0,"D":12,"T":100,"L":482.38,"F":397,"ensemble":"xgboost","running_time":21.50129470000047,"std_s":0.0,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""},{"dataset":"fraud_detection","mission":"fraud_detection order-1 sweep_D (n=100)","task":"Path-Dependent SHAP","approach":"shapiq","method":"shapiq","n":100,"m":0,"D":12,"T":100,"L":482.38,"F":397,"ensemble":"xgboost","running_time":6.896361266666948,"std_s":0.36446713096934025,"is_estimated":false,"estimation_description":"","not_supported":false,"memory_crash":false,"runtime_error":false,"error_message":""}];
+    const MISSION_META = {"california_housing order-1 sweep_n (D=6)":{"dataset":{"name":"california_housing","n_samples":20640,"n_features":8,"columns":["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100,1000],"m_values":[0]},"california_housing order-2 sweep_n (D=6)":{"dataset":{"name":"california_housing","n_samples":20640,"n_features":8,"columns":["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100],"m_values":[0]},"california_housing order-3 sweep_n (D=6)":{"dataset":{"name":"california_housing","n_samples":20640,"n_features":8,"columns":["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions (order 3)","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100],"m_values":[0]},"breast_cancer order-1 sweep_n (D=6)":{"dataset":{"name":"breast_cancer","n_samples":569,"n_features":30,"columns":["mean radius","mean texture","mean perimeter","mean area","mean smoothness","mean compactness","mean concavity","mean concave points","mean symmetry","mean fractal dimension","radius error","texture error","perimeter error","area error","smoothness error","compactness error","concavity error","concave points error","symmetry error","fractal dimension error","worst radius","worst texture","worst perimeter","worst area","worst smoothness","worst compactness","worst concavity","worst concave points","worst symmetry","worst fractal dimension"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100,250],"m_values":[0]},"breast_cancer order-2 sweep_n (D=6)":{"dataset":{"name":"breast_cancer","n_samples":569,"n_features":30,"columns":["mean radius","mean texture","mean perimeter","mean area","mean smoothness","mean compactness","mean concavity","mean concave points","mean symmetry","mean fractal dimension","radius error","texture error","perimeter error","area error","smoothness error","compactness error","concavity error","concave points error","symmetry error","fractal dimension error","worst radius","worst texture","worst perimeter","worst area","worst smoothness","worst compactness","worst concavity","worst concave points","worst symmetry","worst fractal dimension"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100],"m_values":[0]},"breast_cancer order-3 sweep_n (D=6)":{"dataset":{"name":"breast_cancer","n_samples":569,"n_features":30,"columns":["mean radius","mean texture","mean perimeter","mean area","mean smoothness","mean compactness","mean concavity","mean concave points","mean symmetry","mean fractal dimension","radius error","texture error","perimeter error","area error","smoothness error","compactness error","concavity error","concave points error","symmetry error","fractal dimension error","worst radius","worst texture","worst perimeter","worst area","worst smoothness","worst compactness","worst concavity","worst concave points","worst symmetry","worst fractal dimension"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions (order 3)","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100],"m_values":[0]},"fraud_detection order-1 sweep_n (D=6)":{"dataset":{"name":"fraud_detection","n_samples":590540,"n_features":397,"columns":["TransactionAmt","card1","card2","card3","card5","addr1","addr2","dist1","dist2","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14","D15","M2","M3","M4","M5","M6","M7","M8","M9","V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11","V12","V13","V14","V15","V16","V17","V18","V19","V20","V21","V22","V23","V24","V25","V26","V27","V28","V29","V30","V31","V32","V33","V34","V35","V36","V37","V38","V39","V40","V41","V42","V43","V44","V45","V46","V47","V48","V49","V50","V51","V52","V53","V54","V55","V56","V57","V58","V59","V60","V61","V62","V63","V64","V65","V66","V67","V68","V69","V70","V71","V72","V73","V74","V75","V76","V77","V78","V79","V80","V81","V82","V83","V84","V85","V86","V87","V88","V89","V90","V91","V92","V93","V94","V95","V96","V97","V98","V99","V100","V101","V102","V103","V104","V105","V106","V107","V108","V109","V110","V111","V112","V113","V114","V115","V116","V117","V118","V119","V120","V121","V122","V123","V124","V125","V126","V127","V128","V129","V130","V131","V132","V133","V134","V135","V136","V137","V138","V139","V140","V141","V142","V143","V144","V145","V146","V147","V148","V149","V150","V151","V152","V153","V154","V155","V156","V157","V158","V159","V160","V161","V162","V163","V164","V165","V166","V167","V168","V169","V170","V171","V172","V173","V174","V175","V176","V177","V178","V179","V180","V181","V182","V183","V184","V185","V186","V187","V188","V189","V190","V191","V192","V193","V194","V195","V196","V197","V198","V199","V200","V201","V202","V203","V204","V205","V206","V207","V208","V209","V210","V211","V212","V213","V214","V215","V216","V217","V218","V219","V220","V221","V222","V223","V224","V225","V226","V227","V228","V229","V230","V231","V232","V233","V234","V235","V236","V237","V238","V239","V240","V241","V242","V243","V244","V245","V246","V247","V248","V249","V250","V251","V252","V253","V254","V255","V256","V257","V258","V259","V260","V261","V262","V263","V264","V265","V266","V267","V268","V269","V270","V271","V272","V273","V274","V275","V276","V277","V278","V279","V280","V281","V282","V283","V284","V285","V286","V287","V288","V289","V290","V291","V292","V293","V294","V295","V296","V297","V298","V299","V300","V301","V302","V303","V304","V305","V306","V307","V308","V309","V310","V311","V312","V313","V314","V315","V316","V317","V318","V319","V320","V321","V322","V323","V324","V325","V326","V327","V328","V329","V330","V331","V332","V333","V334","V335","V336","V337","V338","V339","is_visa","is_american_express","is_discover","is_mastercard","is_debit","ProductCD_W","ProductCD_C","ProductCD_R","ProductCD_H","ProductCD_S","gmail_hotmail_or_yahoo_email","nan_email"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100,1000],"m_values":[0]},"fraud_detection order-2 sweep_n (D=6)":{"dataset":{"name":"fraud_detection","n_samples":590540,"n_features":397,"columns":["TransactionAmt","card1","card2","card3","card5","addr1","addr2","dist1","dist2","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14","D15","M2","M3","M4","M5","M6","M7","M8","M9","V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11","V12","V13","V14","V15","V16","V17","V18","V19","V20","V21","V22","V23","V24","V25","V26","V27","V28","V29","V30","V31","V32","V33","V34","V35","V36","V37","V38","V39","V40","V41","V42","V43","V44","V45","V46","V47","V48","V49","V50","V51","V52","V53","V54","V55","V56","V57","V58","V59","V60","V61","V62","V63","V64","V65","V66","V67","V68","V69","V70","V71","V72","V73","V74","V75","V76","V77","V78","V79","V80","V81","V82","V83","V84","V85","V86","V87","V88","V89","V90","V91","V92","V93","V94","V95","V96","V97","V98","V99","V100","V101","V102","V103","V104","V105","V106","V107","V108","V109","V110","V111","V112","V113","V114","V115","V116","V117","V118","V119","V120","V121","V122","V123","V124","V125","V126","V127","V128","V129","V130","V131","V132","V133","V134","V135","V136","V137","V138","V139","V140","V141","V142","V143","V144","V145","V146","V147","V148","V149","V150","V151","V152","V153","V154","V155","V156","V157","V158","V159","V160","V161","V162","V163","V164","V165","V166","V167","V168","V169","V170","V171","V172","V173","V174","V175","V176","V177","V178","V179","V180","V181","V182","V183","V184","V185","V186","V187","V188","V189","V190","V191","V192","V193","V194","V195","V196","V197","V198","V199","V200","V201","V202","V203","V204","V205","V206","V207","V208","V209","V210","V211","V212","V213","V214","V215","V216","V217","V218","V219","V220","V221","V222","V223","V224","V225","V226","V227","V228","V229","V230","V231","V232","V233","V234","V235","V236","V237","V238","V239","V240","V241","V242","V243","V244","V245","V246","V247","V248","V249","V250","V251","V252","V253","V254","V255","V256","V257","V258","V259","V260","V261","V262","V263","V264","V265","V266","V267","V268","V269","V270","V271","V272","V273","V274","V275","V276","V277","V278","V279","V280","V281","V282","V283","V284","V285","V286","V287","V288","V289","V290","V291","V292","V293","V294","V295","V296","V297","V298","V299","V300","V301","V302","V303","V304","V305","V306","V307","V308","V309","V310","V311","V312","V313","V314","V315","V316","V317","V318","V319","V320","V321","V322","V323","V324","V325","V326","V327","V328","V329","V330","V331","V332","V333","V334","V335","V336","V337","V338","V339","is_visa","is_american_express","is_discover","is_mastercard","is_debit","ProductCD_W","ProductCD_C","ProductCD_R","ProductCD_H","ProductCD_S","gmail_hotmail_or_yahoo_email","nan_email"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100],"m_values":[0]},"fraud_detection order-3 sweep_n (D=6)":{"dataset":{"name":"fraud_detection","n_samples":590540,"n_features":397,"columns":["TransactionAmt","card1","card2","card3","card5","addr1","addr2","dist1","dist2","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14","D15","M2","M3","M4","M5","M6","M7","M8","M9","V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11","V12","V13","V14","V15","V16","V17","V18","V19","V20","V21","V22","V23","V24","V25","V26","V27","V28","V29","V30","V31","V32","V33","V34","V35","V36","V37","V38","V39","V40","V41","V42","V43","V44","V45","V46","V47","V48","V49","V50","V51","V52","V53","V54","V55","V56","V57","V58","V59","V60","V61","V62","V63","V64","V65","V66","V67","V68","V69","V70","V71","V72","V73","V74","V75","V76","V77","V78","V79","V80","V81","V82","V83","V84","V85","V86","V87","V88","V89","V90","V91","V92","V93","V94","V95","V96","V97","V98","V99","V100","V101","V102","V103","V104","V105","V106","V107","V108","V109","V110","V111","V112","V113","V114","V115","V116","V117","V118","V119","V120","V121","V122","V123","V124","V125","V126","V127","V128","V129","V130","V131","V132","V133","V134","V135","V136","V137","V138","V139","V140","V141","V142","V143","V144","V145","V146","V147","V148","V149","V150","V151","V152","V153","V154","V155","V156","V157","V158","V159","V160","V161","V162","V163","V164","V165","V166","V167","V168","V169","V170","V171","V172","V173","V174","V175","V176","V177","V178","V179","V180","V181","V182","V183","V184","V185","V186","V187","V188","V189","V190","V191","V192","V193","V194","V195","V196","V197","V198","V199","V200","V201","V202","V203","V204","V205","V206","V207","V208","V209","V210","V211","V212","V213","V214","V215","V216","V217","V218","V219","V220","V221","V222","V223","V224","V225","V226","V227","V228","V229","V230","V231","V232","V233","V234","V235","V236","V237","V238","V239","V240","V241","V242","V243","V244","V245","V246","V247","V248","V249","V250","V251","V252","V253","V254","V255","V256","V257","V258","V259","V260","V261","V262","V263","V264","V265","V266","V267","V268","V269","V270","V271","V272","V273","V274","V275","V276","V277","V278","V279","V280","V281","V282","V283","V284","V285","V286","V287","V288","V289","V290","V291","V292","V293","V294","V295","V296","V297","V298","V299","V300","V301","V302","V303","V304","V305","V306","V307","V308","V309","V310","V311","V312","V313","V314","V315","V316","V317","V318","V319","V320","V321","V322","V323","V324","V325","V326","V327","V328","V329","V330","V331","V332","V333","V334","V335","V336","V337","V338","V339","is_visa","is_american_express","is_discover","is_mastercard","is_debit","ProductCD_W","ProductCD_C","ProductCD_R","ProductCD_H","ProductCD_S","gmail_hotmail_or_yahoo_email","nan_email"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions (order 3)","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1,10,100],"m_values":[0]},"california_housing order-1 sweep_D (n=100)":{"dataset":{"name":"california_housing","n_samples":20640,"n_features":8,"columns":["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[100],"m_values":[0]},"california_housing order-2 sweep_D (n=1)":{"dataset":{"name":"california_housing","n_samples":20640,"n_features":8,"columns":["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1],"m_values":[0]},"california_housing order-3 sweep_D (n=1)":{"dataset":{"name":"california_housing","n_samples":20640,"n_features":8,"columns":["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions (order 3)","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1],"m_values":[0]},"breast_cancer order-1 sweep_D (n=10)":{"dataset":{"name":"breast_cancer","n_samples":569,"n_features":30,"columns":["mean radius","mean texture","mean perimeter","mean area","mean smoothness","mean compactness","mean concavity","mean concave points","mean symmetry","mean fractal dimension","radius error","texture error","perimeter error","area error","smoothness error","compactness error","concavity error","concave points error","symmetry error","fractal dimension error","worst radius","worst texture","worst perimeter","worst area","worst smoothness","worst compactness","worst concavity","worst concave points","worst symmetry","worst fractal dimension"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[10],"m_values":[0]},"breast_cancer order-2 sweep_D (n=1)":{"dataset":{"name":"breast_cancer","n_samples":569,"n_features":30,"columns":["mean radius","mean texture","mean perimeter","mean area","mean smoothness","mean compactness","mean concavity","mean concave points","mean symmetry","mean fractal dimension","radius error","texture error","perimeter error","area error","smoothness error","compactness error","concavity error","concave points error","symmetry error","fractal dimension error","worst radius","worst texture","worst perimeter","worst area","worst smoothness","worst compactness","worst concavity","worst concave points","worst symmetry","worst fractal dimension"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1],"m_values":[0]},"breast_cancer order-3 sweep_D (n=1)":{"dataset":{"name":"breast_cancer","n_samples":569,"n_features":30,"columns":["mean radius","mean texture","mean perimeter","mean area","mean smoothness","mean compactness","mean concavity","mean concave points","mean symmetry","mean fractal dimension","radius error","texture error","perimeter error","area error","smoothness error","compactness error","concavity error","concave points error","symmetry error","fractal dimension error","worst radius","worst texture","worst perimeter","worst area","worst smoothness","worst compactness","worst concavity","worst concave points","worst symmetry","worst fractal dimension"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP Interactions (order 3)","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[1],"m_values":[0]},"fraud_detection order-1 sweep_D (n=100)":{"dataset":{"name":"fraud_detection","n_samples":590540,"n_features":397,"columns":["TransactionAmt","card1","card2","card3","card5","addr1","addr2","dist1","dist2","C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12","C13","C14","D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14","D15","M2","M3","M4","M5","M6","M7","M8","M9","V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11","V12","V13","V14","V15","V16","V17","V18","V19","V20","V21","V22","V23","V24","V25","V26","V27","V28","V29","V30","V31","V32","V33","V34","V35","V36","V37","V38","V39","V40","V41","V42","V43","V44","V45","V46","V47","V48","V49","V50","V51","V52","V53","V54","V55","V56","V57","V58","V59","V60","V61","V62","V63","V64","V65","V66","V67","V68","V69","V70","V71","V72","V73","V74","V75","V76","V77","V78","V79","V80","V81","V82","V83","V84","V85","V86","V87","V88","V89","V90","V91","V92","V93","V94","V95","V96","V97","V98","V99","V100","V101","V102","V103","V104","V105","V106","V107","V108","V109","V110","V111","V112","V113","V114","V115","V116","V117","V118","V119","V120","V121","V122","V123","V124","V125","V126","V127","V128","V129","V130","V131","V132","V133","V134","V135","V136","V137","V138","V139","V140","V141","V142","V143","V144","V145","V146","V147","V148","V149","V150","V151","V152","V153","V154","V155","V156","V157","V158","V159","V160","V161","V162","V163","V164","V165","V166","V167","V168","V169","V170","V171","V172","V173","V174","V175","V176","V177","V178","V179","V180","V181","V182","V183","V184","V185","V186","V187","V188","V189","V190","V191","V192","V193","V194","V195","V196","V197","V198","V199","V200","V201","V202","V203","V204","V205","V206","V207","V208","V209","V210","V211","V212","V213","V214","V215","V216","V217","V218","V219","V220","V221","V222","V223","V224","V225","V226","V227","V228","V229","V230","V231","V232","V233","V234","V235","V236","V237","V238","V239","V240","V241","V242","V243","V244","V245","V246","V247","V248","V249","V250","V251","V252","V253","V254","V255","V256","V257","V258","V259","V260","V261","V262","V263","V264","V265","V266","V267","V268","V269","V270","V271","V272","V273","V274","V275","V276","V277","V278","V279","V280","V281","V282","V283","V284","V285","V286","V287","V288","V289","V290","V291","V292","V293","V294","V295","V296","V297","V298","V299","V300","V301","V302","V303","V304","V305","V306","V307","V308","V309","V310","V311","V312","V313","V314","V315","V316","V317","V318","V319","V320","V321","V322","V323","V324","V325","V326","V327","V328","V329","V330","V331","V332","V333","V334","V335","V336","V337","V338","V339","is_visa","is_american_express","is_discover","is_mastercard","is_debit","ProductCD_W","ProductCD_C","ProductCD_R","ProductCD_H","ProductCD_S","gmail_hotmail_or_yahoo_email","nan_email"]},"models":[{"ensemble_type":"xgboost","hyperparams":{"max_depth":4,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":6,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":9,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42},{"ensemble_type":"xgboost","hyperparams":{"max_depth":12,"n_estimators":100,"learning_rate":0.1,"subsample":0.8,"colsample_bytree":0.8,"n_jobs":-1},"random_state":42}],"tasks":[{"name":"Path-Dependent SHAP","approaches":[{"name":"Woodelf","description":"Woodelf path-dependent values via hybrid_woodelf (the code path WoodelfExplainer.calc_metric uses internally). Model parsing is included in the timing."},{"name":"shapiq","description":"shapiq.TreeExplainer. Explains one row at a time; runs are capped by a wall-clock budget and extrapolated linearly in n."}]}],"n_values":[100],"m_values":[0]}};
+    const SCORES = {"methods":["Woodelf","shapiq"],"overall":{"scores":{"Woodelf":82.90447852294982,"shapiq":53.5334122382819},"n":52},"by_mission":{"breast_cancer order-1 sweep_n (D=6)":{"scores":{"Woodelf":76.04634632384987,"shapiq":61.912114588077046},"n":4},"california_housing order-2 sweep_n (D=6)":{"scores":{"Woodelf":100.0,"shapiq":28.17551561429556},"n":3},"california_housing order-1 sweep_D (n=100)":{"scores":{"Woodelf":45.82556310257728,"shapiq":100.0},"n":4},"breast_cancer order-3 sweep_D (n=1)":{"scores":{"Woodelf":100.0,"shapiq":50.01028930974723},"n":2},"fraud_detection order-1 sweep_n (D=6)":{"scores":{"Woodelf":59.90926817144312,"shapiq":61.777309780959996},"n":4},"fraud_detection order-1 sweep_D (n=100)":{"scores":{"Woodelf":71.81086547388317,"shapiq":60.816147283133205},"n":4},"california_housing order-2 sweep_D (n=1)":{"scores":{"Woodelf":100.0,"shapiq":77.15077160547281},"n":4},"breast_cancer order-3 sweep_n (D=6)":{"scores":{"Woodelf":100.0,"shapiq":20.14775931632909},"n":3},"fraud_detection order-2 sweep_n (D=6)":{"scores":{"Woodelf":100.0,"shapiq":9.3929110519201},"n":3},"breast_cancer order-1 sweep_D (n=10)":{"scores":{"Woodelf":67.21023279043004,"shapiq":100.0},"n":2},"california_housing order-3 sweep_n (D=6)":{"scores":{"Woodelf":100.0,"shapiq":20.4558087608164},"n":3},"california_housing order-3 sweep_D (n=1)":{"scores":{"Woodelf":100.0,"shapiq":61.005955386802825},"n":4},"breast_cancer order-2 sweep_n (D=6)":{"scores":{"Woodelf":100.0,"shapiq":29.341692754353293},"n":3},"fraud_detection order-3 sweep_n (D=6)":{"scores":{"Woodelf":100.0,"shapiq":0.9023236800622324},"n":3},"california_housing order-1 sweep_n (D=6)":{"scores":{"Woodelf":40.56106133137921,"shapiq":81.21478374398383},"n":4},"breast_cancer order-2 sweep_D (n=1)":{"scores":{"Woodelf":100.0,"shapiq":71.48024734205747},"n":2}}};
+    // Pre-compute unique values across ALL runs (used for conditional pie visibility).
+    function _allUnique(key) {
+      var seen = {};
+      DATA.forEach(function(r) { seen[String(r[key])] = true; });
+      return Object.keys(seen);
+    }
+    var _allUniqueM        = _allUnique('m');
+    var _allUniqueTask     = _allUnique('task');
+    var _allUniqueEnsemble = _allUnique('ensemble');
+    function methodLabel(name) { return name || 'unknown'; }
+    var _scoreColors = ['#2ca02c','#1f77b4','#ff7f0e','#9467bd','#8c564b','#e377c2'];
+    function methodColor(name) {
+      var idx = (SCORES.methods || []).indexOf(name);
+      return _scoreColors[idx >= 0 ? idx % _scoreColors.length : 0];
+    }
+    function fmtTime(s) {
+      if (s == null || isNaN(s)) return '?';
+      var abs = Math.abs(s);
+      if (abs < 60)         return s.toFixed(4) + ' s';
+      if (abs < 3600)       return (s / 60).toFixed(3) + ' min';
+      if (abs < 86400)      return (s / 3600).toFixed(3) + ' hr';
+      if (abs < 31536000)   return (s / 86400).toFixed(3) + ' days';
+      return (s / 31536000).toFixed(3) + ' yr';
+    }
+    function renderMethodBadge(m, val, maxScore) {
+      var win = val >= maxScore - 0.001;
+      var color = methodColor(m);
+      var ns = val === 0 && !win;
+      var label = methodLabel(m) + ': ' + (ns ? 'N/A' : val.toFixed(1) + (win ? ' \u2605' : ''));
+      return '<span class="msb-badge" style="background:' + color +
+             ';color:#fff;opacity:' + (win ? '1' : '0.7') + ';border:1px solid ' + color + '">' +
+             label + '</span>';
+    }
+
+    // Scoring — pre-computed by Python, embedded as SCORES constant.
+    // SCORES = { methods: [...], overall: { scores: {method: avg}, n }, by_mission: {...} }
+    // -----------------------------------------------------------------------
+
+    function renderScoreboard() {
+      var el = document.getElementById('scoreboard');
+      if (!SCORES.overall) { el.style.display = 'none'; return; }
+
+      function scoreCell(scoresObj, methodName) {
+        if (!scoresObj || !scoresObj.scores) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
+        var val = scoresObj.scores[methodName];
+        if (val === undefined) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
+        var maxVal = Math.max.apply(null, Object.keys(scoresObj.scores).map(function(m){ return scoresObj.scores[m]; }));
+        var isWin = val >= maxVal - 0.001;
+        var isNs = val === 0 && !isWin;
+        var color = methodColor(methodName);
+        return '<td class="score-cell' + (isWin ? ' winner' : '') + '">' +
+               '<span style="color:' + color + (isNs ? ';opacity:0.5' : '') + '">' +
+               (isNs ? 'N/A' : val.toFixed(1) + (isWin ? ' \u2605' : '')) + '</span>' +
+               '</td>';
+      }
+
+      // --- Left: overall summary table ---
+      var methods = SCORES.methods || [];
+      var leftHtml = '<div class="scoreboard-title">Score Summary</div>';
+      leftHtml += '<table class="score-table"><thead><tr>';
+      leftHtml += '<th></th><th>Overall (' + SCORES.overall.n + ' runs)</th>';
+      leftHtml += '</tr></thead><tbody>';
+      methods.forEach(function(m) {
+        leftHtml += '<tr><td class="team-name" style="color:' + methodColor(m) + '">' + methodLabel(m) + '</td>';
+        leftHtml += scoreCell(SCORES.overall, m);
+        leftHtml += '</tr>';
+      });
+      leftHtml += '</tbody></table>';
+
+      // --- Right: filter sliders + live filtered score ---
+      var SB_PARAMS = ['n', 'm', 'D', 'T'];
+      var slidersHtml = '<div class="scoreboard-title">Filtered Score</div><div class="sb-sliders">';
+      SB_PARAMS.forEach(function(p) {
+        var vals = getUnique(p);
+        var maxI = vals.length - 1;
+        slidersHtml +=
+          '<div class="ar-filter-group">' +
+          '<label>' + p + ':</label>' +
+          '<div class="dual-range-wrap">' +
+            '<div class="dual-range-slider">' +
+              '<div class="drs-track"></div>' +
+              '<div class="drs-fill" id="sb-drs-' + p + '-fill"></div>' +
+              '<input type="range" id="sb-drs-' + p + '-lo" min="0" max="' + maxI + '" value="0">' +
+              '<input type="range" id="sb-drs-' + p + '-hi" min="0" max="' + maxI + '" value="' + maxI + '">' +
+            '</div>' +
+            '<div class="drs-vals">' +
+              '<span id="sb-drs-' + p + '-lo-val">' + vals[0] + '</span>' +
+              '<span id="sb-drs-' + p + '-hi-val">' + vals[maxI] + '</span>' +
+            '</div>' +
+          '</div></div>';
+      });
+      slidersHtml += '</div>';
+      var sbTaskVals = getUnique('task');
+      slidersHtml += '<div class="filter-row"><span class="fr-label">Tasks:</span><div class="filter-chips">';
+      sbTaskVals.forEach(function(t) {
+        slidersHtml += '<label class="filter-chip"><input type="checkbox" class="sb-task-cb" value="' + t + '" checked> ' + taskDisplayName(t) + '</label>';
+      });
+      slidersHtml += '</div></div>';
+      var sbMethodVals = SCORES.methods || [];
+      slidersHtml += '<div class="filter-row"><span class="fr-label">Methods:</span><div class="filter-chips">';
+      sbMethodVals.forEach(function(m) {
+        var color = methodColor(m);
+        slidersHtml += '<label class="filter-chip" style="border-color:' + color + ';color:' + color + '">' +
+          '<input type="checkbox" class="sb-method-cb" value="' + m + '" checked style="accent-color:' + color + '"> ' +
+          methodLabel(m) + '</label>';
+      });
+      slidersHtml += '</div></div>';
+      slidersHtml += '<div class="filter-row"><label class="remove-fast-wrap"><input type="checkbox" id="sb-remove-fast"> Runtime &gt; 10s</label></div>';
+      slidersHtml += '<div id="sb-filtered-score" class="sb-filtered-score"></div>';
+
+      el.innerHTML =
+        '<div class="sb-left">' + leftHtml + '</div>' +
+        '<div class="sb-divider"></div>' +
+        '<div class="sb-right">' + slidersHtml + '</div>' +
+        '<div class="sb-note">\u2605\u2009The score for each run is: (winner\u2009time\u00a0/\u00a0my\u2009time)\u00a0\u00d7\u00a0100. The overall score is the average across all runs.</div>';
+
+      // --- Wire up slider logic ---
+      var sbVals = {}, sbState = {};
+      SB_PARAMS.forEach(function(p) {
+        sbVals[p]  = getUnique(p);
+        sbState[p] = { lo: 0, hi: sbVals[p].length - 1 };
+      });
+
+      function updateSbFill(p) {
+        var n = sbVals[p].length;
+        var fill = document.getElementById('sb-drs-' + p + '-fill');
+        if (!fill || n <= 1) return;
+        var pct = 100 / (n - 1);
+        fill.style.left  = (sbState[p].lo * pct) + '%';
+        fill.style.width = ((sbState[p].hi - sbState[p].lo) * pct) + '%';
+      }
+
+      function computeScoreFromRows(rows, removeFast) {
+        var groups = {};
+        rows.forEach(function(r) {
+          if (!r.approach) return;
+          var key = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
+          if (!groups[key]) groups[key] = { times: {}, notSupported: {} };
+          if (r.not_supported || r.memory_crash || r.runtime_error) {
+            groups[key].notSupported[r.approach] = true;
+          } else {
+            if (!groups[key].times[r.approach]) groups[key].times[r.approach] = [];
+            groups[key].times[r.approach].push(r.running_time);
+          }
+        });
+        var totals = {}, counts = {}, nGroups = 0;
+        Object.keys(groups).forEach(function(key) {
+          var g = groups[key];
+          var times = {};
+          Object.keys(g.times).forEach(function(m) {
+            var avg = g.times[m].reduce(function(a,b){return a+b;},0) / g.times[m].length;
+            if (avg > 0) times[m] = avg;
+          });
+          var nsKeys = Object.keys(g.notSupported);
+          // Need at least 2 methods total (supported or crashed) to form a comparison
+          if (Object.keys(times).length + nsKeys.length < 2) return;
+          if (Object.keys(times).length === 0) {
+            // All methods crashed — all get score 0
+            nsKeys.forEach(function(m) {
+              totals[m] = (totals[m] || 0) + 0;
+              counts[m] = (counts[m] || 0) + 1;
+            });
+            nGroups++;
+            return;
+          }
+          var minT = Math.min.apply(null, Object.keys(times).map(function(m){ return times[m]; }));
+          if (removeFast) {
+            var allFast = Object.keys(times).every(function(m){ return times[m] < 10; });
+            if (allFast) return;
+          }
+          Object.keys(times).forEach(function(m) {
+            var score = (minT / times[m]) * 100;
+            totals[m] = (totals[m] || 0) + score;
+            counts[m] = (counts[m] || 0) + 1;
+          });
+          nsKeys.forEach(function(m) {
+            totals[m] = (totals[m] || 0) + 0;
+            counts[m] = (counts[m] || 0) + 1;
+          });
+          nGroups++;
+        });
+        if (!nGroups) return null;
+        var scores = {};
+        Object.keys(totals).forEach(function(m) { scores[m] = totals[m] / counts[m]; });
+        return { scores: scores, n: nGroups };
+      }
+
+      function updateFilteredScore() {
+        var nLo = sbVals.n[sbState.n.lo], nHi = sbVals.n[sbState.n.hi];
+        var mLo = sbVals.m[sbState.m.lo], mHi = sbVals.m[sbState.m.hi];
+        var dLo = sbVals.D[sbState.D.lo], dHi = sbVals.D[sbState.D.hi];
+        var selTasks = [];
+        document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
+          if (cb.checked) selTasks.push(cb.value);
+        });
+        var selMethods = [];
+        document.querySelectorAll('.sb-method-cb').forEach(function(cb) {
+          if (cb.checked) selMethods.push(cb.value);
+        });
+        var rmFastEl = document.getElementById('sb-remove-fast');
+        var removeFast = rmFastEl ? rmFastEl.checked : false;
+        var filtered = DATA.filter(function(r) {
+          return r.n >= nLo && r.n <= nHi && r.m >= mLo && r.m <= mHi && r.D >= dLo && r.D <= dHi &&
+                 (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1) &&
+                 (selMethods.length === 0 || selMethods.indexOf(r.approach) !== -1);
+        });
+        var result = computeScoreFromRows(filtered, removeFast);
+        var el2 = document.getElementById('sb-filtered-score');
+        if (!result) {
+          el2.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
+          return;
+        }
+        var maxScore = Math.max.apply(null, Object.keys(result.scores).map(function(m){ return result.scores[m]; }));
+        var html = Object.keys(result.scores).sort().map(function(m) {
+          return renderMethodBadge(m, result.scores[m], maxScore);
+        }).join('<span class="msb-sep">vs</span>');
+        html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + result.n + ' runs)</span>';
+        el2.innerHTML = html;
+      }
+
+      SB_PARAMS.forEach(function(p) {
+        var loEl = document.getElementById('sb-drs-' + p + '-lo');
+        var hiEl = document.getElementById('sb-drs-' + p + '-hi');
+        function syncSbZIndex() {
+          loEl.style.zIndex = (parseInt(loEl.value) >= parseInt(loEl.max)) ? 3 : '';
+        }
+        loEl.addEventListener('input', function() {
+          if (parseInt(loEl.value) > parseInt(hiEl.value)) loEl.value = hiEl.value;
+          syncSbZIndex();
+          sbState[p].lo = parseInt(loEl.value);
+          sbState[p].hi = parseInt(hiEl.value);
+          document.getElementById('sb-drs-' + p + '-lo-val').textContent = sbVals[p][sbState[p].lo];
+          document.getElementById('sb-drs-' + p + '-hi-val').textContent = sbVals[p][sbState[p].hi];
+          updateSbFill(p);
+          updateFilteredScore();
+        });
+        hiEl.addEventListener('input', function() {
+          if (parseInt(hiEl.value) < parseInt(loEl.value)) hiEl.value = loEl.value;
+          syncSbZIndex();
+          sbState[p].lo = parseInt(loEl.value);
+          sbState[p].hi = parseInt(hiEl.value);
+          document.getElementById('sb-drs-' + p + '-lo-val').textContent = sbVals[p][sbState[p].lo];
+          document.getElementById('sb-drs-' + p + '-hi-val').textContent = sbVals[p][sbState[p].hi];
+          updateSbFill(p);
+          updateFilteredScore();
+        });
+        syncSbZIndex();
+        updateSbFill(p);
+      });
+
+      document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
+        cb.addEventListener('change', updateFilteredScore);
+      });
+      document.querySelectorAll('.sb-method-cb').forEach(function(cb) {
+        cb.addEventListener('change', updateFilteredScore);
+      });
+      var sbRmFastEl = document.getElementById('sb-remove-fast');
+      if (sbRmFastEl) sbRmFastEl.addEventListener('change', updateFilteredScore);
+
+      updateFilteredScore();
+    }
+
+    function renderMissionScore(missionName) {
+      var el = document.getElementById('mission-score-banner');
+      var entry = (SCORES.by_mission || {})[missionName];
+      if (!entry || !entry.scores) { el.innerHTML = ''; return; }
+
+      var maxScore = Math.max.apply(null, Object.keys(entry.scores).map(function(m){ return entry.scores[m]; }));
+      var badges = Object.keys(entry.scores).sort().map(function(m) {
+        return renderMethodBadge(m, entry.scores[m], maxScore);
+      });
+
+      el.innerHTML =
+        '<span class="msb-label">Mission Score:</span>' +
+        badges.join('<span class="msb-sep">vs</span>') +
+        '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">avg of ' +
+        entry.n + ' run' + (entry.n > 1 ? 's' : '') + '</span>';
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+    function taskDisplayName(t) {
+      if (t === 'background_shap')    return 'Background SHAP';
+      if (t === 'path_dependent_shap') return 'Path-Dependent SHAP';
+      return t;
+    }
+
+    function unique(arr) {
+      return [...new Set(arr)].sort(function(a, b) {
+        return typeof a === 'number' ? a - b : String(a).localeCompare(String(b));
+      });
+    }
+
+    function getUnique(key, subset) {
+      var src = subset !== undefined ? subset : DATA;
+      return unique(src.map(function(r) { return r[key]; }));
+    }
+
+    // -----------------------------------------------------------------------
+    // State
+    // -----------------------------------------------------------------------
+    var allDatasets = getUnique('dataset');
+    var state = {
+      dataset: allDatasets[0],
+      mission: null,
+    };
+
+    // -----------------------------------------------------------------------
+    // Cascading options helpers
+    // -----------------------------------------------------------------------
+    function rowsForDataset() {
+      return DATA.filter(function(r) { return r.dataset === state.dataset; });
+    }
+
+    function rowsForMission() {
+      return rowsForDataset().filter(function(r) { return r.mission === state.mission; });
+    }
+
+    function missionsForDataset() { return getUnique('mission', rowsForDataset()); }
+
+    // -----------------------------------------------------------------------
+    // Auto-detect x-axis from the current mission's data
+    // -----------------------------------------------------------------------
+    var X_LABELS = {
+      n: 'n \u2014 explain set size',
+      m: 'm \u2014 background size',
+      D: 'D \u2014 max tree depth',
+      T: 'T \u2014 number of trees',
+    };
+
+    function detectXParam(rows) {
+      var ns = getUnique('n', rows);
+      var ms = getUnique('m', rows);
+      var ds = getUnique('D', rows);
+      var ts = getUnique('T', rows);
+      if (ns.length > 1) return 'n';
+      if (ds.length > 1) return 'D';
+      if (ts.length > 1) return 'T';
+      if (ms.length > 1) return 'm';
+      return 'n';
+    }
+
+    // -----------------------------------------------------------------------
+    // Chart
+    // -----------------------------------------------------------------------
+    function buildTraces(rows, xp, yPos) {
+      var approaches = unique(rows.map(function(r) { return r.approach; }));
+      return approaches.map(function(app) {
+        // Include crash rows (at yPos) alongside normal rows so the line extends to them.
+        // Exclude not_supported rows — those remain in their own separate trace.
+        var appRows = rows
+          .filter(function(r) { return r.approach === app && !r.not_supported; })
+          .sort(function(a, b) { return a[xp] - b[xp]; });
+        if (!appRows.length) return null;
+
+        var label = methodLabel(appRows[0].approach);
+        var color = methodColor(appRows[0].approach);
+        return {
+          x: appRows.map(function(r) { return r[xp]; }),
+          y: appRows.map(function(r) {
+            return (r.memory_crash || r.runtime_error) ? yPos : r.running_time;
+          }),
+          error_y: {
+            type: 'data',
+            array: appRows.map(function(r) {
+              return (r.memory_crash || r.runtime_error || r.is_estimated) ? 0 : r.std_s;
+            }),
+            visible: true,
+          },
+          mode: 'lines+markers',
+          name: label,
+          line: { color: color },
+          marker: {
+            symbol: appRows.map(function(r) {
+              if (r.memory_crash) return 'triangle-down';
+              if (r.runtime_error) return 'x';
+              if (r.is_estimated) return 'circle-open';
+              return 'circle';
+            }),
+            size: appRows.map(function(r) {
+              return (r.memory_crash || r.runtime_error) ? 13 : 9;
+            }),
+            color: appRows.map(function(r) {
+              if (r.memory_crash) return '#d62728';
+              if (r.runtime_error) return '#ff7f0e';
+              return color;
+            }),
+          },
+          customdata: appRows.map(function(r) {
+            if (r.memory_crash) return 'Memory Crash';
+            if (r.runtime_error) return r.error_message ? 'Runtime Error: ' + r.error_message : 'Runtime Error';
+            var t = fmtTime(r.running_time);
+            if (r.is_estimated) {
+              t += '\u2009\u2605\u202festimated';
+              if (r.estimation_description) t += '<br><i>' + r.estimation_description + '</i>';
+            }
+            return t;
+          }),
+          hovertemplate:
+            '<b>' + label + '</b><br>' +
+            xp + ': %{x}<br>' +
+            'time: %{customdata}' +
+            '<extra></extra>',
+        };
+      });
+    }
+
+    function buildNotSupportedTraces(rows, xp, yPos) {
+      var approaches = unique(rows.map(function(r) { return r.approach; }));
+      var traces = [];
+      approaches.forEach(function(app) {
+        var nsRows = rows
+          .filter(function(r) { return r.approach === app && r.not_supported; })
+          .sort(function(a, b) { return a[xp] - b[xp]; });
+        if (!nsRows.length) return;
+        var color = methodColor(nsRows[0].approach);
+        var label = methodLabel(nsRows[0].approach) + ' \u2014 not supported';
+        traces.push({
+          x: nsRows.map(function(r) { return r[xp]; }),
+          y: nsRows.map(function() { return yPos; }),
+          mode: 'lines+markers',
+          name: label,
+          line: { dash: 'dash', color: color, width: 1.5 },
+          marker: { symbol: 'x', size: 11, color: color, line: { width: 2.5, color: color } },
+          hovertemplate: '<b>' + label + '</b><br>' + xp + ': %{x}<extra></extra>',
+        });
+      });
+      return traces;
+    }
+
+    function shouldUseLogScale(vals) {
+      var nums = vals.filter(function(v) { return v > 0; });
+      if (nums.length < 2) return false;
+      var mn = Math.min.apply(null, nums);
+      var mx = Math.max.apply(null, nums);
+      return mx / mn >= 20;
+    }
+
+    function renderChart(rows, xp) {
+      var xVals = getUnique(xp, rows);
+      var supportedRows = rows.filter(function(r) { return !r.not_supported && !r.memory_crash && !r.runtime_error; });
+      var yVals = supportedRows.map(function(r) { return r.running_time; }).filter(function(v) { return v > 0; });
+      var useLogX = shouldUseLogScale(xVals);
+      var useLogY = shouldUseLogScale(yVals);
+
+      var hasNotSupported = rows.some(function(r) { return r.not_supported; });
+      var hasMemoryCrash  = rows.some(function(r) { return r.memory_crash; });
+      var hasRuntimeError = rows.some(function(r) { return r.runtime_error; });
+      var hasSpecial = hasNotSupported || hasMemoryCrash || hasRuntimeError;
+      var yMax = yVals.length ? Math.max.apply(null, yVals) : 1;
+      var yMin = yVals.length ? Math.min.apply(null, yVals) : 0;
+      var yPos, yAxisRange;
+      if (useLogY) {
+        yPos = yMax * 100;
+        yAxisRange = [Math.log10(Math.max(yMin * 0.5, 1e-6)), Math.log10(yPos * 3)];
+      } else {
+        yPos = yMax * 1.35;
+        yAxisRange = hasSpecial ? [0, yMax * 1.7] : null;
+      }
+
+      var traces = buildTraces(rows, xp, yPos).filter(function(t) { return t !== null; });
+      if (hasNotSupported) {
+        traces = traces.concat(buildNotSupportedTraces(rows, xp, yPos));
+      }
+
+      var yAxis = { title: 'Time (s)', type: useLogY ? 'log' : 'linear' };
+      if (yAxisRange) yAxis.range = yAxisRange;
+
+      var layout = {
+        xaxis: { title: X_LABELS[xp] || xp, type: useLogX ? 'log' : 'linear' },
+        yaxis: yAxis,
+        legend: { title: { text: 'Method\u2003\u25cb=estimated\u2003\u25bc/\u00d7=crash' } },
+        template: 'plotly_white',
+        margin: { t: 30, r: 20, l: 70, b: 55 },
+        height: 460,
+      };
+      Plotly.react('chart', traces, layout, { displayModeBar: false });
+    }
+
+    window.addEventListener('resize', function() {
+      var el = document.getElementById('chart');
+      if (el && el.data) { Plotly.Plots.resize(el); }
+    });
+
+    // -----------------------------------------------------------------------
+    // Table
+    // -----------------------------------------------------------------------
+    function renderTable(rows, xp) {
+      var el = document.getElementById('data-table');
+      if (rows.length === 0) {
+        el.innerHTML = '<p>No data matches the current selection.</p>';
+        return;
+      }
+
+      var xVals     = getUnique(xp, rows);
+      var approaches = getUnique('approach', rows);
+
+      // index[approach][xVal] = {t, est, ns, mc, re}
+      var index = {};
+      rows.forEach(function(r) {
+        if (!index[r.approach]) index[r.approach] = {};
+        index[r.approach][r[xp]] = { t: r.running_time, est: r.is_estimated, ns: r.not_supported, mc: r.memory_crash, re: r.runtime_error };
+      });
+
+      var html = '<table><thead><tr><th>Approach</th>';
+      xVals.forEach(function(v) { html += '<th>' + xp + '\u202f=\u202f' + v + '</th>'; });
+      html += '</tr></thead><tbody>';
+
+      approaches.forEach(function(app) {
+        html += '<tr><td class="app-name">' + app + '</td>';
+        xVals.forEach(function(v) {
+          var cell = (index[app] || {})[v];
+          if (cell !== undefined) {
+            if (cell.ns || cell.mc || cell.re) {
+              html += '<td class="missing">N/A</td>';
+            } else {
+              var val = fmtTime(cell.t);
+              html += '<td class="' + (cell.est ? 'estimated' : '') + '">'
+                    + val + (cell.est ? '*' : '') + '</td>';
+            }
+          } else {
+            html += '<td class="missing">\u2014</td>';
+          }
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    }
+
+    // -----------------------------------------------------------------------
+    // Model card helper (called by the depth/variant select box)
+    // -----------------------------------------------------------------------
+    function updateModelCard(uid) {
+      var data = (window._modelRegistry || {})[uid];
+      if (!data) return;
+      var sel = document.getElementById(uid + '-sel');
+      if (!sel) return;
+      var item = data[parseInt(sel.value, 10)];
+      if (!item) return;
+      Object.keys(item.varying).forEach(function(k) {
+        var cell = document.getElementById(uid + '-v-' + k);
+        if (cell) cell.textContent = item.varying[k];
+      });
+      var tEl  = document.getElementById(uid + '-T');
+      var lEl  = document.getElementById(uid + '-L');
+      var tlEl = document.getElementById(uid + '-TL');
+      if (tEl)  tEl.textContent  = item.T  != null ? item.T            : '\u2014';
+      if (lEl)  lEl.textContent  = item.L  != null ? item.L.toFixed(1) : '\u2014';
+      if (tlEl) tlEl.textContent = (item.T != null && item.L != null)
+                                     ? Math.round(item.T * item.L) : '\u2014';
+    }
+
+    // -----------------------------------------------------------------------
+    // Details panel
+    // -----------------------------------------------------------------------
+    function renderDetails(missionName, rows) {
+      var el = document.getElementById('mission-details-content');
+      var m = MISSION_META[missionName];
+      if (!m) { el.innerHTML = '<p style="color:#888;font-size:0.85rem">No metadata available.</p>'; return; }
+
+      var html = '';
+
+      // --- Dataset card ---
+      var ds = m.dataset || {};
+      html += '<div class="detail-card">';
+      html += '<h3>Dataset</h3>';
+      html += '<dl>';
+      html += '<dt>Name</dt><dd>' + (ds.name || '\u2014') + '</dd>';
+      html += '<dt>Rows</dt><dd>' + (ds.n_samples != null ? ds.n_samples.toLocaleString() : '\u2014') + '</dd>';
+      html += '<dt>Features</dt><dd>' + (ds.n_features != null ? ds.n_features : '\u2014') + '</dd>';
+      if (ds.columns && ds.columns.length) {
+        var shown = ds.columns.slice(0, 10);
+        var extra = ds.columns.length - shown.length;
+        html += '<dt>Feature names</dt><dd>' + shown.join(', ') + (extra > 0 ? ' \u2026 +' + extra + ' more' : '') + '</dd>';
+      }
+      html += '</dl>';
+      html += '</div>';
+
+      // --- Model(s) card ---
+      var models = m.models || [];
+      html += '<div class="detail-card">';
+      html += '<h3>Models</h3>';
+
+      // Reset registry so stale UIDs from a previous mission don't linger
+      window._modelRegistry = {};
+
+      // Group models by ensemble_type so each type gets one card
+      var byEnsemble = {}, ensembleOrder = [];
+      models.forEach(function(mod) {
+        var et = mod.ensemble_type || 'unknown';
+        if (!byEnsemble[et]) { byEnsemble[et] = []; ensembleOrder.push(et); }
+        byEnsemble[et].push(mod);
+      });
+
+      ensembleOrder.forEach(function(et) {
+        var mods = byEnsemble[et];
+        var allKeys = Object.keys(mods[0].hyperparams || {});
+
+        // Split params into shared (same value across all models) vs varying
+        var sharedParams = {}, varyingKeys = [];
+        allKeys.forEach(function(k) {
+          var vals = mods.map(function(mod) { return String((mod.hyperparams || {})[k]); });
+          if (vals.every(function(v) { return v === vals[0]; })) {
+            sharedParams[k] = (mods[0].hyperparams || {})[k];
+          } else {
+            varyingKeys.push(k);
+          }
+        });
+
+        html += '<dl>';
+        html += '<dt>Type</dt><dd>' + et + '</dd>';
+        Object.keys(sharedParams).forEach(function(k) {
+          html += '<dt>' + k + '</dt><dd>' + sharedParams[k] + '</dd>';
+        });
+
+        if (mods.length > 1 && varyingKeys.length > 0) {
+          // Multi-model group: show a select for the varying params
+          var uid = 'mcard-' + et.replace(/\W/g, '') + '-' + Date.now();
+
+          // Pre-compute T/L for each model by matching rows on D or index
+          var modelData = mods.map(function(mod, i) {
+            var hp = mod.hyperparams || {};
+            var label = varyingKeys.map(function(k) { return k + '=' + hp[k]; }).join(', ');
+            var targetD = hp['max_depth'];
+            var matchRows = (rows || []).filter(function(r) { return r.ensemble === et; });
+            var mr = null;
+            if (targetD != null) {
+              mr = matchRows.find(function(r) { return r.D === targetD; });
+              if (!mr) mr = matchRows.reduce(function(best, r) {
+                return (!best || Math.abs(r.D - targetD) < Math.abs(best.D - targetD)) ? r : best;
+              }, null);
+            } else {
+              mr = matchRows[i] || null;
+            }
+            return {
+              label: label,
+              varying: varyingKeys.reduce(function(acc, k) { acc[k] = hp[k]; return acc; }, {}),
+              T: mr ? mr.T : null,
+              L: mr ? mr.L : null,
+            };
+          });
+          window._modelRegistry[uid] = modelData;
+
+          // Varying-param display rows (value updates when select changes)
+          varyingKeys.forEach(function(k) {
+            html += '<dt>' + k + '</dt><dd id="' + uid + '-v-' + k + '">'
+                  + (mods[0].hyperparams || {})[k] + '</dd>';
+          });
+          html += '<dt>\u25bc model</dt><dd>'
+                + '<select id="' + uid + '-sel" '
+                + 'onchange="updateModelCard(\'' + uid + '\')" '
+                + 'style="font-size:0.8rem;padding:2px 6px;border-radius:4px;border:1px solid #ccc">';
+          modelData.forEach(function(md, i) {
+            html += '<option value="' + i + '">' + md.label + '</option>';
+          });
+          html += '</select></dd>';
+          html += '<dt>trees (T)</dt><dd id="' + uid + '-T">\u2014</dd>';
+          html += '<dt>avg leaves/tree (L)</dt><dd id="' + uid + '-L">\u2014</dd>';
+          html += '<dt>total leaves</dt><dd id="' + uid + '-TL">\u2014</dd>';
+
+        } else {
+          // Single model — find the one matching row
+          var sampleRow = (rows || []).find(function(r) { return r.ensemble === et; });
+          if (sampleRow) {
+            html += '<dt>trees (T)</dt><dd>' + sampleRow.T + '</dd>';
+            html += '<dt>avg leaves/tree (L)</dt><dd>' + sampleRow.L.toFixed(1) + '</dd>';
+            html += '<dt>total leaves</dt><dd>' + Math.round(sampleRow.T * sampleRow.L) + '</dd>';
+          }
+        }
+
+        html += '</dl>';
+      });
+
+      html += '</div>';
+
+      // --- Task & approaches card ---
+      var tasks = m.tasks || [];
+      html += '<div class="detail-card">';
+      html += '<h3>Task &amp; Approaches</h3>';
+      tasks.forEach(function(t) {
+        html += '<p style="font-size:0.85rem;font-weight:600;color:#1f3a5f;margin:6px 0 4px">' + t.name + '</p>';
+        (t.approaches || []).forEach(function(a) {
+          html += '<div class="approach-row">'
+                + '<span class="aname">' + a.name + '</span>'
+                + (a.description ? '<span class="adesc">\u2014 ' + a.description + '</span>' : '')
+                + '</div>';
+        });
+      });
+      html += '</div>';
+
+      // --- Sweep card ---
+      html += '<div class="detail-card">';
+      html += '<h3>Mission Sweep</h3>';
+      html += '<dl>';
+      html += '<dt>n values</dt><dd>' + (m.n_values || []).join(', ') + '</dd>';
+      html += '<dt>m values</dt><dd>' + (m.m_values || []).join(', ') + '</dd>';
+      html += '</dl>';
+      html += '</div>';
+
+      el.innerHTML = html;
+      // Populate the model select cards with the first-option values
+      Object.keys(window._modelRegistry || {}).forEach(function(uid) {
+        updateModelCard(uid);
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // Main render
+    // -----------------------------------------------------------------------
+    function render() {
+      var rows = rowsForMission();
+
+      renderDetails(state.mission, rows);
+      renderMissionScore(state.mission);
+
+      if (rows.length === 0) {
+        Plotly.react('chart', [], { title: 'No data for this selection', template: 'plotly_white' }, { displayModeBar: false });
+        document.getElementById('data-table').innerHTML = '<p>No data matches the current selection.</p>';
+        return;
+      }
+
+      var xp = detectXParam(rows);
+      renderChart(rows, xp);
+      renderTable(rows, xp);
+    }
+
+    // -----------------------------------------------------------------------
+    // Select population helpers
+    // -----------------------------------------------------------------------
+    function populateSelect(id, values, current) {
+      var el = document.getElementById(id);
+      el.innerHTML = '';
+      values.forEach(function(v) {
+        var opt = document.createElement('option');
+        opt.value = v;
+        opt.text  = String(v);
+        if (String(v) === String(current)) opt.selected = true;
+        el.appendChild(opt);
+      });
+      // Return the actually-selected value (first if current wasn't in list).
+      return el.options[el.selectedIndex] ? el.options[el.selectedIndex].value : (values[0] || null);
+    }
+
+    function refreshMissionSelect() {
+      var missions = missionsForDataset();
+      if (missions.indexOf(state.mission) === -1) state.mission = missions[0] || null;
+      populateSelect('ctrl-mission', missions, state.mission);
+      state.mission = missions.indexOf(state.mission) !== -1 ? state.mission : (missions[0] || null);
+    }
+
+    // -----------------------------------------------------------------------
+    // Initialise
+    // -----------------------------------------------------------------------
+    populateSelect('ctrl-dataset', allDatasets, state.dataset);
+    refreshMissionSelect();
+
+    document.getElementById('ctrl-dataset').addEventListener('change', function(e) {
+      state.dataset = e.target.value;
+      refreshMissionSelect();
+      render();
+    });
+    document.getElementById('ctrl-mission').addEventListener('change', function(e) {
+      state.mission = e.target.value;
+      render();
+    });
+
+    renderScoreboard();
+    render();
+
+    // -----------------------------------------------------------------------
+    // All-results table — dual-range slider filters
+    // -----------------------------------------------------------------------
+    var AR_PARAMS  = ['n', 'm', 'D', 'T'];
+
+    var arVals  = {};   // param -> sorted unique value array
+    var arState = {};   // param -> {lo: idx, hi: idx}
+
+    function buildDualSliders() {
+      AR_PARAMS.forEach(function(p) {
+        arVals[p]  = getUnique(p);
+        arState[p] = { lo: 0, hi: arVals[p].length - 1 };
+      });
+
+      var html = '';
+      AR_PARAMS.forEach(function(p) {
+        var vals = arVals[p];
+        var maxI = vals.length - 1;
+        html +=
+          '<div class="ar-filter-group">' +
+          '<label>' + p + ':</label>' +
+          '<div class="dual-range-wrap">' +
+            '<div class="dual-range-slider">' +
+              '<div class="drs-track"></div>' +
+              '<div class="drs-fill" id="drs-' + p + '-fill"></div>' +
+              '<input type="range" id="drs-' + p + '-lo" min="0" max="' + maxI + '" value="0">' +
+              '<input type="range" id="drs-' + p + '-hi" min="0" max="' + maxI + '" value="' + maxI + '">' +
+            '</div>' +
+            '<div class="drs-vals">' +
+              '<span id="drs-' + p + '-lo-val">' + vals[0] + '</span>' +
+              '<span id="drs-' + p + '-hi-val">' + vals[maxI] + '</span>' +
+            '</div>' +
+          '</div>' +
+          '</div>';
+      });
+
+      var arTaskVals = getUnique('task');
+      html += '<div class="ar-filter-group"><span class="fr-label">Tasks:</span><div class="filter-chips">';
+      arTaskVals.forEach(function(t) {
+        html += '<label class="filter-chip"><input type="checkbox" class="ar-task-cb" value="' + t + '" checked> ' + taskDisplayName(t) + '</label>';
+      });
+      html += '</div></div>';
+
+      var arDatasetVals = getUnique('dataset');
+      html += '<div class="ar-filter-group"><span class="fr-label">Datasets:</span><div class="filter-chips">';
+      arDatasetVals.forEach(function(d) {
+        html += '<label class="filter-chip"><input type="checkbox" class="ar-dataset-cb" value="' + d + '" checked> ' + d + '</label>';
+      });
+      html += '</div></div>';
+
+      var arEnsembleVals = getUnique('ensemble');
+      html += '<div class="ar-filter-group"><span class="fr-label">Ensembles:</span><div class="filter-chips">';
+      arEnsembleVals.forEach(function(e) {
+        html += '<label class="filter-chip"><input type="checkbox" class="ar-ensemble-cb" value="' + e + '" checked> ' + e + '</label>';
+      });
+      html += '</div></div>';
+
+      var allMethodNames = SCORES.methods || [];
+      html += '<div class="ar-filter-group"><label style="font-weight:600;color:#495057;white-space:nowrap">Winner:</label>';
+      html += '<select id="ar-winner-sel" style="border:1px solid #ced4da;border-radius:4px;padding:3px 7px;font-size:0.84rem;background:#fff;cursor:pointer">';
+      html += '<option value="all">All runs</option>';
+      allMethodNames.forEach(function(m) {
+        html += '<option value="' + m + '">' + methodLabel(m) + ' wins</option>';
+      });
+      html += '</select></div>';
+
+      html += '<div class="ar-filter-group"><label class="remove-fast-wrap"><input type="checkbox" id="ar-remove-fast"> Runtime &gt; 10s</label></div>';
+      document.getElementById('ar-filters').innerHTML = html;
+
+      document.querySelectorAll('.ar-task-cb').forEach(function(cb) {
+        cb.addEventListener('change', renderAllResultsTable);
+      });
+      document.querySelectorAll('.ar-dataset-cb').forEach(function(cb) {
+        cb.addEventListener('change', renderAllResultsTable);
+      });
+      document.querySelectorAll('.ar-ensemble-cb').forEach(function(cb) {
+        cb.addEventListener('change', renderAllResultsTable);
+      });
+      var arWinnerEl = document.getElementById('ar-winner-sel');
+      if (arWinnerEl) arWinnerEl.addEventListener('change', renderAllResultsTable);
+      var arRmFastEl = document.getElementById('ar-remove-fast');
+      if (arRmFastEl) arRmFastEl.addEventListener('change', renderAllResultsTable);
+
+      AR_PARAMS.forEach(function(p) {
+        var loEl = document.getElementById('drs-' + p + '-lo');
+        var hiEl = document.getElementById('drs-' + p + '-hi');
+        function syncZIndex() {
+          var lo = parseInt(loEl.value);
+          var max = parseInt(loEl.max);
+          // Raise lo above hi only when both handles are at the right end.
+          // hi sits on top naturally (DOM order), which is correct for every
+          // other position — including both-at-zero — so the user can drag it
+          // right.  The one exception is both-at-max: there hi would block lo
+          // from being dragged left, so we flip the stacking order.
+          loEl.style.zIndex = (lo >= max) ? 3 : '';
+        }
+        loEl.addEventListener('input', function() {
+          if (parseInt(loEl.value) > parseInt(hiEl.value)) loEl.value = hiEl.value;
+          syncZIndex();
+          onSliderChange(p);
+        });
+        hiEl.addEventListener('input', function() {
+          if (parseInt(hiEl.value) < parseInt(loEl.value)) hiEl.value = loEl.value;
+          syncZIndex();
+          onSliderChange(p);
+        });
+        syncZIndex();
+        updateFill(p);
+      });
+    }
+
+    function onSliderChange(p) {
+      var lo = parseInt(document.getElementById('drs-' + p + '-lo').value);
+      var hi = parseInt(document.getElementById('drs-' + p + '-hi').value);
+      arState[p] = { lo: lo, hi: hi };
+      document.getElementById('drs-' + p + '-lo-val').textContent = arVals[p][lo];
+      document.getElementById('drs-' + p + '-hi-val').textContent = arVals[p][hi];
+      updateFill(p);
+      renderAllResultsTable();
+    }
+
+    function updateFill(p) {
+      var n = arVals[p].length;
+      var fill = document.getElementById('drs-' + p + '-fill');
+      if (!fill) return;
+      if (n <= 1) { fill.style.left = '0%'; fill.style.width = '100%'; return; }
+      var pct = 100 / (n - 1);
+      fill.style.left  = (arState[p].lo * pct) + '%';
+      fill.style.width = ((arState[p].hi - arState[p].lo) * pct) + '%';
+    }
+
+    var _arRunKeys = [];
+    var _arRunMap  = {};
+    var _arMethods = [];
+
+    function downloadAllResultsCSV() {
+      var BASE_COLS = ['Dataset', 'Task', 'Mission', 'n', 'm', 'D', 'T', 'L', 'F', 'Ensemble'];
+      var headers = BASE_COLS.concat(_arMethods.map(function(m) { return methodLabel(m); }));
+
+      function csvCell(val) {
+        var s = String(val == null ? '' : val);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      }
+
+      var lines = [headers.map(csvCell).join(',')];
+      _arRunKeys.forEach(function(k) {
+        var run = _arRunMap[k];
+        var row = [run.dataset, run.task, run.mission,
+                   run.n, run.m, run.D, run.T,
+                   run.L != null ? run.L.toFixed(1) : '',
+                   run.F, run.ensemble];
+        _arMethods.forEach(function(m) {
+          var cell = run.methods[m];
+          if (!cell) row.push('');
+          else if (cell.ns || cell.mc || cell.re) row.push('N/A');
+          else row.push(cell.est ? cell.t.toFixed(4) + '*' : cell.t.toFixed(4));
+        });
+        lines.push(row.map(csvCell).join(','));
+      });
+
+      var csv = lines.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'results.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function renderAllResultsTable() {
+      var selArTasks = [];
+      document.querySelectorAll('.ar-task-cb').forEach(function(cb) {
+        if (cb.checked) selArTasks.push(cb.value);
+      });
+      var selDatasets = [];
+      document.querySelectorAll('.ar-dataset-cb').forEach(function(cb) {
+        if (cb.checked) selDatasets.push(cb.value);
+      });
+      var selEnsembles = [];
+      document.querySelectorAll('.ar-ensemble-cb').forEach(function(cb) {
+        if (cb.checked) selEnsembles.push(cb.value);
+      });
+      var arWinnerMethod = document.getElementById('ar-winner-sel') ? document.getElementById('ar-winner-sel').value : 'all';
+      var arRmFast = document.getElementById('ar-remove-fast') ? document.getElementById('ar-remove-fast').checked : false;
+
+      // Filter individual rows by param ranges, task, dataset, and ensemble
+      var filtered = DATA.filter(function(r) {
+        if (!AR_PARAMS.every(function(p) {
+          return r[p] >= arVals[p][arState[p].lo] && r[p] <= arVals[p][arState[p].hi];
+        })) return false;
+        if (selArTasks.length > 0 && selArTasks.indexOf(r.task) === -1) return false;
+        if (selDatasets.length > 0 && selDatasets.indexOf(r.dataset) === -1) return false;
+        if (selEnsembles.length > 0 && selEnsembles.indexOf(r.ensemble) === -1) return false;
+        return true;
+      });
+
+      // Group by run: one row per (dataset, mission, task, n, m, D, ensemble)
+      var runKeys = [];
+      var runMap = {};
+      filtered.forEach(function(r) {
+        var k = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
+        if (!runMap[k]) {
+          runMap[k] = { dataset: r.dataset, mission: r.mission, task: r.task,
+                        n: r.n, m: r.m, D: r.D, T: r.T, L: r.L, F: r.F,
+                        ensemble: r.ensemble, methods: {} };
+          runKeys.push(k);
+        }
+        runMap[k].methods[r.approach] = { t: r.running_time, est: r.is_estimated,
+                                           ns: r.not_supported, mc: r.memory_crash, re: r.runtime_error };
+      });
+
+      // Apply winner filter: keep only runs where arWinnerMethod has the lowest valid time
+      if (arWinnerMethod !== 'all') {
+        runKeys = runKeys.filter(function(k) {
+          var mths = runMap[k].methods;
+          var winnerCell = mths[arWinnerMethod];
+          if (!winnerCell || winnerCell.ns || winnerCell.mc || winnerCell.re) return false;
+          var winnerTime = winnerCell.t;
+          return Object.keys(mths).every(function(m) {
+            if (m === arWinnerMethod) return true;
+            var c = mths[m];
+            if (c.ns || c.mc || c.re) return true; // crashed methods don't count against winner
+            return winnerTime <= c.t;
+          });
+        });
+      }
+
+      // Apply remove-fast filter at run level: skip runs where all valid times < 10 s
+      if (arRmFast) {
+        runKeys = runKeys.filter(function(k) {
+          var mths = runMap[k].methods;
+          return !Object.keys(mths).every(function(m) {
+            var c = mths[m];
+            return c.ns || c.mc || c.re || c.t < 10;
+          });
+        });
+      }
+
+      // Determine methods present in the (filtered) runs, sorted
+      var methodSet = {};
+      runKeys.forEach(function(k) {
+        Object.keys(runMap[k].methods).forEach(function(m) { methodSet[m] = true; });
+      });
+      var methods = Object.keys(methodSet).sort();
+
+      var BASE_COLS = ['#', 'Dataset', 'Task', 'Mission', 'n', 'm', 'D', 'T', 'L', 'F', 'Ensemble'];
+      var html = '<table><thead><tr>';
+      BASE_COLS.forEach(function(h) { html += '<th>' + h + '</th>'; });
+      methods.forEach(function(m) { html += '<th>' + methodLabel(m) + '</th>'; });
+      html += '</tr></thead><tbody>';
+
+      runKeys.forEach(function(k, idx) {
+        var run = runMap[k];
+        html += '<tr>';
+        html += '<td>' + (idx + 1) + '</td>';
+        html += '<td>' + run.dataset + '</td>';
+        html += '<td>' + run.task + '</td>';
+        html += '<td>' + run.mission + '</td>';
+        html += '<td>' + run.n + '</td>';
+        html += '<td>' + run.m + '</td>';
+        html += '<td>' + run.D + '</td>';
+        html += '<td>' + run.T + '</td>';
+        html += '<td>' + (run.L != null ? run.L.toFixed(1) : '\u2014') + '</td>';
+        html += '<td>' + run.F + '</td>';
+        html += '<td>' + run.ensemble + '</td>';
+        methods.forEach(function(m) {
+          var cell = run.methods[m];
+          if (!cell) {
+            html += '<td class="missing">\u2014</td>';
+          } else if (cell.ns || cell.mc || cell.re) {
+            html += '<td class="missing">N/A</td>';
+          } else {
+            html += '<td class="time-cell' + (cell.est ? ' estimated' : '') + '">'
+                  + fmtTime(cell.t) + (cell.est ? '*' : '') + '</td>';
+          }
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('all-results-table').innerHTML = html;
+      _arRunKeys = runKeys;
+      _arRunMap  = runMap;
+      _arMethods = methods;
+    }
+
+    buildDualSliders();
+    renderAllResultsTable();
+
+    // -----------------------------------------------------------------------
+    // Analytics section
+    // -----------------------------------------------------------------------
+    var _anaVals = {}, _anaState = {};
+    var _ANA_PARAMS = ['n', 'm', 'D', 'T'];
+
+    function _anaUpdateFill(p) {
+      var n = _anaVals[p].length;
+      var fill = document.getElementById('ana-drs-' + p + '-fill');
+      if (!fill) return;
+      if (n <= 1) { fill.style.left = '0%'; fill.style.width = '100%'; return; }
+      var pct = 100 / (n - 1);
+      fill.style.left  = (_anaState[p].lo * pct) + '%';
+      fill.style.width = ((_anaState[p].hi - _anaState[p].lo) * pct) + '%';
+    }
+
+    function buildAnaFilters() {
+      _ANA_PARAMS.forEach(function(p) {
+        _anaVals[p]  = getUnique(p);
+        _anaState[p] = { lo: 0, hi: _anaVals[p].length - 1 };
+      });
+
+      var html = '';
+
+      // n / m / D dual-range sliders
+      _ANA_PARAMS.forEach(function(p) {
+        var vals = _anaVals[p];
+        var maxI = vals.length - 1;
+        html +=
+          '<div class="ar-filter-group">' +
+          '<label>' + p + ':</label>' +
+          '<div class="dual-range-wrap">' +
+            '<div class="dual-range-slider">' +
+              '<div class="drs-track"></div>' +
+              '<div class="drs-fill" id="ana-drs-' + p + '-fill"></div>' +
+              '<input type="range" id="ana-drs-' + p + '-lo" min="0" max="' + maxI + '" value="0">' +
+              '<input type="range" id="ana-drs-' + p + '-hi" min="0" max="' + maxI + '" value="' + maxI + '">' +
+            '</div>' +
+            '<div class="drs-vals">' +
+              '<span id="ana-drs-' + p + '-lo-val">' + vals[0] + '</span>' +
+              '<span id="ana-drs-' + p + '-hi-val">' + vals[maxI] + '</span>' +
+            '</div>' +
+          '</div></div>';
+      });
+
+      // Task chips
+      var taskVals = getUnique('task');
+      html += '<div class="ar-filter-group"><span class="fr-label">Tasks:</span><div class="filter-chips">';
+      taskVals.forEach(function(t) {
+        html += '<label class="filter-chip"><input type="checkbox" class="ana-task-cb" value="' + t + '" checked> ' + taskDisplayName(t) + '</label>';
+      });
+      html += '</div></div>';
+
+      // Dataset chips
+      var dsVals = getUnique('dataset');
+      html += '<div class="ar-filter-group"><span class="fr-label">Datasets:</span><div class="filter-chips">';
+      dsVals.forEach(function(d) {
+        html += '<label class="filter-chip"><input type="checkbox" class="ana-dataset-cb" value="' + d + '" checked> ' + d + '</label>';
+      });
+      html += '</div></div>';
+
+      // Winner dropdown
+      var allMethods = SCORES.methods || [];
+      html += '<div class="ar-filter-group"><label style="font-weight:600;color:#495057;white-space:nowrap">Winner:</label>';
+      html += '<select id="ana-winner-sel" style="border:1px solid #ced4da;border-radius:4px;padding:3px 7px;font-size:0.84rem;background:#fff;cursor:pointer">';
+      html += '<option value="all">All runs</option>';
+      allMethods.forEach(function(m) {
+        html += '<option value="' + m + '">' + methodLabel(m) + ' wins</option>';
+      });
+      html += '</select></div>';
+
+      document.getElementById('ana-filters').innerHTML = html;
+
+      // Wire sliders
+      _ANA_PARAMS.forEach(function(p) {
+        var loEl = document.getElementById('ana-drs-' + p + '-lo');
+        var hiEl = document.getElementById('ana-drs-' + p + '-hi');
+        function syncZ() { loEl.style.zIndex = (parseInt(loEl.value) >= parseInt(loEl.max)) ? 3 : ''; }
+        loEl.addEventListener('input', function() {
+          if (parseInt(loEl.value) > parseInt(hiEl.value)) loEl.value = hiEl.value;
+          syncZ();
+          _anaState[p].lo = parseInt(loEl.value);
+          _anaState[p].hi = parseInt(hiEl.value);
+          document.getElementById('ana-drs-' + p + '-lo-val').textContent = _anaVals[p][_anaState[p].lo];
+          document.getElementById('ana-drs-' + p + '-hi-val').textContent = _anaVals[p][_anaState[p].hi];
+          _anaUpdateFill(p);
+          renderAnalytics();
+        });
+        hiEl.addEventListener('input', function() {
+          if (parseInt(hiEl.value) < parseInt(loEl.value)) hiEl.value = loEl.value;
+          syncZ();
+          _anaState[p].lo = parseInt(loEl.value);
+          _anaState[p].hi = parseInt(hiEl.value);
+          document.getElementById('ana-drs-' + p + '-lo-val').textContent = _anaVals[p][_anaState[p].lo];
+          document.getElementById('ana-drs-' + p + '-hi-val').textContent = _anaVals[p][_anaState[p].hi];
+          _anaUpdateFill(p);
+          renderAnalytics();
+        });
+        syncZ();
+        _anaUpdateFill(p);
+      });
+
+      document.querySelectorAll('.ana-task-cb').forEach(function(cb) {
+        cb.addEventListener('change', renderAnalytics);
+      });
+      document.querySelectorAll('.ana-dataset-cb').forEach(function(cb) {
+        cb.addEventListener('change', renderAnalytics);
+      });
+      var anaWinEl = document.getElementById('ana-winner-sel');
+      if (anaWinEl) anaWinEl.addEventListener('change', renderAnalytics);
+    }
+
+    function getAnaFilteredRuns() {
+      var selTasks = [];
+      document.querySelectorAll('.ana-task-cb').forEach(function(cb) {
+        if (cb.checked) selTasks.push(cb.value);
+      });
+      var selDatasets = [];
+      document.querySelectorAll('.ana-dataset-cb').forEach(function(cb) {
+        if (cb.checked) selDatasets.push(cb.value);
+      });
+      var winnerFilter = (document.getElementById('ana-winner-sel') || {}).value || 'all';
+
+      // Filter individual rows by all active filters
+      var filtered = DATA.filter(function(r) {
+        if (!_ANA_PARAMS.every(function(p) {
+          return r[p] >= _anaVals[p][_anaState[p].lo] && r[p] <= _anaVals[p][_anaState[p].hi];
+        })) return false;
+        if (selTasks.length > 0 && selTasks.indexOf(r.task) === -1) return false;
+        if (selDatasets.length > 0 && selDatasets.indexOf(r.dataset) === -1) return false;
+        return true;
+      });
+
+      // Group into runs (unique dataset × mission × task × n × m × D × ensemble)
+      var runMap = {}, runKeys = [];
+      filtered.forEach(function(r) {
+        var k = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
+        if (!runMap[k]) {
+          runMap[k] = {
+            dataset: r.dataset, mission: r.mission, task: r.task,
+            n: r.n, m: r.m, D: r.D, ensemble: r.ensemble,
+            methods: {}
+          };
+          runKeys.push(k);
+        }
+        runMap[k].methods[r.approach] = {
+          t: r.running_time,
+          ns: r.not_supported,
+          mc: r.memory_crash,
+          re: r.runtime_error
+        };
+      });
+
+      // Compute winner per run (method with lowest positive valid time)
+      runKeys.forEach(function(k) {
+        var g = runMap[k];
+        var best = null, bestT = Infinity;
+        Object.keys(g.methods).forEach(function(m) {
+          var c = g.methods[m];
+          if (!c.ns && !c.mc && !c.re && c.t > 0 && c.t < bestT) {
+            bestT = c.t; best = m;
+          }
+        });
+        g.winner = best || '__all_failed__';
+      });
+
+      // Apply winner filter
+      if (winnerFilter !== 'all') {
+        runKeys = runKeys.filter(function(k) { return runMap[k].winner === winnerFilter; });
+      }
+
+      return { runMap: runMap, runKeys: runKeys };
+    }
+
+    function _makePieLayout(title, color) {
+      return {
+        title: { text: title, font: { size: 13, color: color || '#343a40' } },
+        margin: { t: 44, b: 8, l: 8, r: 8 },
+        height: 270,
+        showlegend: true,
+        legend: { font: { size: 10 }, orientation: 'v' },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+      };
+    }
+
+    function renderAnaMissionsPies(runMap, runKeys) {
+      var el = document.getElementById('ana-missions-pies');
+      if (runKeys.length === 0) {
+        el.innerHTML = '<p style="color:#888;font-size:0.9rem;padding:8px 0">No runs match the current filters.</p>';
+        return;
+      }
+
+      // Single row: n, m, D (numeric), then Task type, Ensemble type (categorical).
+      // Visibility is based on ALL runs in DATA, not the current filter selection.
+      var allDims = [
+        { key: 'n',        label: 'n — explain set size', numeric: true },
+        { key: 'm',        label: 'm — background size',  numeric: true,
+          skip: _allUniqueM.length === 1 && _allUniqueM[0] === '0' },
+        { key: 'D',        label: 'D — max tree depth',   numeric: true },
+        { key: 'T',        label: 'T — number of trees',   numeric: true },
+        { key: 'task',     label: 'Task type',            fmt: taskDisplayName,
+          skip: _allUniqueTask.length <= 1 },
+        { key: 'ensemble', label: 'Ensemble type',
+          skip: _allUniqueEnsemble.length <= 1 },
+      ].filter(function(d) { return !d.skip; });
+
+      var piesHtml = '<div class="ana-pies-row">';
+      allDims.forEach(function(d) {
+        var cls = d.fmt || !d.numeric ? 'ana-pie-cell-wide' : 'ana-pie-cell';
+        piesHtml += '<div id="ana-pie-' + d.key + '" class="' + cls + '"></div>';
+      });
+      piesHtml += '</div>';
+      el.innerHTML = piesHtml;
+
+      allDims.forEach(function(dim) {
+        var counts = {};
+        runKeys.forEach(function(k) {
+          var val = String(runMap[k][dim.key]);
+          if (dim.fmt) val = dim.fmt(val);
+          counts[val] = (counts[val] || 0) + 1;
+        });
+        var labels = Object.keys(counts).sort(function(a, b) {
+          if (dim.numeric) return parseFloat(a) - parseFloat(b);
+          return String(a).localeCompare(String(b));
+        });
+        var values = labels.map(function(l) { return counts[l]; });
+        var trace = { type: 'pie', labels: labels, values: values, hole: 0.35,
+          textinfo: 'percent',
+          hovertemplate: '<b>%{label}</b><br>%{value} runs (%{percent})<extra></extra>' };
+        if (dim.numeric) { trace.sort = false; trace.direction = 'clockwise'; }
+        Plotly.newPlot('ana-pie-' + dim.key, [trace], _makePieLayout(dim.label),
+          { displayModeBar: false, responsive: true });
+      });
+    }
+
+    function renderAnaScore(runMap, runKeys) {
+      var el = document.getElementById('ana-score');
+      if (!el) return;
+      if (runKeys.length === 0) {
+        el.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
+        return;
+      }
+
+      // Compute scores from already-grouped runs
+      var totals = {}, counts = {}, nGroups = 0;
+      runKeys.forEach(function(k) {
+        var g = runMap[k];
+        var times = {};
+        Object.keys(g.methods).forEach(function(m) {
+          var c = g.methods[m];
+          if (!c.ns && !c.mc && !c.re && c.t > 0) times[m] = c.t;
+        });
+        var nsKeys = Object.keys(g.methods).filter(function(m) {
+          var c = g.methods[m]; return c.ns || c.mc || c.re;
+        });
+        if (Object.keys(times).length + nsKeys.length < 2) return;
+        if (Object.keys(times).length === 0) {
+          nsKeys.forEach(function(m) { totals[m] = (totals[m] || 0); counts[m] = (counts[m] || 0) + 1; });
+          nGroups++;
+          return;
+        }
+        var minT = Math.min.apply(null, Object.keys(times).map(function(m) { return times[m]; }));
+        Object.keys(times).forEach(function(m) {
+          totals[m] = (totals[m] || 0) + (minT / times[m]) * 100;
+          counts[m] = (counts[m] || 0) + 1;
+        });
+        nsKeys.forEach(function(m) { totals[m] = (totals[m] || 0); counts[m] = (counts[m] || 0) + 1; });
+        nGroups++;
+      });
+
+      if (!nGroups) {
+        el.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
+        return;
+      }
+      var scores = {};
+      Object.keys(totals).forEach(function(m) { scores[m] = totals[m] / counts[m]; });
+      var maxScore = Math.max.apply(null, Object.keys(scores).map(function(m) { return scores[m]; }));
+      var html = Object.keys(scores).sort().map(function(m) {
+        return renderMethodBadge(m, scores[m], maxScore);
+      }).join('<span class="msb-sep">vs</span>');
+      html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + nGroups + ' runs)</span>';
+      el.innerHTML = html;
+    }
+
+    function renderAnaMethodsPies(runMap, runKeys) {
+      var el = document.getElementById('ana-methods-pies');
+      var methods = SCORES.methods || [];
+      if (runKeys.length === 0 || methods.length === 0) { el.innerHTML = ''; return; }
+
+      var piesHtml = '<div class="ana-pies-row">';
+      piesHtml += '<div id="ana-pie-winner" class="ana-pie-cell-wide"></div>';
+      methods.forEach(function(m) {
+        var safeId = m.replace(/[^a-zA-Z0-9]/g, '_');
+        piesHtml += '<div id="ana-mpie-' + safeId + '" class="ana-pie-cell"></div>';
+      });
+      piesHtml += '</div>';
+      el.innerHTML = piesHtml;
+
+      // Winner pie
+      var wCounts = {};
+      runKeys.forEach(function(k) {
+        var w = runMap[k].winner;
+        var lbl = (w === '__all_failed__') ? 'All Failed' : methodLabel(w);
+        wCounts[lbl] = (wCounts[lbl] || 0) + 1;
+      });
+      var wLabels = Object.keys(wCounts);
+      var wValues = wLabels.map(function(l) { return wCounts[l]; });
+      var wColors = wLabels.map(function(l) {
+        if (l === 'All Failed') return '#d62728';
+        var mn = (SCORES.methods || []).find(function(m) { return methodLabel(m) === l; });
+        return mn ? methodColor(mn) : '#adb5bd';
+      });
+      Plotly.newPlot('ana-pie-winner',
+        [{ type: 'pie', labels: wLabels, values: wValues, hole: 0.35,
+           marker: { colors: wColors }, textinfo: 'percent',
+           hovertemplate: '<b>%{label}</b><br>%{value} runs (%{percent})<extra></extra>' }],
+        _makePieLayout('Winner'),
+        { displayModeBar: false, responsive: true }
+      );
+
+      var STATUS_LABELS = ['Won', 'Lost', 'Not Supported', 'Memory Crash', 'Exception Crash'];
+      var STATUS_KEYS   = ['won', 'lost', 'not_supported', 'memory_crash', 'runtime_error'];
+      var STATUS_COLORS = ['#2ca02c', '#1f77b4', '#adb5bd', '#d62728', '#ff7f0e'];
+
+      methods.forEach(function(m) {
+        var counts = { won: 0, lost: 0, not_supported: 0, memory_crash: 0, runtime_error: 0 };
+        runKeys.forEach(function(k) {
+          var g = runMap[k];
+          var cell = g.methods[m];
+          if (!cell) return;
+          if (cell.ns)        { counts.not_supported++; }
+          else if (cell.mc)   { counts.memory_crash++;  }
+          else if (cell.re)   { counts.runtime_error++; }
+          else if (g.winner === m) { counts.won++; }
+          else                { counts.lost++;          }
+        });
+
+        var filtLabels = [], filtValues = [], filtColors = [];
+        STATUS_KEYS.forEach(function(sk, i) {
+          if (counts[sk] > 0) {
+            filtLabels.push(STATUS_LABELS[i]);
+            filtValues.push(counts[sk]);
+            filtColors.push(STATUS_COLORS[i]);
+          }
+        });
+        if (filtValues.length === 0) {
+          filtLabels = ['No data']; filtValues = [1]; filtColors = ['#dee2e6'];
+        }
+
+        var safeId = m.replace(/[^a-zA-Z0-9]/g, '_');
+        Plotly.newPlot(
+          'ana-mpie-' + safeId,
+          [{ type: 'pie', labels: filtLabels, values: filtValues, hole: 0.35,
+             marker: { colors: filtColors }, textinfo: 'percent',
+             hovertemplate: '<b>%{label}</b><br>%{value} runs (%{percent})<extra></extra>' }],
+          _makePieLayout(methodLabel(m), methodColor(m)),
+          { displayModeBar: false, responsive: true }
+        );
+      });
+    }
+
+    function renderAnalytics() {
+      var result = getAnaFilteredRuns();
+      renderAnaScore(result.runMap, result.runKeys);
+      renderAnaMissionsPies(result.runMap, result.runKeys);
+      renderAnaMethodsPies(result.runMap, result.runKeys);
+    }
+
+    buildAnaFilters();
+    renderAnalytics();
+  </script>
+</body>
+</html>

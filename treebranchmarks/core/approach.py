@@ -82,6 +82,14 @@ class Approach(ABC):
     ) -> ApproachOutput:
         return ApproachOutput(elapsed_s=0.0, not_supported=True)
 
+    def path_dependent_interactions_order_3(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        return ApproachOutput(elapsed_s=0.0, not_supported=True)
+
     def background_shap(
         self,
         trained_model: TrainedModel,
@@ -91,6 +99,14 @@ class Approach(ABC):
         return ApproachOutput(elapsed_s=0.0, not_supported=True)
 
     def background_shap_interactions(
+        self,
+        trained_model: TrainedModel,
+        X_explain: pd.DataFrame,
+        X_background: Optional[pd.DataFrame],
+    ) -> ApproachOutput:
+        return ApproachOutput(elapsed_s=0.0, not_supported=True)
+
+    def background_shap_interactions_order_3(
         self,
         trained_model: TrainedModel,
         X_explain: pd.DataFrame,
