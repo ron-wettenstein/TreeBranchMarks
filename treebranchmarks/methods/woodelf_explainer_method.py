@@ -1,10 +1,20 @@
 """
 WoodelfApproach — WoodelfExplainer covering all 4 task types.
 
+On CPU, ``WoodelfExplainer.calc_metric`` dispatches through ``hybrid_woodelf``,
+which switches to the sparse (MN/LTS) path once the tree is deeper than the
+high-depth thresholds.  The sparse path covers Shapley/Banzhaf values *and*
+interaction values, with and without a background, so no depth is out of reach
+any more — the depth limits below are purely runtime shortcuts, not capability
+limits:
+
 - path_dependent_shap:          no limit
-- path_dependent_interactions:  extrapolate when D > 15, crash when D >= 18
-- background_shap:              extrapolate when D > 18, crash when D >= 20
-- background_shap_interactions: extrapolate when D > 15, crash when D >= 18
+- path_dependent_interactions:  extrapolate when D > 15
+- background_shap:              extrapolate when D > 18
+- background_shap_interactions: extrapolate when D > 15
+
+The GPU variant still goes through ``woodelf_for_high_depth`` (calc_metric only
+takes the hybrid path when ``GPU=False``), so it keeps the memory-crash depths.
 """
 
 from __future__ import annotations
@@ -32,9 +42,10 @@ class WoodelfApproach(Approach):
     description = "Woodelf TreeExplainer implementation."
 
     _BG_SHAP_TREE_LIMIT_DEPTH  = 18   # background_shap: extrapolate when D > this
-    _BG_SHAP_CRASH_DEPTH       = 20   # background_shap: crash when D >= this
     _IV_TREE_LIMIT_DEPTH       = 15   # PD/BG interactions: extrapolate when D > this
-    _IV_CRASH_DEPTH            = 18   # PD/BG interactions: crash when D >= this
+    # Memory-crash depths — None means "handled by the sparse path at any depth".
+    _BG_SHAP_CRASH_DEPTH       = None
+    _IV_CRASH_DEPTH            = None
     GPU                        = False
 
     # ------------------------------------------------------------------
@@ -72,7 +83,9 @@ class WoodelfApproach(Approach):
                 GPU=self.GPU,
             )
 
-        if tree_limit_depth is not None and D > tree_limit_depth:
+        # Extrapolating from one tree is only worth it when there is more than one
+        # tree; at T=1 the "extrapolated" run *is* the full run.
+        if tree_limit_depth is not None and D > tree_limit_depth and T > 1:
             t0 = time.perf_counter()
             if use_interactions:
                 explainer.shap_interaction_values(
@@ -147,8 +160,16 @@ class WoodelfApproach(Approach):
 # ---------------------------------------------------------------------------
 
 class WoodelfGPUApproach(WoodelfApproach):
-    """WoodelfApproach with GPU=True (requires CuPy: pip install cupy)."""
+    """
+    WoodelfApproach with GPU=True (requires CuPy: pip install cupy).
+
+    The GPU path bypasses ``hybrid_woodelf`` and always runs
+    ``woodelf_for_high_depth``, so the historical memory-crash depths still apply.
+    """
 
     name = "Woodelf GPU"
     description = "Woodelf TreeExplainer implementation accelerated on GPU (CuPy required)."
     GPU = True
+
+    _BG_SHAP_CRASH_DEPTH = 20   # background_shap: crash when D >= this
+    _IV_CRASH_DEPTH      = 18   # PD/BG interactions: crash when D >= this

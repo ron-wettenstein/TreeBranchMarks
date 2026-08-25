@@ -55,7 +55,22 @@
       "Bash(python -c ' *)",
       "Grep(C:/university/decision_trees/code_and_work/**)",
       "Bash(cd c:/university/decision_trees/code_and_work/treebranchmarks*)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(cd c:/university/decision_trees/code_and_work/woodelf_explainer *)",
+      "Read(//c/university/decision_trees/code_and_work/woodelf_explainer/**)",
+      "Bash(PYTHONPATH=. python \"C:/Users/ronoi/AppData/Local/Temp/claude/c--university-decision-trees-code-and-work-treebranchmarks/07bd579e-eb0b-42a1-853f-e9b741adde18/scratchpad/smoke_bg_iv.py\" 20 50 20)",
+      "Bash(cd c:/university/decision_trees/code_and_work/woodelf_explainer && grep -rn \"def get_unique_features_in_path\\\\|def get_nodes_to_path_dict\" woodelf/ && grep -n \"get_unique_features_in_path\\\\|ignore_right_neighbor\" woodelf/woodelf_sparse.py | head)",
+      "Bash(cd c:/university/decision_trees/code_and_work/woodelf_explainer && grep -rn \"def load_decision_tree_ensemble_model\" woodelf/)",
+      "Bash(PYTHONPATH=. python -u \"C:/Users/ronoi/AppData/Local/Temp/claude/c--university-decision-trees-code-and-work-treebranchmarks/07bd579e-eb0b-42a1-853f-e9b741adde18/scratchpad/calibrate.py\" 20)",
+      "Bash(rm -f results/smoke_woodelf_vs_shapiq.* results/smoke_fraud_woodelf_vs_shapiq.*)",
+      "Bash(rm -rf cache/method_results/smoke_woodelf_vs_shapiq cache/method_results/smoke_fraud_woodelf_vs_shapiq)",
+      "Bash(cd c:/university/decision_trees/code_and_work/woodelf_explainer/woodelf && sed -n '122,215p' woodelf_sparse.py)",
+      "Read(//c/university/decision_trees/code_and_work/woodelf_explainer/woodelf/**)",
+      "Bash(cd c:/university/decision_trees/code_and_work/woodelf_explainer/woodelf && sed -n '30,50p' woodelf_sparse.py && echo \"=== hybrid tail ===\" && sed -n '210,245p' woodelf_sparse.py)",
+      "Bash(PYTHONPATH=. timeout 1200 python \"C:/Users/ronoi/AppData/Local/Temp/claude/c--university-decision-trees-code-and-work-treebranchmarks/17f31a49-9670-4fd1-91d4-4727ecdce8d0/scratchpad/calib_pd.py\" cal 6 1,10,100,1000,10000 1,2,3)",
+      "Bash(rm -f results/smoke_pd_woodelf_vs_shapiq.*)",
+      "Bash(rm -rf cache/method_results/smoke_pd_woodelf_vs_shapiq)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 900 python \"C:/Users/ronoi/AppData/Local/Temp/claude/c--university-decision-trees-code-and-work-treebranchmarks/17f31a49-9670-4fd1-91d4-4727ecdce8d0/scratchpad/nb2.py\")"
     ]
   }
 }
