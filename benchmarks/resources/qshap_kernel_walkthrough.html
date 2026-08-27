@@ -1,0 +1,1028 @@
+<title>The Quadrature-TreeSHAP Kernel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;1,400&family=Spectral:ital,wght@0,500;0,600;1,400;1,500&display=swap">
+
+<style>
+:root{
+  color-scheme: light dark;
+  --paper:#EEF3F3;
+  --surface:#FAFCFC;
+  --sunk:#E4ECEC;
+  --ink:#0F1A1D;
+  --ink-2:#2E4247;
+  --muted:#5E7176;
+  --faint:#83969A;
+  --rule:#C9D6D6;
+  --rule-soft:#DCE5E5;
+  --hot:#B4460F;
+  --hot-ink:#8F380C;
+  --hot-wash:rgba(180,70,15,.09);
+  --cold:#0A6674;
+  --cold-ink:#08525E;
+  --cold-wash:rgba(10,102,116,.09);
+  --code-bg:#E7EFEF;
+  --code-ink:#17282C;
+  --shadow:rgba(15,26,29,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1214;
+    --surface:#131B1E;
+    --sunk:#0A1012;
+    --ink:#DEE8E8;
+    --ink-2:#B4C4C6;
+    --muted:#8CA0A4;
+    --faint:#6B8085;
+    --rule:#253336;
+    --rule-soft:#1B2629;
+    --hot:#F0925F;
+    --hot-ink:#F5A97C;
+    --hot-wash:rgba(240,146,95,.12);
+    --cold:#4FC4D2;
+    --cold-ink:#77D5E0;
+    --cold-wash:rgba(79,196,210,.12);
+    --code-bg:#0E1719;
+    --code-ink:#CFDDDD;
+    --shadow:rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1214;
+  --surface:#131B1E;
+  --sunk:#0A1012;
+  --ink:#DEE8E8;
+  --ink-2:#B4C4C6;
+  --muted:#8CA0A4;
+  --faint:#6B8085;
+  --rule:#253336;
+  --rule-soft:#1B2629;
+  --hot:#F0925F;
+  --hot-ink:#F5A97C;
+  --hot-wash:rgba(240,146,95,.12);
+  --cold:#4FC4D2;
+  --cold-ink:#77D5E0;
+  --cold-wash:rgba(79,196,210,.12);
+  --code-bg:#0E1719;
+  --code-ink:#CFDDDD;
+  --shadow:rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- shell ---------- */
+.shell{max-width:1360px;margin:0 auto;padding:0 1.25rem 6rem}
+@media (min-width:1120px){
+  .shell{display:grid;grid-template-columns:15.5rem minmax(0,1fr);gap:3.5rem;padding:0 2rem 7rem}
+}
+
+/* ---------- masthead ---------- */
+.mast{grid-column:1/-1;border-bottom:1px solid var(--rule);padding:3.5rem 0 2.25rem;margin-bottom:3rem}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 1.1rem;
+}
+.eyebrow b{color:var(--hot);font-weight:600}
+h1{
+  font-family:Spectral,Georgia,"Times New Roman",serif;
+  font-weight:600;font-size:clamp(2.1rem,5.2vw,3.4rem);
+  line-height:1.06;letter-spacing:-.018em;margin:0 0 1.1rem;
+  text-wrap:balance;max-width:20ch;
+}
+.dek{font-size:clamp(1.02rem,1.6vw,1.16rem);color:var(--ink-2);max-width:60ch;margin:0 0 2rem}
+.dek em{font-family:Spectral,Georgia,serif;font-style:italic;color:var(--ink)}
+.mast-meta{display:flex;flex-wrap:wrap;gap:.55rem 2rem;font-family:"IBM Plex Mono",monospace;font-size:.76rem;color:var(--muted)}
+.mast-meta span{white-space:nowrap}
+.mast-meta b{color:var(--ink-2);font-weight:500}
+.mast-meta a{color:var(--cold);text-decoration:none;border-bottom:1px solid var(--rule)}
+.mast-meta a:hover{border-bottom-color:var(--cold)}
+
+/* ---------- nav rail ---------- */
+nav.rail{display:none}
+@media (min-width:1120px){
+  nav.rail{display:block;position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;padding:0 0 3rem}
+  nav.rail ol{list-style:none;margin:0;padding:0}
+  nav.rail li{margin:0}
+  nav.rail a{
+    display:flex;gap:.65rem;text-decoration:none;color:var(--muted);
+    font-size:.815rem;line-height:1.35;padding:.42rem 0;border-top:1px solid var(--rule-soft);
+  }
+  nav.rail li:first-child a{border-top:0}
+  nav.rail a:hover{color:var(--ink)}
+  nav.rail a .n{font-family:"IBM Plex Mono",monospace;font-size:.7rem;color:var(--faint);flex:0 0 1.4rem;padding-top:.12rem}
+  nav.rail .railhead{
+    font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--faint);padding:0 0 .6rem;
+  }
+}
+
+/* ---------- sections ---------- */
+main{min-width:0}
+section{margin:0 0 4.25rem;scroll-margin-top:1.5rem}
+h2{
+  font-family:Spectral,Georgia,serif;font-weight:600;
+  font-size:clamp(1.5rem,2.9vw,1.95rem);line-height:1.18;letter-spacing:-.012em;
+  margin:0 0 .35rem;text-wrap:balance;
+}
+h2 .sn{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;font-weight:500;letter-spacing:.1em;
+  color:var(--hot);display:block;margin-bottom:.6rem;text-transform:uppercase;
+}
+h3{
+  font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:1.03rem;
+  letter-spacing:-.005em;margin:2.4rem 0 .55rem;color:var(--ink);
+}
+h4{
+  font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.78rem;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:2rem 0 .5rem;
+}
+p{margin:0 0 1.05rem;max-width:70ch}
+ul,ol.prose-list{margin:0 0 1.15rem;padding-left:1.15rem;max-width:70ch}
+li{margin:0 0 .42rem}
+.lede{font-size:1.05rem;color:var(--ink-2);max-width:66ch;margin-bottom:1.6rem}
+hr.sep{border:0;border-top:1px solid var(--rule);margin:3rem 0}
+
+/* ---------- inline atoms ---------- */
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.855em;
+  background:var(--code-bg);color:var(--code-ink);padding:.09em .34em;border-radius:2px;
+}
+a{color:var(--cold)}
+.m{font-family:Spectral,Georgia,serif;font-style:italic;font-size:1.06em;letter-spacing:.01em;white-space:nowrap}
+.m .r{font-style:normal}
+sub,sup{font-size:.7em;line-height:0}
+.hot{color:var(--hot);font-weight:500}
+.cold{color:var(--cold);font-weight:500}
+.lref{
+  font-family:"IBM Plex Mono",monospace;font-size:.74em;font-weight:500;
+  color:var(--muted);background:var(--sunk);padding:.1em .4em;border:1px solid var(--rule-soft);
+  white-space:nowrap;
+}
+
+/* ---------- code listings ---------- */
+.src{
+  margin:1.1rem 0 1.4rem;background:var(--code-bg);border:1px solid var(--rule-soft);
+  padding:.85rem 0;overflow-x:auto;font-family:"IBM Plex Mono",monospace;
+  font-size:.795rem;line-height:1.6;color:var(--code-ink);
+}
+.src code{background:none;padding:0;font-size:inherit;color:inherit}
+.src .l{display:block;white-space:pre;padding:0 1.1rem 0 0;min-width:max-content}
+.src .l::before{
+  counter-increment:ln;content:counter(ln);
+  display:inline-block;width:3.6rem;padding-right:1.05rem;text-align:right;
+  color:var(--faint);font-size:.94em;user-select:none;
+}
+.src .l.hl{background:var(--hot-wash)}
+.src .l.hlc{background:var(--cold-wash)}
+.src .cm{color:var(--muted);font-style:italic}
+.src .h{color:var(--hot);font-weight:500;font-style:normal}
+.src .c{color:var(--cold);font-weight:500;font-style:normal}
+.src .kw{color:var(--ink);font-weight:600;opacity:.8}
+.srccap{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.06em;
+  color:var(--muted);text-transform:uppercase;margin:0 0 -.6rem;padding-top:.3rem;
+}
+
+/* ---------- crosswalk (paper vs code) ---------- */
+.xwalk{
+  display:grid;gap:0;margin:1.3rem 0 1.6rem;border:1px solid var(--rule);background:var(--surface);
+}
+@media (min-width:760px){.xwalk{grid-template-columns:1fr 1fr}}
+.xw{padding:.95rem 1.1rem 1.05rem;min-width:0;overflow-x:auto}
+.xw + .xw{border-top:1px solid var(--rule)}
+@media (min-width:760px){.xw + .xw{border-top:0;border-left:1px solid var(--rule)}}
+.xw .tag{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.13em;
+  text-transform:uppercase;margin-bottom:.6rem;font-weight:600;
+}
+.xw.paper .tag{color:var(--cold)}
+.xw.code .tag{color:var(--hot)}
+.xw .body{font-size:.9rem;line-height:1.55}
+.xw pre{margin:0;font-family:"IBM Plex Mono",monospace;font-size:.775rem;line-height:1.55;white-space:pre;color:var(--code-ink)}
+.xw .note{margin:.6rem 0 0;font-size:.815rem;color:var(--muted);max-width:none}
+
+/* ---------- callout / derivation ---------- */
+.deriv{
+  margin:1.4rem 0;padding:1.25rem 1.35rem;background:var(--surface);
+  border:1px solid var(--rule);
+}
+.deriv .dh{
+  font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 .9rem;
+}
+.deriv .step{
+  display:grid;grid-template-columns:auto 1fr;gap:.5rem 1rem;align-items:baseline;
+  padding:.3rem 0;font-size:1rem;
+}
+.deriv .step .why{font-size:.8rem;color:var(--muted);font-family:"IBM Plex Sans",sans-serif;font-style:normal}
+.deriv .eq{font-family:Spectral,Georgia,serif;font-style:italic;font-size:1.08rem}
+.deriv .eq .r{font-style:normal}
+.deriv .concl{margin:.9rem 0 0;padding-top:.85rem;border-top:1px solid var(--rule-soft);font-size:.93rem;color:var(--ink-2);max-width:none}
+
+.note-box{
+  margin:1.4rem 0;padding:1rem 1.2rem;background:var(--hot-wash);
+  border:1px solid var(--rule);font-size:.91rem;
+}
+.note-box p{max-width:none;margin:0 0 .6rem}
+.note-box p:last-child{margin:0}
+.note-box .nh{
+  font-family:"IBM Plex Mono",monospace;font-size:.69rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--hot-ink);font-weight:600;margin-bottom:.5rem;
+}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0 1.7rem;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;min-width:640px;background:var(--surface);font-size:.865rem}
+thead th{
+  text-align:left;font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted);font-weight:600;
+  padding:.7rem .9rem;border-bottom:1px solid var(--rule);vertical-align:bottom;
+}
+tbody td{padding:.68rem .9rem;border-bottom:1px solid var(--rule-soft);vertical-align:top;line-height:1.5}
+tbody tr:last-child td{border-bottom:0}
+tbody td code{font-size:.83em}
+td.sym{font-family:Spectral,Georgia,serif;font-style:italic;font-size:1.05rem;white-space:nowrap;color:var(--cold-ink)}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--faint);font-size:.8rem;white-space:nowrap}
+.chip{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.07em;
+  text-transform:uppercase;padding:.13em .5em;border:1px solid var(--rule);color:var(--muted);
+  white-space:nowrap;
+}
+.chip.speed{color:var(--hot);border-color:var(--hot);background:var(--hot-wash)}
+.chip.stab{color:var(--cold);border-color:var(--cold);background:var(--cold-wash)}
+.chip.eng{color:var(--muted)}
+
+/* ---------- figures ---------- */
+figure{margin:1.8rem 0 2rem;padding:0}
+figure svg{display:block;width:100%;max-width:100%;height:auto;color:var(--ink)}
+.figwrap{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);padding:1.35rem 1.2rem}
+figcaption{
+  margin-top:.75rem;font-size:.83rem;color:var(--muted);line-height:1.5;max-width:72ch;
+}
+figcaption b{color:var(--ink-2);font-weight:600}
+svg .hotstroke{stroke:var(--hot)}
+svg .hotfill{fill:var(--hot)}
+svg .coldstroke{stroke:var(--cold)}
+svg .coldfill{fill:var(--cold)}
+svg text{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:currentColor}
+svg text.lbl{font-family:"IBM Plex Sans",sans-serif;font-size:11.5px}
+svg text.mth{font-family:Spectral,Georgia,serif;font-style:italic;font-size:13px}
+svg .box{fill:none;stroke:currentColor;stroke-width:1.1}
+svg .soft{stroke:currentColor;stroke-width:1;opacity:.35}
+svg .dim{opacity:.55}
+
+/* ---------- call graph strip ---------- */
+.cg{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:1.2rem 0 1.6rem;font-family:"IBM Plex Mono",monospace;font-size:.775rem}
+.cg .fn{padding:.35rem .6rem;border:1px solid var(--rule);background:var(--surface);color:var(--ink)}
+.cg .fn small{display:block;font-size:.85em;color:var(--muted);letter-spacing:.02em}
+.cg .ar{color:var(--faint)}
+
+/* ---------- key/value grid ---------- */
+.kv{display:grid;gap:0;border:1px solid var(--rule);margin:1.2rem 0 1.6rem;background:var(--surface)}
+.kv .row{display:grid;grid-template-columns:1fr;gap:.15rem;padding:.7rem .95rem;border-top:1px solid var(--rule-soft)}
+.kv .row:first-child{border-top:0}
+@media (min-width:700px){.kv .row{grid-template-columns:13rem 1fr;gap:1.2rem;align-items:baseline}}
+.kv .k{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink);font-weight:500}
+.kv .v{font-size:.875rem;color:var(--ink-2);line-height:1.55}
+.kv .v .m{color:var(--cold-ink)}
+
+footer{
+  grid-column:1/-1;border-top:1px solid var(--rule);padding-top:1.6rem;margin-top:2rem;
+  font-size:.82rem;color:var(--muted);
+}
+footer p{max-width:70ch}
+a:focus-visible,nav.rail a:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+
+<header class="mast">
+  <p class="eyebrow">Annotated source &nbsp;·&nbsp; <b>shapiq_qshap.cpp</b> &nbsp;·&nbsp; 418 lines</p>
+  <h1>The Quadrature-TreeSHAP Kernel</h1>
+  <p class="dek">A line-by-line reading of the C++ any-order interaction kernel against <em>Algorithm 1</em> of <em>Quadrature-TreeSHAP: Depth-Independent TreeSHAP and Shapley Interactions</em> — and an account of the fourteen places where the code deliberately parts ways with the pseudocode.</p>
+  <div class="mast-meta">
+    <span><b>File</b> src/gpu_linear_treeshap/cpp/shapiq_qshap.cpp</span>
+    <span><b>Paper</b> <a href="https://arxiv.org/abs/2605.04497">arXiv:2605.04497</a></span>
+    <span><b>Algorithm 1</b> p. 6</span>
+    <span><b>Upstream</b> <a href="https://github.com/mmschlk/shapiq/blob/main/src/shapiq/tree/quadrature/cext/quadrature_tree_shap.cc">shapiq / quadrature_tree_shap.cc</a></span>
+  </div>
+</header>
+
+<nav class="rail" aria-label="Contents">
+  <p class="railhead">Contents</p>
+  <ol>
+    <li><a href="#orient"><span class="n">01</span><span>What the file is</span></a></li>
+    <li><a href="#bridge"><span class="n">02</span><span>Notation bridge</span></a></li>
+    <li><a href="#reparam"><span class="n">03</span><span>The (h, c) substitution</span></a></li>
+    <li><a href="#tree"><span class="n">04</span><span>QuadTree &amp; split semantics</span></a></li>
+    <li><a href="#ws"><span class="n">05</span><span>The workspace</span></a></li>
+    <li><a href="#rank"><span class="n">06</span><span>Output layout &amp; ranking</span></a></li>
+    <li><a href="#traverse"><span class="n">07</span><span>The stage machine</span></a></li>
+    <li><a href="#extract"><span class="n">08</span><span>quad_extract</span></a></li>
+    <li><a href="#enum"><span class="n">09</span><span>quad_enumerate</span></a></li>
+    <li><a href="#diffs"><span class="n">10</span><span>Differences from Alg. 1</span></a></li>
+    <li><a href="#invariants"><span class="n">11</span><span>Invariants worth trusting</span></a></li>
+    <li><a href="#gaps"><span class="n">12</span><span>What the paper has that the file doesn't</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============================================================ -->
+<section id="orient">
+  <h2><span class="sn">01 — Orientation</span>What the file is</h2>
+
+  <p class="lede">Four functions, no dependencies beyond the STL. It computes all Shapley interaction values of every order in <code>[min_order, max_order]</code> for a batch of rows against a whole forest, in a single depth-first pass per row.</p>
+
+  <div class="cg">
+    <span class="fn">quadrature_tree_shap<small>L395 · per batch</small></span>
+    <span class="ar">→</span>
+    <span class="fn">quadrature_inference<small>L257 · per row</small></span>
+    <span class="ar">→</span>
+    <span class="fn">quad_extract<small>L204 · per edge</small></span>
+    <span class="ar">→</span>
+    <span class="fn">quad_enumerate<small>L166 · per subset</small></span>
+  </div>
+
+  <p>The paper's Algorithm 1 is one recursive <code>DFS</code> over one tree for one sample at one fixed interaction order <span class="m">s</span>. This file expands that in four directions at once — batch of rows, forest of trees, range of orders, iterative traversal — while shrinking the per-node arithmetic. Everything else in this document is a consequence of those four expansions plus one algebraic substitution.</p>
+
+  <h3>The quantity being computed</h3>
+
+  <p>The paper's chain is short. For a leaf <span class="m">v</span>, the <em>empty prediction</em> and <em>marginal multiplier</em> are</p>
+
+  <div class="deriv">
+    <p class="dh">Paper, Eq. 1 &amp; Eq. 2</p>
+    <div class="step">
+      <span class="eq">R<sup>v</sup><sub>∅</sub> <span class="r">=</span> val(v) · ∏<sub><span class="r">e ∈ path(v)</span></sub> w<sub>e</sub></span>
+      <span class="why">leaf value scaled by the cover ratio of every edge on the path</span>
+    </div>
+    <div class="step">
+      <span class="eq">q<sup>v</sup><sub>i</sub> <span class="r">=</span> ∏<sub><span class="r">e: f(e)=i</span></sub> 1/w<sub>e</sub> &nbsp;<span class="r">if</span>&nbsp; x <span class="r">satisfies every split on</span> i, &nbsp;<span class="r">else</span> 0</span>
+      <span class="why">what putting feature <em>i</em> into the coalition multiplies the prediction by</span>
+    </div>
+    <div class="step">
+      <span class="eq">α<sup>v</sup><sub>j</sub> <span class="r">=</span> q<sup>v</sup><sub>j</sub> − 1, &nbsp;&nbsp; H<sub>v</sub>(p) <span class="r">=</span> ∏<sub><span class="r">j ∈ M(v)</span></sub> (1 + α<sup>v</sup><sub>j</sub> p)</span>
+      <span class="why"><em>M(v)</em> = distinct features on the path to <em>v</em></span>
+    </div>
+    <p class="concl">Theorem 1 then gives the order-|S| weighted Banzhaf interaction at participation probability <span class="m">p</span> in closed form (Eq. 8), and Eq. 9 recovers the Shapley interaction by integrating it over <span class="m">p ∈ [0,1]</span>. Gauss–Legendre turns that integral into a finite sum over fixed nodes <span class="m">t<sub>m</sub></span> with weights <span class="m">w<sub>m</sub></span> (Eq. 10).</p>
+  </div>
+
+  <p>Everything the kernel does at runtime is an efficient evaluation of the <strong>telescoping update</strong>, Eq. 11, which the paper states for a split <span class="m">e</span> on feature <span class="m">i</span> with head <span class="m">h(e)</span>:</p>
+
+  <div class="deriv">
+    <p class="dh">Paper, Eq. 11 — the update the kernel actually implements</p>
+    <div class="step" style="grid-template-columns:1fr">
+      <span class="eq">SII<sup>(S ∪ {i})</sup> <span class="r">+=</span> ∑<sub>m</sub> w<sub>m</sub> H<sub>h(e)</sub>(t<sub>m</sub>) &nbsp;( &nbsp;<span style="color:var(--hot)">(p<sub>e</sub> − 1)/(1 + (p<sub>e</sub> − 1)t<sub>m</sub>)</span> &nbsp;−&nbsp; <span style="color:var(--muted)">(p<sub>e↑</sub> − 1)/(1 + (p<sub>e↑</sub> − 1)t<sub>m</sub>)</span>&nbsp; ) &nbsp;∏<sub><span class="r">j ∈ S</span></sub> <span style="color:var(--cold)">(p<sub>j</sub> − 1)/(1 + (p<sub>j</sub> − 1)t<sub>m</sub>)</span></span>
+    </div>
+    <p class="concl">Read left to right, the three coloured pieces are exactly the three things the kernel keeps in memory: <span class="hot">the current edge's ratio</span> (<code>g_new</code>), <span style="color:var(--muted);font-weight:500">the same feature's previous ratio higher up the path</span> (the ancestor correction), and <span class="cold">a product of ratios over an arbitrary subset of the other live path features</span> (<code>gamma</code>). <span class="m">H<sub>h(e)</sub>(t<sub>m</sub>)</span> is the subtree sum below the edge — the kernel's <code>E</code>.</p>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="bridge">
+  <h2><span class="sn">02 — Notation bridge</span>Every paper symbol, and where it lives</h2>
+
+  <p class="lede">The single most useful table for reading the file. The kernel does not store <span class="m">q</span>, <span class="m">α</span>, or <span class="m">p<sub>e</sub></span> anywhere — it stores a rescaled form of each. Section 03 explains why.</p>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th style="width:11%">Paper</th><th style="width:30%">Meaning</th><th style="width:26%">In the code</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="sym">t<sub>m</sub>, w<sub>m</sub></td><td>Gauss–Legendre nodes and weights on [0,1]</td><td><code>t[m]</code>, <code>w[m]</code>, <code>n_quad</code></td><td>Caller-supplied. Paper fixes <span class="m">n</span>=8; here it is a runtime parameter.</td></tr>
+      <tr><td class="sym">M(v)</td><td>distinct features on the root-to-leaf path</td><td><code>ws.path_feats</code> <span class="lref">L78</span></td><td>Kept sorted; the paper's set <span class="m">A</span> in Algorithm 1.</td></tr>
+      <tr><td class="sym">w<sub>e</sub></td><td>cover ratio <span class="m">n<sub>child</sub>/n<sub>parent</sub></span></td><td>folded into <code>tree.c_acc</code> <span class="lref">L28</span></td><td>Never stored per edge; only chain products are.</td></tr>
+      <tr><td class="sym">[x sat. e]</td><td>does the sample follow this edge</td><td><code>ws.act[node]</code> <span class="lref">L76</span></td><td>The "hot" bit <span class="m">h</span> ∈ {0,1}; AND-ed down each same-feature chain.</td></tr>
+      <tr><td class="sym">p<sub>e</sub></td><td>accumulated multiplier at edge <span class="m">e</span></td><td><em>not stored</em> — implied by <code>(h, c)</code></td><td><span class="m">p<sub>e</sub> = h / c</span> with <span class="m">c</span> = <code>c_acc[node]</code>.</td></tr>
+      <tr><td class="sym">1 + α<sub>e</sub>t<sub>m</sub></td><td>the edge's factor in <span class="m">H<sub>v</sub></span></td><td><code>u_new = h*t[m] + c*(1-t[m])</code></td><td>Equals <span class="m">c</span>·(1 + α<sub>e</sub>t<sub>m</sub>) — a rescaling, see §03.</td></tr>
+      <tr><td class="sym">e↑</td><td>closest ancestor edge on the same feature</td><td><code>tree.ancestors[node]</code> <span class="lref">L27</span></td><td>Precomputed at conversion, not discovered at runtime.</td></tr>
+      <tr><td class="sym">c (Alg. 1)</td><td>running path polynomial at the nodes</td><td><code>ws.A[depth]</code> <span class="lref">L72</span></td><td>Depth-indexed rows, written in place.</td></tr>
+      <tr><td class="sym">w<sub>prod</sub></td><td>running product of cover ratios</td><td><em>eliminated</em></td><td>Absorbed into <code>A</code> by the rescaling.</td></tr>
+      <tr><td class="sym">H<sub>u</sub></td><td>DFS return: subtree sum of <span class="m">R<sup>v</sup><sub>∅</sub>H<sub>v</sub>(t<sub>m</sub>)</span></td><td><code>ws.E[depth]</code> <span class="lref">L73</span></td><td>Leaf writes <code>A·value</code>; internal node sums its two children.</td></tr>
+      <tr><td class="sym">(p<sub>j</sub>−1)/(1+(p<sub>j</sub>−1)t)</td><td>per-feature Banzhaf ratio</td><td><code>ws.live_g[feature]</code> <span class="lref">L74</span></td><td>Stored as <code>(h - c) / u</code>; one row of <span class="m">n<sub>quad</sub></span> per feature.</td></tr>
+      <tr><td class="sym">δ<sub>e</sub></td><td>the telescoping difference</td><td><code>ws.delta</code> <span class="lref">L75</span></td><td>Pre-multiplied by <span class="m">w<sub>m</sub></span> <em>and</em> <span class="m">H</span>: <code>w[m]*E[m]*(g_new − g_old)</code>.</td></tr>
+      <tr><td class="sym">γ<sub>P</sub></td><td>∏ of ratios over the chosen subset</td><td><code>ws.gamma[level]</code> <span class="lref">L77</span></td><td>Level <span class="m">k</span> holds the product over the current size-(<span class="m">k</span>+1) prefix.</td></tr>
+      <tr><td class="sym">Φ[S]</td><td>output map, order-<span class="m">s</span> interactions</td><td><code>out[order_offsets[s] + rank]</code></td><td>Flat array, per-order blocks, lexicographic rank.</td></tr>
+      <tr><td class="sym">s</td><td>interaction order</td><td><code>min_order … max_order</code></td><td>A range, not a single value.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="reparam">
+  <h2><span class="sn">03 — The core substitution</span>Hot bit and cold factor</h2>
+
+  <p class="lede">If you understand one thing about this file, make it this. Algorithm 1 computes with reciprocal cover ratios. The kernel never forms a reciprocal at all — and this is what the field names <code>act</code> ("hot") and <code>c_acc</code> ("cold factor") are about.</p>
+
+  <p>Fix a feature <span class="m">f</span> and a node whose incoming edge splits on <span class="m">f</span>. Let</p>
+
+  <ul>
+    <li><span class="hot"><span class="m">h</span> = <code>act[node]</code> ∈ {0,1}</span> — does <span class="m">x</span> satisfy <em>every</em> split on <span class="m">f</span> seen so far on this path;</li>
+    <li><span class="cold"><span class="m">c</span> = <code>c_acc[node]</code></span> — the product of cover ratios <span class="m">w<sub>e</sub></span> over the same-feature chain up to and including this edge.</li>
+  </ul>
+
+  <p>Then the paper's <span class="m">p<sub>e</sub> = h / c</span> and <span class="m">α<sub>e</sub> = p<sub>e</sub> − 1 = (h − c)/c</span>. Substituting:</p>
+
+  <div class="deriv">
+    <p class="dh">Derivation — why <code>u = h·t + c·(1−t)</code></p>
+    <div class="step">
+      <span class="eq">1 + α<sub>e</sub>t</span><span class="why">the factor Algorithm 1 multiplies into <span class="m">c′</span></span>
+    </div>
+    <div class="step">
+      <span class="eq"><span class="r">=</span> 1 + (h − c)t / c</span><span class="why">substitute α<sub>e</sub></span>
+    </div>
+    <div class="step">
+      <span class="eq"><span class="r">=</span> ( c + (h − c)t ) / c &nbsp;<span class="r">=</span>&nbsp; ( h·t + c·(1 − t) ) / c</span><span class="why">rearrange</span>
+    </div>
+    <div class="step">
+      <span class="eq"><span class="r">⟹</span>&nbsp; u &nbsp;<span class="r">≔</span>&nbsp; h·t + c·(1 − t) &nbsp;<span class="r">=</span>&nbsp; c · (1 + α<sub>e</sub>t)</span><span class="why"><span class="lref">L305–306</span></span>
+    </div>
+    <p class="concl">The kernel's <code>u</code> is the paper's factor <strong>scaled by the very cover product <span class="m">c</span> that Algorithm 1 tracks separately in <code>w_prod</code></strong>. Multiplying the <span class="m">u</span>'s along a path therefore produces the factor product <em>and</em> the cover product in one go — so <code>w_prod</code> simply disappears from the kernel.</p>
+  </div>
+
+  <p>The same substitution collapses the Banzhaf ratio:</p>
+
+  <div class="deriv">
+    <p class="dh">Derivation — why <code>live_g = (h − c) / u</code></p>
+    <div class="step">
+      <span class="eq">α<sub>e</sub> / (1 + α<sub>e</sub>t) &nbsp;<span class="r">=</span>&nbsp; ((h − c)/c) / (u/c) &nbsp;<span class="r">=</span>&nbsp; (h − c) / u</span><span class="why"><span class="lref">L308</span></span>
+    </div>
+    <p class="concl">Numerator and denominator are both bounded by 1 in magnitude, and no reciprocal of a cover is formed. But the reason that is <em>safer</em> is not the obvious one — see immediately below.</p>
+  </div>
+
+  <h3>Why <code>u</code> is the safer denominator</h3>
+
+  <p>Worth being precise, because the intuitive reading — "reciprocals of small numbers are dangerous" — is not the mechanism. Dividing by <span class="m">w<sub>e</sub></span> is <strong>well-conditioned</strong>: IEEE division carries a relative error of at most half an ulp and cannot suffer cancellation, so <code>1/w_e</code> is exactly as accurate as <span class="m">w<sub>e</sub></span>. Three other properties do the work.</p>
+
+  <h4>a · The bound on live_g, derived</h4>
+
+  <p>Fix one edge. Three quantities go in, and their ranges are all we need:</p>
+
+  <ul>
+    <li><span class="m">h</span> = <code>act[node]</code> ∈ {0, 1} — exactly two values;</li>
+    <li><span class="m">c</span> = <code>c_acc[node]</code> ∈ (0, 1] — a product of cover ratios, each ≤ 1;</li>
+    <li><span class="m">t</span> ∈ (0, 1) — a Gauss–Legendre node, strictly interior, and <em>fixed before the traversal starts</em>.</li>
+  </ul>
+
+  <p>Because <span class="m">h</span> has only two values, the whole analysis is two cases.</p>
+
+  <div class="deriv">
+    <p class="dh">Case h = 1 — the chain is hot (x satisfies every split on f so far)</p>
+    <div class="step"><span class="eq">u <span class="r">=</span> t + c(1 − t)</span><span class="why">substitute h = 1</span></div>
+    <div class="step"><span class="eq">c(1 − t) <span class="r">≥</span> 0 &nbsp;⟹&nbsp; u <span class="r">≥</span> t</span><span class="why"><strong>lower bound — the floor</strong></span></div>
+    <div class="step"><span class="eq">c <span class="r">≤</span> 1 &nbsp;⟹&nbsp; u <span class="r">≤</span> t + (1 − t) <span class="r">=</span> 1</span><span class="why">upper bound</span></div>
+    <div class="step"><span class="eq">live_g <span class="r">=</span> (1 − c) / ( t + c(1 − t) )</span><span class="why">numerator ∈ [0, 1)</span></div>
+    <div class="step"><span class="eq">c → 0: &nbsp;live_g → 1/t &nbsp;&nbsp;&nbsp; c → 1: &nbsp;live_g → 0</span><span class="why">monotone decreasing in c</span></div>
+    <p class="concl">So <span class="m">u ∈ [t, 1]</span> and <span class="m">live_g ∈ [0, 1/t]</span>. The floor on <span class="m">u</span> is <span class="m">t</span> — a constant of the quadrature rule. No product of covers, however small, can push the denominator below it, because the <span class="m">h·t</span> term does not involve <span class="m">c</span> at all.</p>
+  </div>
+
+  <div class="deriv">
+    <p class="dh">Case h = 0 — the chain is cold (x already failed a split on f)</p>
+    <div class="step"><span class="eq">u <span class="r">=</span> c(1 − t), &nbsp;&nbsp; h − c <span class="r">=</span> −c</span><span class="why">substitute h = 0</span></div>
+    <div class="step"><span class="eq">live_g <span class="r">=</span> −c / ( c(1 − t) ) <span class="r">=</span> −1 / (1 − t)</span><span class="why"><strong>c divides out exactly</strong></span></div>
+    <p class="concl">Here <span class="m">u</span> has <em>no</em> floor — it is proportional to <span class="m">c</span> and can be arbitrarily small. It doesn't matter: the same <span class="m">c</span> appears in the numerator, so the ratio is a pure function of <span class="m">t</span>. The cold case is protected by exact cancellation of scale rather than by a bound, which is also why §08's pruning test is exact.</p>
+  </div>
+
+  <p>Gauss–Legendre nodes are symmetric about <span class="m">½</span>, so <span class="m">1 − t<sub>n</sub> = t₁</span> and the two cases give the same magnitude. Combining them:</p>
+
+  <div class="deriv">
+    <div class="step" style="grid-template-columns:1fr">
+      <span class="eq">| live_g | &nbsp;<span class="r">≤</span>&nbsp; max( 1/t₁ , 1/(1 − t<sub>n</sub>) ) &nbsp;<span class="r">=</span>&nbsp; 1 / t₁</span>
+    </div>
+    <p class="concl">A bound that depends only on <em>how many quadrature points you chose</em> — not on the tree's depth, not on its covers, not on the sample.</p>
+  </div>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th style="width:16%">n_quad</th><th style="width:19%"><span class="m">t₁</span></th><th style="width:19%"><span class="m">1/t₁</span></th><th>Measured range of <code>live_g</code>, sweeping <span class="m">c</span> over [1e−12, 1] and both <span class="m">h</span></th></tr></thead>
+    <tbody>
+      <tr><td class="num">8 <span class="chip eng">paper</span></td><td class="num">0.019855</td><td class="num">50.365</td><td class="num">[−50.365, +50.365] &nbsp;— matches the bound exactly</td></tr>
+      <tr><td class="num">10 <span class="chip eng">repo default</span></td><td class="num">0.013047</td><td class="num">76.647</td><td class="num">[−76.647, +76.647]</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>b · The contrast with the paper's intermediates</h4>
+
+  <p>The paper computes the <em>same</em> number, <span class="m">α/(1 + αt)</span>, and it is equally bounded — that is the whole point of §03's algebra. The difference is what the intermediates do on the way. With <span class="m">α = (h − c)/c</span>, a shrinking cover product sends <span class="m">α</span> and <span class="m">1 + αt</span> both to infinity while their quotient stays near <span class="m">1/t</span>:</p>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th style="width:16%"><span class="m">c</span> (hot edge)</th><th style="width:20%"><span class="m">α = 1/c − 1</span></th><th style="width:24%">Paper: <span class="m">α/(1+αt₁)</span></th><th>Kernel: <span class="m">(1−c)/(t₁ + c(1−t₁))</span></th></tr></thead>
+    <tbody>
+      <tr><td class="num">1e−1</td><td class="num">9</td><td class="num">7.63556</td><td class="num">7.63556</td></tr>
+      <tr><td class="num">1e−8</td><td class="num">1e+08</td><td class="num">50.3649</td><td class="num">50.3649</td></tr>
+      <tr><td class="num">1e−100</td><td class="num">1e+100</td><td class="num">50.3650</td><td class="num">50.3650</td></tr>
+      <tr><td class="num">1e−300</td><td class="num">1e+300</td><td class="num">50.3650</td><td class="num">50.3650</td></tr>
+      <tr><td class="num">1e−320</td><td class="num">inf</td><td><strong>NaN</strong></td><td class="num">50.3650</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Read the last two rows together. The paper's form is accurate right up to the edge of the exponent range and then fails discontinuously — <span class="m">α</span> overflows, <span class="m">1 + αt</span> overflows, and <span class="m">∞/∞</span> is NaN. The kernel's form never approaches that edge, because <span class="m">t₁</span> holds the denominator up. In isolation this is a narrow win, confined to the last twenty decades. It matters because it composes: the same rescaling is what keeps the <em>path accumulator</em> in range, which is where the failures actually occur.</p>
+
+  <h4>c · Two accumulators whose ranges cancel</h4>
+
+  <p>This is the one that bites in practice. Algorithm 1 carries <span class="m">H<sub>v</sub>(t) ∼ 1/∏w<sub>e</sub></span>, which grows, and <span class="m">w<sub>prod</sub> = ∏w<sub>e</sub></span>, which shrinks, and multiplies them only at the leaf. Each can leave <code>double</code>'s range while their product sits comfortably inside it — and <span class="m">∞ × 0</span> is NaN. The rescaling multiplies them at <em>every edge</em> instead, so there is one accumulator, it is bounded by 1, and it is the answer. Evaluating both forms in <code>double</code> at the 8-node rule against a log-space reference:</p>
+
+  <p>Each row is one root-to-leaf path, evaluated at the top quadrature node <span class="m">t₈ = 0.980</span>. <strong>"<span class="m">N</span> distinct features" means a path of depth <span class="m">N</span> where every edge splits on a different feature</strong> — so <span class="m">D = d = N</span> in the paper's Table 1 notation, and each feature's chain is a single edge. The fourth row is the opposite extreme: one feature split ten times. The two middle columns are the intermediates that Algorithm 1 keeps apart until the leaf.</p>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th style="width:27%">Path</th><th style="width:12%"><span class="m">H(t₈)</span></th><th style="width:12%"><span class="m">w<sub>prod</sub></span></th><th style="width:14%">True <span class="m">A(t₈)</span></th><th style="width:17%">Alg. 1 form</th><th>Kernel form</th></tr></thead>
+    <tbody>
+      <tr><td>6 distinct features, cover 0.4</td><td class="num">227</td><td class="num">4.1e−3</td><td class="num">0.93062</td><td class="num">0.93062</td><td class="num">0.93062 ✓</td></tr>
+      <tr><td>50 distinct features, cover 0.01</td><td class="num">3.71e+99</td><td class="num">1e−100</td><td class="num">0.37061</td><td class="num">0.37061</td><td class="num">0.37061 ✓</td></tr>
+      <tr><td>300 distinct features, cover 0.02</td><td class="num">inf</td><td class="num">0</td><td class="num">2.7534e−3</td><td><strong>NaN</strong> at 6 of 8 nodes</td><td class="num">2.7534e−3 ✓</td></tr>
+      <tr><td>1 feature split 10×, cover 1e−40</td><td class="num">inf</td><td class="num">0</td><td class="num">0.98014</td><td><strong>NaN</strong> at all 8</td><td class="num">0.98014 ✓</td></tr>
+      <tr><td>200 × 0.02, then 1 feature × 12 × 1e−30</td><td class="num">inf</td><td class="num">0</td><td class="num">1.9255e−2</td><td><strong>NaN</strong> at all 8</td><td class="num">1.9255e−2 ✓</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>In every failing row the true value is an ordinary <code>double</code> — only the intermediates leave the range, and they leave it in <em>opposite directions</em>, which is why the product would have been fine. Relative error of the kernel form against a log-space reference stays at <span class="m">≤ 4e−12</span> across all five rows.</p>
+
+  <div class="note-box">
+    <p class="nh">Read the second row carefully</p>
+    <p>50 distinct features at cover 0.01 is roughly the paper's deepest benchmark model — Fashion-MNIST sparse, <span class="m">D</span> = 52, <span class="m">d</span> = 48 in Table 1. <strong>Algorithm 1's form still works there.</strong> But it has spent about 100 decades of headroom in each direction out of the ~308 that <code>double</code> allows, and the consumption is linear in depth: <span class="m">log₁₀H ≈ −log₁₀w<sub>prod</sub> ≈ d · log₁₀(1/w̄)</span>. Triple the depth, or drop the mean cover by a factor of ten, and the row becomes the third row. The kernel's form has no such budget to spend — its accumulator is bounded by 1 at every depth.</p>
+  </div>
+
+  <h4>d · Degrading to the limit instead of to NaN</h4>
+
+  <p>The three properties combine into one useful behaviour. When a hot chain's cover product underflows to exactly 0, the kernel evaluates <span class="m">(1 − 0)/(t + 0) = 1/t</span> — and <span class="m">1/t</span> is precisely <span class="m">lim<sub>W→0</sub> α/(1 + αt)</span>, the mathematically correct value at that limit. The formula does not merely avoid failing; it returns the right answer at the point where the alternative returns NaN. That is a consequence of <span class="m">h·t</span> surviving when <span class="m">c</span> does not, which is the same structural fact as the floor in (a).</p>
+
+  <div class="note-box">
+    <p class="nh">Where the kernel still breaks</p>
+    <p>It is not unconditionally safe, and the exact-cancellation argument in (a) has a floor of its own. Measured on the cold branch at <span class="m">t₈</span>: <code>live_g</code> is exactly <span class="m">−50.365</span> for <span class="m">c</span> down to <span class="m">1e−300</span>; at the smallest denormal <span class="m">c = 4.94e−324</span> the denominator <span class="m">c(1−t)</span> underflows to 0 while the numerator does not, giving <span class="m">−∞</span>; at <span class="m">c = 0</span> exactly, <span class="lref">L308</span> computes <code>(0 − 0)/0</code> = NaN.</p>
+    <p>What makes this remote rather than routine is that <code>c_acc</code> is a per-feature <em>chain</em> product — typically a handful of terms, since it only accumulates over repeated splits on the <em>same</em> feature — whereas Algorithm 1's <span class="m">w<sub>prod</sub></span> is a path-global product over every edge on the path. The accumulator that realistically underflows is exactly the one the rescaling eliminates.</p>
+    <p><strong>And upstream closes the hole explicitly.</strong> <code>shapiq</code>'s converter builds the array as <code>c_acc = where(isfinite(p_e) &amp; (p_e &gt; 0), 1.0 / p_e, 1e-300)</code> — a hard floor of <span class="m">1e−300</span> wherever the reciprocal would be 0 or undefined, which keeps <code>c</code> comfortably above the denormal range where the two failure modes above live. That line is also independent confirmation of §03's reading: <code>c_acc</code> is defined as <span class="m">1/p<sub>e</sub></span>, exactly the <span class="m">c = h/p<sub>e</sub></span> the derivation predicts.</p>
+  </div>
+
+  <h3>The path invariant that follows</h3>
+
+  <p>Group the path's edges by feature. Telescoping (§07) makes the net contribution of feature <span class="m">f</span> to <code>A</code> equal to <span class="m">u</span> at its <em>last</em> edge, which is <span class="m">W<sub>f</sub></span>(1 + α<sub>f</sub>t) with <span class="m">W<sub>f</sub></span> the full chain cover product. Multiplying over features:</p>
+
+  <div class="deriv">
+    <div class="step" style="grid-template-columns:1fr">
+      <span class="eq">A <span class="r">=</span> ∏<sub><span class="r">f ∈ M(v)</span></sub> W<sub>f</sub>(1 + α<sub>f</sub>t) <span class="r">=</span> ( ∏<sub><span class="r">e ∈ path</span></sub> w<sub>e</sub> ) · H<sub>v</sub>(t) &nbsp;&nbsp;⟹&nbsp;&nbsp; E<sub>leaf</sub> <span class="r">=</span> A · val(v) <span class="r">=</span> R<sup>v</sup><sub>∅</sub> · H<sub>v</sub>(t)</span>
+    </div>
+    <p class="concl">So <code>E</code> at a leaf is exactly Algorithm 1's returned <span class="m">c · val(v) · w<sub>prod</sub></span>, and <code>E</code> at an internal node is exactly its <span class="m">H<sub>u</sub></span> — reached by a different route, with one fewer running product and no reciprocals.</p>
+  </div>
+
+  <div class="note-box">
+    <p class="nh">A branch that vanishes</p>
+    <p>Algorithm 1 needs a dedicated case for a broken chain: <code>else if p[f] = 0 then p_e ← 0; p↑ ← 0</code>. In the <code>(h, c)</code> form that case is not special — <span class="m">h</span> = 0 flows through <code>u = c·(1−t)</code> like any other value. The kernel has no corresponding branch, and §08 shows the payoff: the broken-chain case becomes an <em>identically zero</em> contribution that can be skipped outright.</p>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="tree">
+  <h2><span class="sn">04 — Inputs</span>QuadTree and split semantics</h2>
+
+  <p class="lede"><code>QuadTree</code> <span class="lref">L20–56</span> is a flat, forest-wide struct of arrays. Two of its fields are the kernel's whole preprocessing story; the rest are ordinary tree plumbing.</p>
+
+  <div class="kv">
+    <div class="row"><div class="k">thresholds, features<br>children_left/right</div><div class="v">Standard node arrays. <code>features[node] = -2</code> and <code>children_left[node] = -1</code> mark leaves.</div></div>
+    <div class="row"><div class="k">parents</div><div class="v">Tree parent, <code>-1</code> at each root. Used only to recover the <em>incoming edge's</em> split feature: <code>features[parents[node]]</code>. This is why <code>quad_extract</code> is never called on a root.</div></div>
+    <div class="row"><div class="k"><span class="hot">ancestors</span></div><div class="v"><strong>Preprocessed.</strong> The closest ancestor node whose incoming edge splits on the same feature, or <code>-1</code> if this is the feature's first appearance on the path. Purely structural — independent of the sample — so it is hoisted out of the traversal entirely. This replaces Algorithm 1's runtime <code>p[·]</code> map with its <code>UNSEEN</code> sentinel and its save/restore.</div></div>
+    <div class="row"><div class="k"><span class="cold">c_acc</span></div><div class="v"><strong>Preprocessed.</strong> The <em>accumulated cold factor</em>: the product of cover ratios <span class="m">w<sub>e</sub></span> along the same-feature chain from its first edge down to this node. Also purely structural. Together with <code>act</code> it determines <span class="m">p<sub>e</sub></span> without a division.</div></div>
+    <div class="row"><div class="k">values</div><div class="v">Per-node prediction; only the leaf entries are read <span class="lref">L339</span>.</div></div>
+    <div class="row"><div class="k">cat_values, cat_start<br>cat_size</div><div class="v">CSR-style categorical split sets. <code>cat_size[node] &gt; 0</code> switches the node from a threshold test to set membership.</div></div>
+    <div class="row"><div class="k">children_left_default</div><div class="v">Default direction for a missing value at this node.</div></div>
+    <div class="row"><div class="k">decision_type</div><div class="v">Whether the converted model means <code>&lt;</code> or <code>&lt;=</code>. Mirrors the linear kernel's convention.</div></div>
+  </div>
+
+  <h3>goes_left <span class="lref">L38–55</span></h3>
+
+  <pre class="src" style="counter-reset:ln 37"><code><span class="l"><span class="kw">bool</span> goes_left(<span class="kw">double</span> feature_value, <span class="kw">int</span> node) <span class="kw">const</span></span><span class="l">{</span><span class="l">    <span class="kw">if</span> (std::isnan(feature_value))                      <span class="cm">// missing → model's default branch</span></span><span class="l">        <span class="kw">return</span> children_left_default[node] != 0;</span><span class="l">    <span class="kw">if</span> (cat_size[node] &gt; 0)                             <span class="cm">// categorical → set membership</span></span><span class="l">    {</span><span class="l">        <span class="kw">const</span> <span class="kw">int64_t</span> category = <span class="kw">static_cast</span>&lt;<span class="kw">int64_t</span>&gt;(feature_value);</span><span class="l">        <span class="kw">const</span> <span class="kw">int64_t</span> *begin = cat_values + cat_start[node];</span><span class="l">        <span class="kw">return</span> std::binary_search(begin, begin + cat_size[node], category);</span><span class="l">    }</span><span class="l">    <span class="kw">if</span> (decision_type == Q_LESS_THAN)</span><span class="l">        <span class="kw">return</span> feature_value &lt; thresholds[node];</span><span class="l">    <span class="kw">return</span> feature_value &lt;= thresholds[node];</span><span class="l">}</span></code></pre>
+
+  <p>Algorithm 1 compresses all of this into <span class="m">s<sub>e</sub> ← [x satisfies edge v→u]</span>. The kernel spends fifteen lines on it because real converted models carry NaN policy, categorical sets, and two incompatible comparison conventions. Note that the categorical branch requires <code>cat_values</code> to be <strong>sorted per node</strong> — <code>binary_search</code> is silently wrong otherwise.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="ws">
+  <h2><span class="sn">05 — State</span>The workspace</h2>
+
+  <p class="lede"><code>QuadWorkspace</code> <span class="lref">L65–161</span> is allocated once per kernel invocation and reused across every tree and every row. Nothing in the hot loop allocates.</p>
+
+  <div class="kv">
+    <div class="row"><div class="k">A <span class="lref">L72</span></div><div class="v"><code>(max_depth+2) × n_quad</code>. Row <span class="m">d</span> holds the path polynomial <span class="m">∏ u</span> for the node currently at depth <span class="m">d</span>. Row 0 is reset to 1 at the start of each tree <span class="lref">L274</span>.</div></div>
+    <div class="row"><div class="k">E <span class="lref">L73</span></div><div class="v"><code>(max_depth+2) × n_quad</code>. Row <span class="m">d</span> holds the subtree sum <span class="m">H</span> for the node at depth <span class="m">d</span>. The <code>+2</code> is because a node at <code>depth</code> forms a pointer to row <code>depth+1</code> unconditionally <span class="lref">L285</span>.</div></div>
+    <div class="row"><div class="k">live_g <span class="lref">L74</span></div><div class="v"><code>n_feats × n_quad</code>. For each feature currently live on the path, its Banzhaf ratio <code>(h−c)/u</code>. Indexed by <em>feature</em>, not by node — so a repeated feature overwrites its own row and must be restored on the way out.</div></div>
+    <div class="row"><div class="k">gamma <span class="lref">L77</span></div><div class="v"><code>max(max_order,1) × n_quad</code>. Row <span class="m">k</span> = running product of <code>live_g</code> over the first <span class="m">k</span>+1 chosen subset members. The prefix-sharing device of §09.</div></div>
+    <div class="row"><div class="k">delta <span class="lref">L75</span></div><div class="v"><code>n_quad</code>. The per-edge weighted telescoping difference <code>w[m]·E[m]·(g_new − g_old)</code>, computed once and reused for every subset.</div></div>
+    <div class="row"><div class="k">act <span class="lref">L76</span></div><div class="v"><code>num_nodes</code> bits. The hot flag. Written for both children when a node is expanded <span class="lref">L329–330</span>, then AND-ed with the ancestor's flag when the child is entered <span class="lref">L292–293</span>.</div></div>
+    <div class="row"><div class="k">path_feats <span class="lref">L78</span></div><div class="v">Sorted distinct features on the current path — Algorithm 1's set <span class="m">A</span>. A feature is inserted only at its <em>first</em> edge <span class="lref">L319–321</span> and erased at the matching exit.</div></div>
+    <div class="row"><div class="k">stack <span class="lref">L85</span></div><div class="v">Explicit DFS frames. Reserved at <code>5·max_depth + 10</code>; the true bound is <code>4·max_depth + 1</code>, since expanding a node pushes five frames and immediately pops one.</div></div>
+    <div class="row"><div class="k">binom / order_offsets / cum</div><div class="v">The combinatorial index, built once in the constructor. See §06.</div></div>
+    <div class="row"><div class="k">merged_scratch<br>candidates / chosen</div><div class="v">Scratch for ranking and subset enumeration. <code>chosen</code> is sized <code>max_order</code> and holds the current subset prefix.</div></div>
+  </div>
+
+  <div class="note-box">
+    <p class="nh">Why indexing <code>live_g</code> by feature is safe</p>
+    <p>Two different live features never collide because they occupy different rows. The same feature appearing twice on a path <em>does</em> collide — which is exactly what the telescoping wants: the deeper edge's ratio replaces the shallower one, and on exit the kernel recomputes the ancestor's ratio from <code>act[ancestor]</code> and <code>c_acc[ancestor]</code> rather than paying for a save buffer <span class="lref">L347–354, L377–384</span>.</p>
+  </div>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="rank">
+  <h2><span class="sn">06 — Output</span>Flat blocks and lexicographic rank</h2>
+
+  <p class="lede">Algorithm 1 writes into an abstract map <span class="m">Φ[S]</span>. The kernel writes into one flat <code>double*</code> per row, and the layout is a hard contract with the Python side.</p>
+
+  <p>The constructor <span class="lref">L104–134</span> builds three tables:</p>
+
+  <ol class="prose-list">
+    <li><strong><code>binom</code></strong> — Pascal's triangle up to <code>max_order</code>, <code>(n_feats+1) × (max_order+1)</code>. Entries with <span class="m">k &gt; n</span> are left at 0, which is the correct value.</li>
+    <li><strong><code>order_offsets[s]</code></strong> — where order <span class="m">s</span>'s block starts. Blocks are laid out consecutively for <span class="m">s</span> = <code>min_order … max_order</code>, each of length <span class="m">C(n<sub>feats</sub>, s)</span>. Orders outside the range keep offset 0, which is why the first-order write is gated on <code>min_order == 1</code> <span class="lref">L240</span> — without the guard it would alias into whatever block starts at 0.</li>
+    <li><strong><code>cum[r][v]</code></strong> = <span class="m">∑<sub>u &lt; v</sub> C(n<sub>feats</sub> − 1 − u, r)</span> — the prefix sums that turn combination ranking into <span class="m">O(s)</span> work instead of <span class="m">O(s·n<sub>feats</sub>)</span>.</li>
+  </ol>
+
+  <h3>merged_rank <span class="lref">L139–160</span></h3>
+
+  <p>Given the sorted subset prefix <code>chosen[0..size)</code> and a pivot <code>feature</code> not in it, this merges the pivot into place and returns the position of the resulting tuple in <code>itertools.combinations(range(n_feats), s)</code> — lexicographic order.</p>
+
+  <pre class="src" style="counter-reset:ln 149"><code><span class="l">    <span class="kw">int</span> s = size + 1;</span><span class="l">    <span class="kw">int64_t</span> rank = 0;</span><span class="l">    <span class="kw">int</span> prev = -1;</span><span class="l">    <span class="kw">for</span> (<span class="kw">int</span> i = 0; i &lt; s; ++i)</span><span class="l">    {</span><span class="l">        <span class="kw">const</span> <span class="kw">int64_t</span> *cum_r = cum.data() + (<span class="kw">size_t</span>)(s - 1 - i) * (n_feats + 2);</span><span class="l">        rank += cum_r[merged[i]] - cum_r[prev + 1];</span><span class="l">        prev = merged[i];</span><span class="l">    }</span><span class="l">    <span class="kw">return</span> rank;</span></code></pre>
+
+  <p>Each iteration counts the tuples that share the prefix <code>merged[0..i)</code> but have a smaller <span class="m">i</span>-th element — a difference of two prefix sums rather than a loop.</p>
+
+  <div class="deriv">
+    <p class="dh">Worked example — n_feats = 5, chosen = [1, 4], feature = 2</p>
+    <div class="step"><span class="eq">merged <span class="r">=</span> [1, 2, 4], &nbsp; s <span class="r">=</span> 3</span><span class="why">pivot inserted at position 1</span></div>
+    <div class="step"><span class="eq">i<span class="r">=0, r=2:</span> &nbsp; cum₂[1] − cum₂[0] <span class="r">=</span> C(4,2) − 0 <span class="r">=</span> 6</span><span class="why">tuples starting with 0</span></div>
+    <div class="step"><span class="eq">i<span class="r">=1, r=1:</span> &nbsp; cum₁[2] − cum₁[2] <span class="r">=</span> 0</span><span class="why">no room between 1 and 2</span></div>
+    <div class="step"><span class="eq">i<span class="r">=2, r=0:</span> &nbsp; cum₀[4] − cum₀[3] <span class="r">=</span> 4 − 3 <span class="r">=</span> 1</span><span class="why">the tuple (1,2,3)</span></div>
+    <p class="concl">rank = 7. And <code>list(itertools.combinations(range(5), 3))[7]</code> is <code>(1, 2, 4)</code>. ✓ The comment at <span class="lref">L80–83</span> is not decorative: the Python side pairs this array with <code>shapiq.utils.sets.generate_interaction_lookup</code>, and a mismatch misplaces values silently rather than raising.</p>
+  </div>
+
+  <p>Order 1 skips <code>merged_rank</code> entirely — the rank of the singleton <span class="m">{i}</span> is <span class="m">i</span>, so the write is just <code>out[order_offsets[1] + feature]</code> <span class="lref">L242</span>.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="traverse">
+  <h2><span class="sn">07 — Traversal</span>quadrature_inference and the stage machine</h2>
+
+  <p class="lede">Algorithm 1's <code>DFS</code> is recursive and returns a vector. <code>quadrature_inference</code> <span class="lref">L257–393</span> is an explicit stack machine over four stages, with <code>A</code> and <code>E</code> living in depth-indexed rows instead of being passed by value.</p>
+
+  <h3>Frame scheduling <span class="lref">L324–336</span></h3>
+
+  <pre class="src" style="counter-reset:ln 325"><code><span class="l"><span class="kw">int</span> right = tree.children_right[node];</span><span class="l"><span class="kw">if</span> (left &gt;= 0)</span><span class="l">{</span><span class="l">    <span class="kw">bool</span> go_left = tree.goes_left(x[tree.features[node]], node);</span><span class="l">    ws.<span class="h">act</span>[left]  = go_left;          <span class="cm">// hot bit for the child edges</span></span><span class="l">    ws.<span class="h">act</span>[right] = !go_left;</span><span class="l">    ws.stack.push_back({node,  depth,     3});   <span class="cm">// leave      (popped 5th)</span></span><span class="l">    ws.stack.push_back({node,  depth,     2});   <span class="cm">// after right (popped 4th)</span></span><span class="l">    ws.stack.push_back({right, depth + 1, 0});   <span class="cm">//            (popped 3rd)</span></span><span class="l">    ws.stack.push_back({node,  depth,     1});   <span class="cm">// after left  (popped 2nd)</span></span><span class="l">    ws.stack.push_back({left,  depth + 1, 0});   <span class="cm">//            (popped 1st)</span></span><span class="l">}</span></code></pre>
+
+  <figure>
+    <div class="figwrap">
+      <svg viewBox="0 0 880 250" role="img" aria-label="The five frames a node expansion pushes, and what each stage does to the E row at the node's depth.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <line x1="40" y1="60" x2="840" y2="60" class="soft" marker-end="url(#ar)"/>
+        <text x="40" y="44" class="lbl dim">pop order →</text>
+
+        <rect x="40"  y="76" width="140" height="52" class="box"/>
+        <text x="52" y="97">left, d+1</text><text x="52" y="114" class="dim">stage 0</text>
+        <rect x="200" y="76" width="140" height="52" class="box"/>
+        <text x="212" y="97">node, d</text><text x="212" y="114" class="dim">stage 1</text>
+        <rect x="360" y="76" width="140" height="52" class="box"/>
+        <text x="372" y="97">right, d+1</text><text x="372" y="114" class="dim">stage 0</text>
+        <rect x="520" y="76" width="140" height="52" class="box"/>
+        <text x="532" y="97">node, d</text><text x="532" y="114" class="dim">stage 2</text>
+        <rect x="680" y="76" width="160" height="52" class="box hotstroke"/>
+        <text x="692" y="97" class="hotfill">node, d</text><text x="692" y="114" class="hotfill">stage 3</text>
+
+        <text x="52"  y="158" class="mth">descend left</text>
+        <text x="212" y="158" class="mth">E[d] ← E[d+1]</text>
+        <text x="372" y="158" class="mth">descend right</text>
+        <text x="532" y="158" class="mth">E[d] += E[d+1]</text>
+        <text x="692" y="158" class="mth hotfill">quad_extract</text>
+
+        <text x="212" y="180" class="lbl dim">memcpy, L365</text>
+        <text x="532" y="180" class="lbl dim">accumulate, L370</text>
+        <text x="692" y="180" class="lbl dim">+ restore, L374–389</text>
+
+        <line x1="110" y1="128" x2="110" y2="200" class="soft"/>
+        <line x1="430" y1="128" x2="430" y2="200" class="soft"/>
+        <line x1="110" y1="200" x2="270" y2="200" class="soft" marker-end="url(#ar)"/>
+        <line x1="430" y1="200" x2="590" y2="200" class="soft" marker-end="url(#ar)"/>
+        <text x="118" y="220" class="lbl dim">left subtree sum arrives in E[d+1]</text>
+        <text x="438" y="220" class="lbl dim">right subtree sum overwrites E[d+1]</text>
+      </svg>
+    </div>
+    <figcaption><b>The four stages.</b> Stage 0 enters a node; stages 1 and 2 fold each child's subtree sum out of row <code>d+1</code> into row <code>d</code> before that row is reused; stage 3 is the only place a non-leaf node contributes to the output. A leaf never reaches stages 1–3 — it writes <code>E[d] = A[d]·value</code> and extracts inside stage 0 <span class="lref">L337–361</span>.</figcaption>
+  </figure>
+
+  <p>The scheduling is what makes the depth-indexed rows safe: row <code>d+1</code> is read at stage 1 <em>before</em> the right subtree is allowed to touch it, and row <code>d−1</code> (the parent's <code>A</code>) is never written by any descendant, because descendants only write rows <span class="m">≥ d</span>.</p>
+
+  <h3>Stage 0 — the edge update <span class="lref">L287–323</span></h3>
+
+  <pre class="src" style="counter-reset:ln 288"><code><span class="l"><span class="kw">int</span> ancestor = tree.<span class="h">ancestors</span>[node];</span><span class="l"><span class="kw">if</span> (node != root)</span><span class="l">{</span><span class="l">    <span class="kw">if</span> (ancestor &gt;= 0)</span><span class="l">        ws.<span class="h">act</span>[node] = ws.<span class="h">act</span>[node] &amp;&amp; ws.<span class="h">act</span>[ancestor];   <span class="cm">// hot chain is transitive</span></span><span class="l">    <span class="kw">int</span> feature = tree.features[tree.parents[node]];</span><span class="l">    <span class="kw">double</span> <span class="h">h</span> = ws.<span class="h">act</span>[node] ? 1.0 : 0.0;</span><span class="l">    <span class="kw">double</span> <span class="c">c</span> = tree.<span class="c">c_acc</span>[node];</span><span class="l">    <span class="kw">const</span> <span class="kw">double</span> *A_prev = ws.A.data() + (<span class="kw">size_t</span>)(depth - 1) * n_quad;</span><span class="l">    <span class="kw">double</span> *g_row = ws.live_g.data() + (<span class="kw">size_t</span>)feature * n_quad;</span><span class="l">    <span class="kw">if</span> (ancestor &gt;= 0)</span><span class="l">    {</span><span class="l">        <span class="kw">double</span> <span class="h">h0</span> = ws.<span class="h">act</span>[ancestor] ? 1.0 : 0.0;</span><span class="l">        <span class="kw">double</span> <span class="c">c0</span> = tree.<span class="c">c_acc</span>[ancestor];</span><span class="l">        <span class="kw">for</span> (<span class="kw">int</span> m = 0; m &lt; n_quad; ++m)</span><span class="l">        {</span><span class="l">            <span class="kw">double</span> u_new = <span class="h">h</span>  * t[m] + <span class="c">c</span>  * (1.0 - t[m]);</span><span class="l">            <span class="kw">double</span> u_old = <span class="h">h0</span> * t[m] + <span class="c">c0</span> * (1.0 - t[m]);</span><span class="l">            A_row[m] = A_prev[m] * (u_new / u_old);      <span class="cm">// telescope: divide the old factor out</span></span><span class="l">            g_row[m] = (<span class="h">h</span> - <span class="c">c</span>) / u_new;</span><span class="l">        }</span><span class="l">    }</span><span class="l">    <span class="kw">else</span></span><span class="l">    {</span><span class="l">        <span class="kw">for</span> (<span class="kw">int</span> m = 0; m &lt; n_quad; ++m)</span><span class="l">        {</span><span class="l">            <span class="kw">double</span> u_new = <span class="h">h</span> * t[m] + <span class="c">c</span> * (1.0 - t[m]);</span><span class="l">            A_row[m] = A_prev[m] * u_new;                <span class="cm">// first edge on this feature</span></span><span class="l">            g_row[m] = (<span class="h">h</span> - <span class="c">c</span>) / u_new;</span><span class="l">        }</span><span class="l">        ws.path_feats.insert(<span class="cm">/* sorted position */</span>, feature);</span><span class="l">    }</span><span class="l">}</span></code></pre>
+
+  <div class="xwalk">
+    <div class="xw paper">
+      <span class="tag">Algorithm 1</span>
+      <div class="body"><pre>if p[f] = UNSEEN then
+    p_e ← 1/w_e if s_e, else 0;   p↑ ← 1;
+else if p[f] = 0 then
+    p_e ← 0;   p↑ ← 0;
+else
+    p_e ← p[f]/w_e if s_e, else 0;   p↑ ← p[f];
+α_e ← p_e − 1;
+c′ ← c ⊙ (1 + α_e t);
+if p[f] ≠ UNSEEN and |p[f] − 1| &gt; ε then
+    c′ ← c′ ⊘ (1 + (p[f] − 1) t);
+Save p[f] and whether f ∈ A; set p[f] ← p_e; add f to A;</pre></div>
+      <p class="note">Three branches, a runtime map with a sentinel, an ε-guard against dividing by a factor near zero, and an explicit save for the unwind.</p>
+    </div>
+    <div class="xw code">
+      <span class="tag">L287–323</span>
+      <div class="body"><pre>ancestor = ancestors[node]      // precomputed
+act[node] &amp;= act[ancestor]      // hot chain
+h = act[node];  c = c_acc[node]
+
+if ancestor &gt;= 0:
+    A[d] = A[d-1] * (u_new / u_old)
+else:
+    A[d] = A[d-1] * u_new
+    path_feats.insert(feature)
+
+live_g[feature] = (h - c) / u_new</pre></div>
+      <p class="note">Two branches, no map, no sentinel, no ε fast-path. <code>u_old</code> is a convex combination of <span class="m">h<sub>0</sub></span> ∈ {0,1} and <span class="m">c<sub>0</sub></span> ∈ (0,1], so on a hot ancestor chain it is bounded below by <span class="m">t₁</span>, and on a cold one it cancels against the numerator.</p>
+    </div>
+  </div>
+
+  <figure>
+    <div class="figwrap">
+      <svg viewBox="0 0 860 300" role="img" aria-label="A root-to-leaf path with feature f split twice; c_acc accumulates the chain cover product and the ancestor pointer lets A divide the earlier factor out.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+          <marker id="ar2h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="hotfill"/>
+          </marker>
+        </defs>
+
+        <circle cx="90" cy="46" r="17" class="box"/><text x="83" y="51">r</text>
+        <circle cx="90" cy="126" r="17" class="box"/><text x="80" y="131">n₁</text>
+        <circle cx="90" cy="206" r="17" class="box"/><text x="80" y="211">n₂</text>
+        <circle cx="90" cy="272" r="17" class="box"/><text x="80" y="277">n₃</text>
+
+        <line x1="90" y1="63" x2="90" y2="109" class="box" marker-end="url(#ar2)"/>
+        <line x1="90" y1="143" x2="90" y2="189" class="box" marker-end="url(#ar2)"/>
+        <line x1="90" y1="223" x2="90" y2="255" class="box" marker-end="url(#ar2)"/>
+
+        <text x="118" y="90" class="mth">split f, w₁</text>
+        <text x="118" y="170" class="mth dim">split g, w₃</text>
+        <text x="118" y="245" class="mth">split f, w₂</text>
+
+        <line x1="255" y1="30" x2="255" y2="290" class="soft"/>
+
+        <text x="285" y="34" class="lbl dim">stored per node (structural, sample-independent)</text>
+        <text x="285" y="131" class="mth coldfill">c_acc[n₁] = w₁</text>
+        <text x="285" y="211" class="mth dim">c_acc[n₂] = w₃</text>
+        <text x="285" y="277" class="mth coldfill">c_acc[n₃] = w₁·w₂</text>
+        <text x="285" y="294" class="lbl dim">ancestors[n₃] = n₁</text>
+
+        <path d="M 466 268 C 520 250 520 150 466 132" fill="none" class="hotstroke" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ar2h)"/>
+        <text x="530" y="205" class="lbl hotfill">ancestors[n₃]</text>
+
+        <line x1="640" y1="30" x2="640" y2="290" class="soft"/>
+        <text x="665" y="34" class="lbl dim">effect on A</text>
+        <text x="665" y="131" class="mth">A ×= u₁</text>
+        <text x="665" y="211" class="mth dim">A ×= u₃</text>
+        <text x="665" y="270" class="mth hotfill">A ×= u₂ / u₁</text>
+        <text x="665" y="288" class="lbl dim">net over f: u₂ only</text>
+      </svg>
+    </div>
+    <figcaption><b>Telescoping over a repeated feature.</b> Feature <span class="m">f</span> splits twice. <code>c_acc[n₃]</code> already holds the <em>whole</em> chain product <span class="m">w₁w₂</span>, so <code>u₂ = h·t + w₁w₂(1−t)</code> is the finished factor for <span class="m">f</span>; the <code>ancestors</code> pointer supplies <code>u₁</code> to divide out the partial one. Both quantities on the left are computed at model-conversion time — Algorithm 1 rediscovers them on every sample.</figcaption>
+  </figure>
+
+  <h3>Leaf and unwind <span class="lref">L337–361, L372–390</span></h3>
+
+  <p>A leaf writes <code>E[d] = A[d]·value</code>, calls <code>quad_extract</code>, then restores. An internal node does the same at stage 3, after both children have folded into <code>E[d]</code>. The restore is identical in both places:</p>
+
+  <ul>
+    <li><strong>Repeated feature</strong> (<code>ancestor &gt;= 0</code>): recompute <code>live_g[feature]</code> from the ancestor's <span class="m">h<sub>0</sub></span>, <span class="m">c<sub>0</sub></span>. The feature stays in <code>path_feats</code> — it is still live above.</li>
+    <li><strong>First occurrence</strong>: erase the feature from <code>path_feats</code>. <code>live_g[feature]</code> is left stale, which is harmless because membership is gated by <code>path_feats</code>, and any sibling subtree that splits on <span class="m">f</span> again will overwrite the row at its own stage 0.</li>
+  </ul>
+
+  <p>This is Algorithm 1's <code>Restore p[f]; if f was not previously active, remove f from A</code> — with the recomputation replacing the save.</p>
+
+  <h3>Forest and batch <span class="lref">L271–276, L395–418</span></h3>
+
+  <p><code>roots[]</code> indexes into one flat node array covering the entire ensemble, so the workspace is sized once from <code>tree.num_nodes</code> and <code>tree.max_depth</code> and every tree accumulates into the same output row. <code>act</code> and <code>path_feats</code> are cleared once per <em>row</em> <span class="lref">L268–269</span>, not per tree — safe because the DFS restores them symmetrically, and because <code>act</code> for any node is written by its parent before it is ever read. <code>quadrature_tree_shap</code> then loops rows with <code>out_stride</code> spacing, reusing the single workspace throughout.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="extract">
+  <h2><span class="sn">08 — Extraction</span>quad_extract</h2>
+
+  <p class="lede"><span class="lref">L204–255</span>. Called once per edge, with <code>E[depth]</code> already holding the subtree sum. It computes Eq. 11's bracket, emits the first-order value, and hands the rest to the subset enumerator.</p>
+
+  <h3>The cold-chain early return <span class="lref">L214–216</span></h3>
+
+  <pre class="src" style="counter-reset:ln 213"><code><span class="l"><span class="kw">int</span> ancestor = tree.<span class="h">ancestors</span>[node];</span><span class="l"><span class="kw">if</span> (ancestor &gt;= 0 &amp;&amp; !ws.<span class="h">act</span>[ancestor])</span><span class="l">    <span class="kw">return</span>;  <span class="cm">// both telescoping terms cancel exactly once the hot chain is broken</span></span></code></pre>
+
+  <p>This has no counterpart in Algorithm 1, and it is exact rather than approximate:</p>
+
+  <div class="deriv">
+    <p class="dh">Why the contribution is identically zero</p>
+    <div class="step"><span class="eq"><span class="r">If</span> act[ancestor] <span class="r">= false, then</span> act[node] <span class="r">= false too</span></span><span class="why">the AND at L293</span></div>
+    <div class="step"><span class="eq">h <span class="r">=</span> h₀ <span class="r">=</span> 0 &nbsp;⟹&nbsp; u <span class="r">=</span> c(1−t), &nbsp; u₀ <span class="r">=</span> c₀(1−t)</span><span class="why">both edges cold</span></div>
+    <div class="step"><span class="eq">g<sub>new</sub> <span class="r">=</span> −c / (c(1−t)) <span class="r">=</span> −1/(1−t) <span class="r">=</span> −c₀ / (c₀(1−t)) <span class="r">=</span> g<sub>old</sub></span><span class="why">the cold factors cancel</span></div>
+    <div class="step"><span class="eq">δ <span class="r">=</span> g<sub>new</sub> − g<sub>old</sub> <span class="r">=</span> 0 &nbsp;<span class="r">for every</span> t<sub>m</sub></span><span class="why">independent of the node, the feature, and the quadrature point</span></div>
+    <p class="concl">Algorithm 1 computes this zero and multiplies it through every subset of the active path before adding it to <span class="m">Φ</span>. The kernel recognises it from one bit and skips the entire subset lattice below that edge. Note the condition is on the <em>ancestor</em>, not on the node: an edge that <em>breaks</em> a still-hot chain has <span class="m">h</span> = 0 but <span class="m">h₀</span> = 1, δ ≠ 0, and must be processed.</p>
+  </div>
+
+  <h3>δ and the first-order write <span class="lref">L217–243</span></h3>
+
+  <pre class="src" style="counter-reset:ln 220"><code><span class="l"><span class="kw">if</span> (ancestor &gt;= 0)</span><span class="l">{</span><span class="l">    <span class="kw">double</span> <span class="h">h0</span> = ws.<span class="h">act</span>[ancestor] ? 1.0 : 0.0;</span><span class="l">    <span class="kw">double</span> <span class="c">c0</span> = tree.<span class="c">c_acc</span>[ancestor];</span><span class="l">    <span class="kw">for</span> (<span class="kw">int</span> m = 0; m &lt; n_quad; ++m)</span><span class="l">    {</span><span class="l">        <span class="kw">double</span> u0 = <span class="h">h0</span> * t[m] + <span class="c">c0</span> * (1.0 - t[m]);</span><span class="l">        ws.delta[m] = w[m] * E_row[m] * (g_new[m] - (<span class="h">h0</span> - <span class="c">c0</span>) / u0);</span><span class="l">        sum1 += ws.delta[m];</span><span class="l">    }</span><span class="l">}</span><span class="l"><span class="kw">else</span></span><span class="l">{</span><span class="l">    <span class="kw">for</span> (<span class="kw">int</span> m = 0; m &lt; n_quad; ++m)</span><span class="l">    {</span><span class="l">        ws.delta[m] = w[m] * E_row[m] * g_new[m];   <span class="cm">// p↑ = 1 ⟹ the correction term is 0</span></span><span class="l">        sum1 += ws.delta[m];</span><span class="l">    }</span><span class="l">}</span><span class="l"><span class="kw">if</span> (ws.min_order == 1)</span><span class="l">    out[ws.order_offsets[1] + feature] += sum1;</span></code></pre>
+
+  <p>Three things are folded into <code>delta</code> that Algorithm 1 keeps separate until the innermost loop: the quadrature weight <span class="m">w<sub>m</sub></span>, the subtree sum <span class="m">H<sub>u</sub></span>, and the telescoping difference. As a result the per-subset cost in §09 is a bare dot product of <code>delta</code> against <code>gamma</code>, with nothing else to multiply.</p>
+
+  <p><code>sum1</code> — accumulated in the same pass — is the order-1 value: it is exactly Eq. 11 with <span class="m">S</span> = ∅, where the empty product is 1. The kernel gets it for free rather than routing the empty subset through the enumerator.</p>
+
+  <p>The <code>ancestor &lt; 0</code> branch drops the correction term entirely, matching Algorithm 1's <span class="m">p<sub>↑</sub> ← 1</span> on a feature's first appearance: <span class="m">(1−1)/(1+(1−1)t) = 0</span>.</p>
+
+  <h3>Candidate set <span class="lref">L244–254</span></h3>
+
+  <p><code>candidates</code> = <code>path_feats \ {feature}</code>, rebuilt per edge. This is Algorithm 1's <span class="m">A \ {f}</span>. Because <code>path_feats</code> is kept sorted and the pivot is removed by value, <code>candidates</code> is sorted too — which is what lets <code>quad_enumerate</code> generate subsets in lexicographic order and lets <code>merged_rank</code> assume a sorted <code>chosen</code>.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="enum">
+  <h2><span class="sn">09 — Enumeration</span>quad_enumerate</h2>
+
+  <p class="lede"><span class="lref">L166–202</span>. One recursion over the subset lattice of <code>candidates</code> that emits <em>every</em> order from <code>min_order</code> to <code>max_order</code>, sharing the γ product between a subset and its prefixes.</p>
+
+  <pre class="src" style="counter-reset:ln 176"><code><span class="l"><span class="kw">for</span> (<span class="kw">size_t</span> i = start; i &lt; candidates.size(); ++i)</span><span class="l">{</span><span class="l">    <span class="kw">int</span> j = candidates[i];</span><span class="l">    <span class="kw">const</span> <span class="kw">double</span> *g_j = ws.live_g.data() + (<span class="kw">size_t</span>)j * n_quad;</span><span class="l">    <span class="kw">double</span> *gamma_level = ws.<span class="c">gamma</span>.data() + (<span class="kw">size_t</span>)level * n_quad;</span><span class="l">    <span class="kw">const</span> <span class="kw">double</span> *gamma_prev = (level == 0) ? <span class="kw">nullptr</span></span><span class="l">                              : ws.<span class="c">gamma</span>.data() + (<span class="kw">size_t</span>)(level - 1) * n_quad;</span><span class="l">    <span class="kw">for</span> (<span class="kw">int</span> m = 0; m &lt; n_quad; ++m)</span><span class="l">        gamma_level[m] = (level == 0 ? 1.0 : gamma_prev[m]) * g_j[m];   <span class="cm">// extend the prefix</span></span><span class="l">    chosen[level] = j;</span><span class="l">    <span class="kw">int</span> order = level + 2;  <span class="cm">// subset of size level+1 plus the pivot feature</span></span><span class="l">    <span class="kw">if</span> (order &gt;= ws.min_order &amp;&amp; order &gt;= 2)</span><span class="l">    {</span><span class="l">        <span class="kw">double</span> contribution = 0.0;</span><span class="l">        <span class="kw">for</span> (<span class="kw">int</span> m = 0; m &lt; n_quad; ++m)</span><span class="l">            contribution += weighted[m] * gamma_level[m];   <span class="cm">// dot product, nothing else</span></span><span class="l">        <span class="kw">int64_t</span> rank = ws.merged_rank(chosen, level + 1, feature);</span><span class="l">        out[ws.order_offsets[order] + rank] += contribution;</span><span class="l">    }</span><span class="l">    <span class="kw">if</span> (order &lt; ws.max_order)</span><span class="l">        quad_enumerate(ws, candidates, i + 1, level + 1, chosen, weighted, feature, out);</span><span class="l">}</span></code></pre>
+
+  <figure>
+    <div class="figwrap">
+      <svg viewBox="0 0 820 290" role="img" aria-label="Subset lattice over candidates a, b, c: each node extends its parent's gamma product by one factor and writes one output cell.">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <text x="20" y="30" class="lbl dim">level 0 · order 2</text>
+        <text x="20" y="140" class="lbl dim">level 1 · order 3</text>
+        <text x="20" y="240" class="lbl dim">level 2 · order 4</text>
+
+        <line x1="20" y1="42" x2="800" y2="42" class="soft"/>
+        <line x1="20" y1="152" x2="800" y2="152" class="soft"/>
+        <line x1="20" y1="252" x2="800" y2="252" class="soft"/>
+
+        <rect x="180" y="56" width="110" height="34" class="box"/><text x="196" y="78">γ₀ = g_a</text>
+        <rect x="380" y="56" width="110" height="34" class="box"/><text x="396" y="78">γ₀ = g_b</text>
+        <rect x="580" y="56" width="110" height="34" class="box"/><text x="596" y="78">γ₀ = g_c</text>
+
+        <rect x="120" y="166" width="130" height="34" class="box coldstroke"/><text x="132" y="188" class="coldfill">γ₁ = γ₀·g_b</text>
+        <rect x="270" y="166" width="130" height="34" class="box coldstroke"/><text x="282" y="188" class="coldfill">γ₁ = γ₀·g_c</text>
+        <rect x="430" y="166" width="130" height="34" class="box coldstroke"/><text x="442" y="188" class="coldfill">γ₁ = γ₀·g_c</text>
+
+        <rect x="120" y="264" width="230" height="22" class="box hotstroke"/>
+        <text x="132" y="279" class="hotfill">γ₂ = γ₁·g_c → {f,a,b,c}</text>
+
+        <line x1="235" y1="90" x2="190" y2="162" class="soft" marker-end="url(#ar3)"/>
+        <line x1="235" y1="90" x2="330" y2="162" class="soft" marker-end="url(#ar3)"/>
+        <line x1="435" y1="90" x2="490" y2="162" class="soft" marker-end="url(#ar3)"/>
+        <line x1="185" y1="200" x2="175" y2="258" class="soft hotstroke" marker-end="url(#ar3)"/>
+
+        <text x="196" y="112" class="lbl dim">{f,a}</text>
+        <text x="396" y="112" class="lbl dim">{f,b}</text>
+        <text x="596" y="112" class="lbl dim">{f,c}</text>
+        <text x="132" y="216" class="lbl dim">{f,a,b}</text>
+        <text x="282" y="216" class="lbl dim">{f,a,c}</text>
+        <text x="442" y="216" class="lbl dim">{f,b,c}</text>
+
+        <text x="580" y="188" class="lbl dim">one multiply per box,</text>
+        <text x="580" y="204" class="lbl dim">not one product per subset</text>
+      </svg>
+    </div>
+    <figcaption><b>γ prefix reuse.</b> With <code>candidates = {a, b, c}</code> and pivot <span class="m">f</span>, each lattice node extends its parent's γ row by a single <code>live_g</code> factor and writes one output cell. Algorithm 1's <code>γ_P ← ∏_{j∈P}</code> recomputes the whole product for each of the <span class="m">C(|A|, s−1)</span> subsets; here a size-<span class="m">k</span> subset costs <span class="m">O(n<sub>quad</sub>)</span> regardless of <span class="m">k</span>, and every order in range is emitted during the same descent.</figcaption>
+  </figure>
+
+  <p>Two details worth pinning down:</p>
+
+  <ul>
+    <li><strong><code>order = level + 2</code></strong> — the subset has <code>level+1</code> members and the pivot feature makes it <code>level+2</code>. The <code>order &gt;= 2</code> guard is therefore always true; it is there to keep the first-order block, which is written elsewhere, out of reach.</li>
+    <li><strong>Emit and descend are independent.</strong> A node emits if <code>order &gt;= min_order</code> and descends if <code>order &lt; max_order</code>. With <code>min_order = 2, max_order = 4</code> the same descent writes into three different output blocks.</li>
+  </ul>
+
+  <p>The recursion is a genuine function call per level, but the levels are bounded by <code>max_order</code>, not by tree depth — so the recursion depth is a small constant even on very deep trees.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="diffs">
+  <h2><span class="sn">10 — The comparison</span>Fourteen departures from Algorithm 1</h2>
+
+  <p class="lede">Everything below is a deliberate deviation, not a divergence in what is computed. Given the same tree, sample, and quadrature rule, the kernel and Algorithm 1 produce the same numbers — up to the floating-point differences the reparametrisation is designed to create.</p>
+
+  <div class="tw">
+  <table>
+    <thead><tr><th style="width:3%">#</th><th style="width:29%">Algorithm 1</th><th style="width:31%">shapiq_qshap.cpp</th><th style="width:11%">Kind</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><span class="m">p<sub>e</sub> = ∏ 1/w<sub>e</sub></span>; factor <span class="m">(1 + α<sub>e</sub>t)</span></td><td><code>u = h·t + c·(1−t)</code> from <code>act</code> and <code>c_acc</code></td><td><span class="chip stab">Stability</span></td><td>No reciprocal of a cover is ever formed. Quantities stay in [0,1].</td></tr>
+      <tr><td class="num">2</td><td>separate <span class="m">w<sub>prod</sub></span> accumulator</td><td><em>gone</em> — absorbed into <code>A</code></td><td><span class="chip speed">Speed</span></td><td>One fewer multiply per edge and one fewer live value.</td></tr>
+      <tr><td class="num">3</td><td><code>p[f]</code> map with <code>UNSEEN</code>; discover <span class="m">e↑</span> at runtime</td><td><code>ancestors[node]</code>, precomputed at conversion</td><td><span class="chip speed">Speed</span></td><td>Structural work leaves the per-sample loop; only the 1-bit <code>act</code> is sample-dependent.</td></tr>
+      <tr><td class="num">4</td><td>save/restore <code>p[f]</code> on the unwind</td><td>recompute <code>live_g</code> from <code>c_acc[ancestor]</code></td><td><span class="chip eng">Engineering</span></td><td>No save stack; the restore is the same arithmetic as the entry.</td></tr>
+      <tr><td class="num">5</td><td><code>else if p[f] = 0</code> branch</td><td><em>no branch</em></td><td><span class="chip stab">Stability</span></td><td><span class="m">h</span> = 0 is not a special case in the <code>(h,c)</code> form.</td></tr>
+      <tr><td class="num">6</td><td>ε fast-path: divide only when <code>|p[f] − 1| &gt; ε</code></td><td>always divides by <code>u_old</code></td><td><span class="chip eng">Engineering</span></td><td>The guard skips a divisor near <em>1</em>, not near 0 — an optimisation for near-null features, not a safeguard. The kernel has no equivalent no-op to skip, since <code>u_old</code> absorbs the cover.</td></tr>
+      <tr><td class="num">7</td><td>recursive <code>DFS</code> returning a fresh vector</td><td>explicit stack, 4 stages, depth-indexed <code>A</code>/<code>E</code> rows written in place</td><td><span class="chip speed">Speed</span></td><td>No per-edge allocation, no stack-depth limit, fixed memory footprint.</td></tr>
+      <tr><td class="num">8</td><td>one fixed order <span class="m">s</span></td><td><code>min_order … max_order</code> in one traversal</td><td><span class="chip speed">Speed</span></td><td>Orders 1–4 cost one pass, not four.</td></tr>
+      <tr><td class="num">9</td><td><span class="m">γ<sub>P</sub> ← ∏<sub>j∈P</sub></span>, recomputed per subset</td><td><code>gamma[level]</code> prefix products</td><td><span class="chip speed">Speed</span></td><td>Each subset costs <span class="m">O(n<sub>quad</sub>)</span> instead of <span class="m">O(s·n<sub>quad</sub>)</span>.</td></tr>
+      <tr><td class="num">10</td><td>no pruning; computes the zero</td><td>cold-chain early return <span class="lref">L215</span></td><td><span class="chip speed">Speed</span></td><td>Skips the whole subset lattice under a chain that is already broken.</td></tr>
+      <tr><td class="num">11</td><td><span class="m">∑<sub>m</sub> w<sub>m</sub>H<sub>u</sub>[m]δ<sub>e</sub>[m]γ<sub>P</sub>[m]</span> inside the subset loop</td><td><span class="m">w<sub>m</sub></span> and <span class="m">H</span> pre-folded into <code>delta</code> once per edge</td><td><span class="chip speed">Speed</span></td><td>The innermost loop is a bare dot product.</td></tr>
+      <tr><td class="num">12</td><td>abstract map <span class="m">Φ[S]</span></td><td>flat array, per-order blocks, <span class="m">O(s)</span> lexicographic rank via <code>cum</code></td><td><span class="chip eng">Engineering</span></td><td>Binary-compatible with <code>shapiq</code>'s interaction lookup; no hashing.</td></tr>
+      <tr><td class="num">13</td><td>one tree, one sample</td><td><code>roots[]</code> forest + row batch, one shared workspace</td><td><span class="chip eng">Engineering</span></td><td>Allocation cost amortised over the whole ensemble and dataset.</td></tr>
+      <tr><td class="num">14</td><td><span class="m">s<sub>e</sub> ← [x satisfies edge]</span></td><td><code>goes_left</code>: NaN defaults, categorical sets, <code>&lt;</code> vs <code>&lt;=</code></td><td><span class="chip eng">Engineering</span></td><td>Handles converted XGBoost / LightGBM / CatBoost models as they actually are.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>The two that change the numbers</h3>
+
+  <p>Departures 1 and 5 are not just faster paths to the same floating-point result — they produce <em>different</em> floating-point results, and that is the point. Algorithm 1 accumulates <span class="m">H</span> (which grows like <span class="m">1/∏w<sub>e</sub></span>) and <span class="m">w<sub>prod</sub></span> (which shrinks like <span class="m">∏w<sub>e</sub></span>) separately, and multiplies them only at the leaf; each can leave <code>double</code>'s range while their product sits well inside it. The kernel multiplies them at every edge, so the running value never leaves [0,1]. The mechanism is <em>not</em> that a division by a small cover was avoided — that division is well-conditioned. See §03 for the measurements.</p>
+
+  <p>Departures 8, 9, and 10 change the complexity. Algorithm 1 as written costs <span class="m">O(C(|A|, s−1) · s · n)</span> per edge for order <span class="m">s</span>; the kernel costs <span class="m">O(∑<sub>k</sub> C(|A|, k) · n)</span> for <em>all</em> orders up to <code>max_order</code> together, with the cold-chain return removing edges entirely.</p>
+
+  <h3>What is unchanged</h3>
+
+  <p>The recursion structure (enter, descend, extract on the way out), the telescoping idea itself, the placement of the extraction at the child edge rather than the node, and the mathematical content of Eq. 11 are all carried over intact. If you read Algorithm 1 with §03's substitution in hand, the kernel is line-for-line recognisable.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="invariants">
+  <h2><span class="sn">11 — While reading</span>Invariants worth trusting</h2>
+
+  <div class="kv">
+    <div class="row"><div class="k">A[d−1] is stable</div><div class="v">A node at depth <span class="m">d</span> reads its parent's row while descendants write only rows <span class="m">≥ d</span>. No descendant can clobber it.</div></div>
+    <div class="row"><div class="k">E[d+1] is read in time</div><div class="v">Stage 1 copies the left child's row out before the right child's stage 0 overwrites it. This is the only reason the frame push order matters.</div></div>
+    <div class="row"><div class="k">act[node] is written once</div><div class="v">By the parent at expansion, then AND-ed at entry. Each node is entered exactly once per row, so the in-place mutation at <span class="lref">L293</span> is not a re-entrancy hazard.</div></div>
+    <div class="row"><div class="k">path_feats mirrors the path</div><div class="v">Insert at first occurrence, erase at the matching exit. On leaving a tree it is empty again, which is why the per-row <code>clear()</code> at <span class="lref">L269</span> is belt-and-braces rather than load-bearing.</div></div>
+    <div class="row"><div class="k">quad_extract never sees a root</div><div class="v">Both call sites guard on <code>node != root</code>. It dereferences <code>parents[node]</code> unconditionally, so the guard is required, not defensive.</div></div>
+    <div class="row"><div class="k">stack ≤ 4·max_depth + 1</div><div class="v">Each expansion is +5 −1. The <code>reserve</code> at <span class="lref">L101</span> is generous by design; <code>std::vector</code> would grow correctly anyway.</div></div>
+    <div class="row"><div class="k">min_order gates order 1</div><div class="v"><code>order_offsets</code> is only meaningful inside <code>[min_order, max_order]</code>. With <code>min_order &gt; 1</code>, <code>order_offsets[1]</code> is 0 and the guard at <span class="lref">L240</span> is what keeps the order-1 write from aliasing the first real block.</div></div>
+  </div>
+
+  <h3>Choosing n_quad</h3>
+
+  <p>Theorem 2 of the paper bounds the required node count for exactness at order <span class="m">s</span>: <span class="m">n ≥ ⌈(d − s + 1)/2⌉</span>, where <span class="m">d</span> is the maximum number of <em>unique</em> features on a root-to-leaf path. Higher orders need fewer points, so a kernel run configured for a range of orders is governed by its <strong>smallest</strong> order — <code>min_order</code>, not <code>max_order</code>. The paper's practical finding is that 8 points reach the float32 noise floor regardless; this kernel works in <code>double</code> throughout and takes <code>n_quad</code>, <code>t</code>, and <code>w</code> from the caller, so the choice is the caller's to make.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ============================================================ -->
+<section id="gaps">
+  <h2><span class="sn">12 — Scope</span>What the paper has that this file doesn't</h2>
+
+  <ul>
+    <li><strong>The converter.</strong> <code>ancestors</code> and <code>c_acc</code> are inputs; nothing in this file computes them, and nothing in this local repository does either. They come from upstream <code>shapiq</code>: <a href="https://github.com/mmschlk/shapiq/blob/main/src/shapiq/tree/quadrature/computer.py"><code>tree/quadrature/computer.py</code></a> builds <code>ancestors</code> through <code>create_edge_tree()</code>, derives the Gauss–Legendre nodes and weights with <code>_gauss_legendre_unit()</code>, and calls this kernel from <code>_explain_cpp()</code>. Reading that file alongside this one is the fastest way to see what the kernel expects.</li>
+    <li><strong>Explicit SIMD.</strong> §7 of the paper describes vectorising 4 points per SSE register on CPU and 32 per warp on GPU. This file writes plain <code>for (m = 0; m &lt; n_quad; ++m)</code> loops over contiguous <code>double</code> arrays with <code>__restrict__</code> on the pointers, and leaves the vectorisation to the compiler. The layout is deliberately vector-friendly — every buffer is <span class="m">n<sub>quad</sub></span>-contiguous — but the intrinsics are not here.</li>
+    <li><strong>Parallelism.</strong> No OpenMP. The row loop in <code>quadrature_tree_shap</code> <span class="lref">L412</span> is embarrassingly parallel apart from the shared <code>QuadWorkspace</code>, which would need to be per-thread.</li>
+    <li><strong>float32.</strong> The paper's precision analysis is about the float32 output format; this kernel is <code>double</code> end to end.</li>
+    <li><strong>The GPU path.</strong> CPU only.</li>
+  </ul>
+</section>
+
+<footer>
+  <p><strong>Local source</strong> — <code>src/gpu_linear_treeshap/cpp/shapiq_qshap.cpp</code>, 418 lines. Line references throughout are to this file as read; they will drift if it is edited.</p>
+  <p><strong>Upstream</strong> — the same kernel lives in <code>shapiq</code> as <a href="https://github.com/mmschlk/shapiq/blob/main/src/shapiq/tree/quadrature/cext/quadrature_tree_shap.cc">src/shapiq/tree/quadrature/cext/quadrature_tree_shap.cc</a>, with its Python driver in <a href="https://github.com/mmschlk/shapiq/blob/main/src/shapiq/tree/quadrature/computer.py">tree/quadrature/computer.py</a>. Both links track <code>main</code>, so they follow the file as it changes — and break if it is moved or renamed.</p>
+  <p><strong>Paper</strong> — Wettenstein, Mitchell &amp; Yu, <em>Quadrature-TreeSHAP: Depth-Independent TreeSHAP and Shapley Interactions</em>, <a href="https://arxiv.org/abs/2605.04497">arXiv:2605.04497</a>, 6 May 2026. Algorithm 1 on p. 6, Eq. 11 on p. 5, Theorem 2 on p. 7.</p>
+</footer>
+
+</main>
+</div>
