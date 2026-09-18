@@ -9,8 +9,46 @@
     var _allUniqueEnsemble = _allUnique('ensemble');
     function methodLabel(name) { return name || 'unknown'; }
     var _scoreColors = ['#2ca02c','#1f77b4','#ff7f0e','#9467bd','#8c564b','#e377c2'];
+
+    // -----------------------------------------------------------------------
+    // Global method filter
+    //
+    // ALL_METHODS never changes: it fixes the chip order and the colour each
+    // method keeps no matter what else is unchecked.  It starts from
+    // SCORES.methods, which lists only approaches that actually scored (i.e.
+    // met another approach in some group), then appends any approach that never
+    // formed a comparison — those still have runtimes to plot, and without them
+    // a single-method report would filter itself down to nothing.
+    //
+    // selectedMethods is what drives the page: scores, chart, tables and pies
+    // all read their rows through visibleRows().
+    // -----------------------------------------------------------------------
+    var ALL_METHODS = (function() {
+      var seen = {}, out = [];
+      (SCORES.methods || []).forEach(function(m) {
+        if (!seen[m]) { seen[m] = true; out.push(m); }
+      });
+      _allUnique('approach').sort().forEach(function(a) {
+        if (a && !seen[a]) { seen[a] = true; out.push(a); }
+      });
+      return out;
+    })();
+    var selectedMethods = ALL_METHODS.slice();
+    var CURRENT_SCORES  = null;   // computeScores(visibleRows()) — set by rerenderAll()
+
+    // Minimum methods that must stay checked for a score to exist at all.
+    var MIN_SELECTED = 2;
+
+    function isMethodSelected(approach) {
+      return selectedMethods.indexOf(approach) !== -1;
+    }
+
+    function visibleRows() {
+      return DATA.filter(function(r) { return isMethodSelected(r.approach); });
+    }
+
     function methodColor(name) {
-      var idx = (SCORES.methods || []).indexOf(name);
+      var idx = ALL_METHODS.indexOf(name);
       return _scoreColors[idx >= 0 ? idx % _scoreColors.length : 0];
     }
     function fmtTime(s) {
@@ -32,43 +70,117 @@
              label + '</span>';
     }
 
-    // Scoring — pre-computed by Python, embedded as SCORES constant.
-    // SCORES = { methods: [...], overall: { scores: {method: avg}, n }, by_mission: {...} }
     // -----------------------------------------------------------------------
+    // Method bar — the global filter, rendered once at the top of the page.
+    //
+    // SCORES (computed by Python over all rows) supplies the chip list and
+    // ordering; every score actually displayed is recomputed client-side by
+    // computeScores() so it tracks the selection.  With all chips checked the
+    // two agree exactly.
+    // -----------------------------------------------------------------------
+    function buildMethodBar() {
+      var el = document.getElementById('method-bar');
+      if (!el) return;
+      if (ALL_METHODS.length === 0) { el.style.display = 'none'; return; }
 
-    function renderScoreboard() {
+      var html = '<span class="fr-label">Methods:</span><div class="filter-chips">';
+      ALL_METHODS.forEach(function(m) {
+        var color = methodColor(m);
+        html += '<label class="filter-chip" style="border-color:' + color + ';color:' + color + '">' +
+          '<input type="checkbox" class="gm-method-cb" value="' + m + '" checked ' +
+          'style="accent-color:' + color + '"> ' + methodLabel(m) + '</label>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+
+      document.querySelectorAll('.gm-method-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          // Rebuild in ALL_METHODS order so colours and table rows stay stable.
+          var checked = {};
+          document.querySelectorAll('.gm-method-cb').forEach(function(c) {
+            if (c.checked) checked[c.value] = true;
+          });
+          selectedMethods = ALL_METHODS.filter(function(m) { return checked[m]; });
+          syncMethodBarLock();
+          rerenderAll();
+        });
+      });
+
+      syncMethodBarLock();
+    }
+
+    // A score needs at least two methods to compare, so once the selection is
+    // down to MIN_SELECTED the remaining chips lock rather than letting the
+    // whole page go blank.
+    function syncMethodBarLock() {
+      var atFloor = selectedMethods.length <= MIN_SELECTED;
+      document.querySelectorAll('.gm-method-cb').forEach(function(cb) {
+        var lock = atFloor && cb.checked;
+        cb.disabled = lock;
+        var chip = cb.parentElement;
+        if (chip) {
+          chip.classList.toggle('locked', lock);
+          if (lock) chip.title = 'At least ' + MIN_SELECTED + ' methods must stay selected';
+          else chip.removeAttribute('title');
+        }
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // Scoreboard
+    //
+    // buildScoreboard() lays out the DOM and wires the sliders exactly once —
+    // re-running it would reset every slider — while renderScoreSummary() and
+    // updateFilteredScore() redraw their own panels on each filter change.
+    // -----------------------------------------------------------------------
+    var SB_PARAMS = ['n', 'm', 'D', 'T'];
+    var sbVals = {}, sbState = {};
+
+    function scoreCell(scoresObj, methodName) {
+      if (!scoresObj || !scoresObj.scores) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
+      var val = scoresObj.scores[methodName];
+      if (val === undefined) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
+      var maxVal = Math.max.apply(null, Object.keys(scoresObj.scores).map(function(m){ return scoresObj.scores[m]; }));
+      var isWin = val >= maxVal - 0.001;
+      var isNs = val === 0 && !isWin;
+      var color = methodColor(methodName);
+      return '<td class="score-cell' + (isWin ? ' winner' : '') + '">' +
+             '<span style="color:' + color + (isNs ? ';opacity:0.5' : '') + '">' +
+             (isNs ? 'N/A' : val.toFixed(1) + (isWin ? ' \u2605' : '')) + '</span>' +
+             '</td>';
+    }
+
+    // Left panel of the scoreboard \u2014 redrawn whenever the method filter changes.
+    function renderScoreSummary() {
+      var el = document.getElementById('sb-left');
+      if (!el) return;
+
+      var overall = CURRENT_SCORES ? CURRENT_SCORES.overall : null;
+      var html = '<div class="scoreboard-title">Score Summary</div>';
+      if (!overall) {
+        html += '<p style="color:#adb5bd;font-size:0.83rem;margin:6px 0">No comparable runs '
+              + 'for the selected methods.</p>';
+        el.innerHTML = html;
+        return;
+      }
+
+      html += '<table class="score-table"><thead><tr>';
+      html += '<th></th><th>Overall (' + overall.n + ' runs)</th>';
+      html += '</tr></thead><tbody>';
+      ALL_METHODS.filter(isMethodSelected).forEach(function(m) {
+        html += '<tr><td class="team-name" style="color:' + methodColor(m) + '">' + methodLabel(m) + '</td>';
+        html += scoreCell(overall, m);
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    }
+
+    function buildScoreboard() {
       var el = document.getElementById('scoreboard');
       if (!SCORES.overall) { el.style.display = 'none'; return; }
 
-      function scoreCell(scoresObj, methodName) {
-        if (!scoresObj || !scoresObj.scores) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
-        var val = scoresObj.scores[methodName];
-        if (val === undefined) return '<td class="score-cell" style="color:#bbb">\u2014</td>';
-        var maxVal = Math.max.apply(null, Object.keys(scoresObj.scores).map(function(m){ return scoresObj.scores[m]; }));
-        var isWin = val >= maxVal - 0.001;
-        var isNs = val === 0 && !isWin;
-        var color = methodColor(methodName);
-        return '<td class="score-cell' + (isWin ? ' winner' : '') + '">' +
-               '<span style="color:' + color + (isNs ? ';opacity:0.5' : '') + '">' +
-               (isNs ? 'N/A' : val.toFixed(1) + (isWin ? ' \u2605' : '')) + '</span>' +
-               '</td>';
-      }
-
-      // --- Left: overall summary table ---
-      var methods = SCORES.methods || [];
-      var leftHtml = '<div class="scoreboard-title">Score Summary</div>';
-      leftHtml += '<table class="score-table"><thead><tr>';
-      leftHtml += '<th></th><th>Overall (' + SCORES.overall.n + ' runs)</th>';
-      leftHtml += '</tr></thead><tbody>';
-      methods.forEach(function(m) {
-        leftHtml += '<tr><td class="team-name" style="color:' + methodColor(m) + '">' + methodLabel(m) + '</td>';
-        leftHtml += scoreCell(SCORES.overall, m);
-        leftHtml += '</tr>';
-      });
-      leftHtml += '</tbody></table>';
-
       // --- Right: filter sliders + live filtered score ---
-      var SB_PARAMS = ['n', 'm', 'D', 'T'];
       var slidersHtml = '<div class="scoreboard-title">Filtered Score</div><div class="sb-sliders">';
       SB_PARAMS.forEach(function(p) {
         var vals = getUnique(p);
@@ -96,127 +208,20 @@
         slidersHtml += '<label class="filter-chip"><input type="checkbox" class="sb-task-cb" value="' + t + '" checked> ' + taskDisplayName(t) + '</label>';
       });
       slidersHtml += '</div></div>';
-      var sbMethodVals = SCORES.methods || [];
-      slidersHtml += '<div class="filter-row"><span class="fr-label">Methods:</span><div class="filter-chips">';
-      sbMethodVals.forEach(function(m) {
-        var color = methodColor(m);
-        slidersHtml += '<label class="filter-chip" style="border-color:' + color + ';color:' + color + '">' +
-          '<input type="checkbox" class="sb-method-cb" value="' + m + '" checked style="accent-color:' + color + '"> ' +
-          methodLabel(m) + '</label>';
-      });
-      slidersHtml += '</div></div>';
       slidersHtml += '<div class="filter-row"><label class="remove-fast-wrap"><input type="checkbox" id="sb-remove-fast"> Runtime &gt; 10s</label></div>';
       slidersHtml += '<div id="sb-filtered-score" class="sb-filtered-score"></div>';
 
       el.innerHTML =
-        '<div class="sb-left">' + leftHtml + '</div>' +
+        '<div class="sb-left" id="sb-left"></div>' +
         '<div class="sb-divider"></div>' +
         '<div class="sb-right">' + slidersHtml + '</div>' +
         '<div class="sb-note">\u2605\u2009The score for each run is: (winner\u2009time\u00a0/\u00a0my\u2009time)\u00a0\u00d7\u00a0100. The overall score is the average across all runs.</div>';
 
       // --- Wire up slider logic ---
-      var sbVals = {}, sbState = {};
       SB_PARAMS.forEach(function(p) {
         sbVals[p]  = getUnique(p);
         sbState[p] = { lo: 0, hi: sbVals[p].length - 1 };
       });
-
-      function updateSbFill(p) {
-        var n = sbVals[p].length;
-        var fill = document.getElementById('sb-drs-' + p + '-fill');
-        if (!fill || n <= 1) return;
-        var pct = 100 / (n - 1);
-        fill.style.left  = (sbState[p].lo * pct) + '%';
-        fill.style.width = ((sbState[p].hi - sbState[p].lo) * pct) + '%';
-      }
-
-      function computeScoreFromRows(rows, removeFast) {
-        var groups = {};
-        rows.forEach(function(r) {
-          if (!r.approach) return;
-          var key = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
-          if (!groups[key]) groups[key] = { times: {}, notSupported: {} };
-          if (r.not_supported || r.memory_crash || r.runtime_error) {
-            groups[key].notSupported[r.approach] = true;
-          } else {
-            if (!groups[key].times[r.approach]) groups[key].times[r.approach] = [];
-            groups[key].times[r.approach].push(r.running_time);
-          }
-        });
-        var totals = {}, counts = {}, nGroups = 0;
-        Object.keys(groups).forEach(function(key) {
-          var g = groups[key];
-          var times = {};
-          Object.keys(g.times).forEach(function(m) {
-            var avg = g.times[m].reduce(function(a,b){return a+b;},0) / g.times[m].length;
-            if (avg > 0) times[m] = avg;
-          });
-          var nsKeys = Object.keys(g.notSupported);
-          // Need at least 2 methods total (supported or crashed) to form a comparison
-          if (Object.keys(times).length + nsKeys.length < 2) return;
-          if (Object.keys(times).length === 0) {
-            // All methods crashed — all get score 0
-            nsKeys.forEach(function(m) {
-              totals[m] = (totals[m] || 0) + 0;
-              counts[m] = (counts[m] || 0) + 1;
-            });
-            nGroups++;
-            return;
-          }
-          var minT = Math.min.apply(null, Object.keys(times).map(function(m){ return times[m]; }));
-          if (removeFast) {
-            var allFast = Object.keys(times).every(function(m){ return times[m] < 10; });
-            if (allFast) return;
-          }
-          Object.keys(times).forEach(function(m) {
-            var score = (minT / times[m]) * 100;
-            totals[m] = (totals[m] || 0) + score;
-            counts[m] = (counts[m] || 0) + 1;
-          });
-          nsKeys.forEach(function(m) {
-            totals[m] = (totals[m] || 0) + 0;
-            counts[m] = (counts[m] || 0) + 1;
-          });
-          nGroups++;
-        });
-        if (!nGroups) return null;
-        var scores = {};
-        Object.keys(totals).forEach(function(m) { scores[m] = totals[m] / counts[m]; });
-        return { scores: scores, n: nGroups };
-      }
-
-      function updateFilteredScore() {
-        var nLo = sbVals.n[sbState.n.lo], nHi = sbVals.n[sbState.n.hi];
-        var mLo = sbVals.m[sbState.m.lo], mHi = sbVals.m[sbState.m.hi];
-        var dLo = sbVals.D[sbState.D.lo], dHi = sbVals.D[sbState.D.hi];
-        var selTasks = [];
-        document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
-          if (cb.checked) selTasks.push(cb.value);
-        });
-        var selMethods = [];
-        document.querySelectorAll('.sb-method-cb').forEach(function(cb) {
-          if (cb.checked) selMethods.push(cb.value);
-        });
-        var rmFastEl = document.getElementById('sb-remove-fast');
-        var removeFast = rmFastEl ? rmFastEl.checked : false;
-        var filtered = DATA.filter(function(r) {
-          return r.n >= nLo && r.n <= nHi && r.m >= mLo && r.m <= mHi && r.D >= dLo && r.D <= dHi &&
-                 (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1) &&
-                 (selMethods.length === 0 || selMethods.indexOf(r.approach) !== -1);
-        });
-        var result = computeScoreFromRows(filtered, removeFast);
-        var el2 = document.getElementById('sb-filtered-score');
-        if (!result) {
-          el2.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
-          return;
-        }
-        var maxScore = Math.max.apply(null, Object.keys(result.scores).map(function(m){ return result.scores[m]; }));
-        var html = Object.keys(result.scores).sort().map(function(m) {
-          return renderMethodBadge(m, result.scores[m], maxScore);
-        }).join('<span class="msb-sep">vs</span>');
-        html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + result.n + ' runs)</span>';
-        el2.innerHTML = html;
-      }
 
       SB_PARAMS.forEach(function(p) {
         var loEl = document.getElementById('sb-drs-' + p + '-lo');
@@ -251,18 +256,54 @@
       document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
         cb.addEventListener('change', updateFilteredScore);
       });
-      document.querySelectorAll('.sb-method-cb').forEach(function(cb) {
-        cb.addEventListener('change', updateFilteredScore);
-      });
       var sbRmFastEl = document.getElementById('sb-remove-fast');
       if (sbRmFastEl) sbRmFastEl.addEventListener('change', updateFilteredScore);
+    }
 
-      updateFilteredScore();
+    function updateSbFill(p) {
+      var n = sbVals[p].length;
+      var fill = document.getElementById('sb-drs-' + p + '-fill');
+      if (!fill || n <= 1) return;
+      var pct = 100 / (n - 1);
+      fill.style.left  = (sbState[p].lo * pct) + '%';
+      fill.style.width = ((sbState[p].hi - sbState[p].lo) * pct) + '%';
+    }
+
+    // Right panel of the scoreboard.  Method selection is applied up front via
+    // visibleRows(); the sliders and task chips narrow it further.
+    function updateFilteredScore() {
+      var el2 = document.getElementById('sb-filtered-score');
+      if (!el2) return;
+
+      var nLo = sbVals.n[sbState.n.lo], nHi = sbVals.n[sbState.n.hi];
+      var mLo = sbVals.m[sbState.m.lo], mHi = sbVals.m[sbState.m.hi];
+      var dLo = sbVals.D[sbState.D.lo], dHi = sbVals.D[sbState.D.hi];
+      var selTasks = [];
+      document.querySelectorAll('.sb-task-cb').forEach(function(cb) {
+        if (cb.checked) selTasks.push(cb.value);
+      });
+      var rmFastEl = document.getElementById('sb-remove-fast');
+      var removeFast = rmFastEl ? rmFastEl.checked : false;
+      var filtered = visibleRows().filter(function(r) {
+        return r.n >= nLo && r.n <= nHi && r.m >= mLo && r.m <= mHi && r.D >= dLo && r.D <= dHi &&
+               (selTasks.length === 0 || selTasks.indexOf(r.task) !== -1);
+      });
+      var result = computeScores(filtered, { removeFast: removeFast }).overall;
+      if (!result) {
+        el2.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
+        return;
+      }
+      var maxScore = Math.max.apply(null, Object.keys(result.scores).map(function(m){ return result.scores[m]; }));
+      var html = Object.keys(result.scores).sort().map(function(m) {
+        return renderMethodBadge(m, result.scores[m], maxScore);
+      }).join('<span class="msb-sep">vs</span>');
+      html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + result.n + ' runs)</span>';
+      el2.innerHTML = html;
     }
 
     function renderMissionScore(missionName) {
       var el = document.getElementById('mission-score-banner');
-      var entry = (SCORES.by_mission || {})[missionName];
+      var entry = ((CURRENT_SCORES && CURRENT_SCORES.by_mission) || {})[missionName];
       if (!entry || !entry.scores) { el.innerHTML = ''; return; }
 
       var maxScore = Math.max.apply(null, Object.keys(entry.scores).map(function(m){ return entry.scores[m]; }));
@@ -310,14 +351,18 @@
     // Cascading options helpers
     // -----------------------------------------------------------------------
     function rowsForDataset() {
-      return DATA.filter(function(r) { return r.dataset === state.dataset; });
+      return visibleRows().filter(function(r) { return r.dataset === state.dataset; });
     }
 
     function rowsForMission() {
       return rowsForDataset().filter(function(r) { return r.mission === state.mission; });
     }
 
-    function missionsForDataset() { return getUnique('mission', rowsForDataset()); }
+    // Built from the full DATA, not visibleRows(), so the Mission dropdown keeps
+    // a stable set of options as methods are toggled on and off.
+    function missionsForDataset() {
+      return getUnique('mission', DATA.filter(function(r) { return r.dataset === state.dataset; }));
+    }
 
     // -----------------------------------------------------------------------
     // Auto-detect x-axis from the current mission's data
@@ -751,7 +796,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // Initialise
+    // Controls
     // -----------------------------------------------------------------------
     populateSelect('ctrl-dataset', allDatasets, state.dataset);
     refreshMissionSelect();
@@ -765,9 +810,6 @@
       state.mission = e.target.value;
       render();
     });
-
-    renderScoreboard();
-    render();
 
     // -----------------------------------------------------------------------
     // All-results table — dual-range slider filters
@@ -826,13 +868,9 @@
       });
       html += '</div></div>';
 
-      var allMethodNames = SCORES.methods || [];
+      // Options are filled by refreshWinnerSelect() so they track the method filter.
       html += '<div class="ar-filter-group"><label style="font-weight:600;color:#495057;white-space:nowrap">Winner:</label>';
       html += '<select id="ar-winner-sel" style="border:1px solid #ced4da;border-radius:4px;padding:3px 7px;font-size:0.84rem;background:#fff;cursor:pointer">';
-      html += '<option value="all">All runs</option>';
-      allMethodNames.forEach(function(m) {
-        html += '<option value="' + m + '">' + methodLabel(m) + ' wins</option>';
-      });
       html += '</select></div>';
 
       html += '<div class="ar-filter-group"><label class="remove-fast-wrap"><input type="checkbox" id="ar-remove-fast"> Runtime &gt; 10s</label></div>';
@@ -961,7 +999,7 @@
       var arRmFast = document.getElementById('ar-remove-fast') ? document.getElementById('ar-remove-fast').checked : false;
 
       // Filter individual rows by param ranges, task, dataset, and ensemble
-      var filtered = DATA.filter(function(r) {
+      var filtered = visibleRows().filter(function(r) {
         if (!AR_PARAMS.every(function(p) {
           return r[p] >= arVals[p][arState[p].lo] && r[p] <= arVals[p][arState[p].hi];
         })) return false;
@@ -971,11 +1009,14 @@
         return true;
       });
 
-      // Group by run: one row per (dataset, mission, task, n, m, D, ensemble)
+      // Group by run: one row per (dataset, mission, task, n, m, D, T, ensemble).
+      // T belongs in the key — without it a mission that sweeps ensemble size
+      // collapses distinct runs into one row (and the run count stops matching
+      // the score's).  Same key as computeScores().
       var runKeys = [];
       var runMap = {};
       filtered.forEach(function(r) {
-        var k = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
+        var k = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.T, r.ensemble].join('||');
         if (!runMap[k]) {
           runMap[k] = { dataset: r.dataset, mission: r.mission, task: r.task,
                         n: r.n, m: r.m, D: r.D, T: r.T, L: r.L, F: r.F,
@@ -1060,9 +1101,6 @@
       _arMethods = methods;
     }
 
-    buildDualSliders();
-    renderAllResultsTable();
-
     // -----------------------------------------------------------------------
     // Analytics section
     // -----------------------------------------------------------------------
@@ -1124,14 +1162,9 @@
       });
       html += '</div></div>';
 
-      // Winner dropdown
-      var allMethods = SCORES.methods || [];
+      // Winner dropdown — options filled by refreshWinnerSelect()
       html += '<div class="ar-filter-group"><label style="font-weight:600;color:#495057;white-space:nowrap">Winner:</label>';
       html += '<select id="ana-winner-sel" style="border:1px solid #ced4da;border-radius:4px;padding:3px 7px;font-size:0.84rem;background:#fff;cursor:pointer">';
-      html += '<option value="all">All runs</option>';
-      allMethods.forEach(function(m) {
-        html += '<option value="' + m + '">' + methodLabel(m) + ' wins</option>';
-      });
       html += '</select></div>';
 
       document.getElementById('ana-filters').innerHTML = html;
@@ -1187,7 +1220,7 @@
       var winnerFilter = (document.getElementById('ana-winner-sel') || {}).value || 'all';
 
       // Filter individual rows by all active filters
-      var filtered = DATA.filter(function(r) {
+      var filtered = visibleRows().filter(function(r) {
         if (!_ANA_PARAMS.every(function(p) {
           return r[p] >= _anaVals[p][_anaState[p].lo] && r[p] <= _anaVals[p][_anaState[p].hi];
         })) return false;
@@ -1196,15 +1229,16 @@
         return true;
       });
 
-      // Group into runs (unique dataset × mission × task × n × m × D × ensemble)
+      // Group into runs (unique dataset × mission × task × n × m × D × T × ensemble).
+      // Same key as computeScores() so run counts and scores agree.
       var runMap = {}, runKeys = [];
       filtered.forEach(function(r) {
-        var k = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.ensemble].join('||');
+        var k = [r.dataset, r.mission, r.task, r.n, r.m, r.D, r.T, r.ensemble].join('||');
         if (!runMap[k]) {
           runMap[k] = {
             dataset: r.dataset, mission: r.mission, task: r.task,
-            n: r.n, m: r.m, D: r.D, ensemble: r.ensemble,
-            methods: {}
+            n: r.n, m: r.m, D: r.D, T: r.T, ensemble: r.ensemble,
+            methods: {}, rows: []
           };
           runKeys.push(k);
         }
@@ -1214,6 +1248,7 @@
           mc: r.memory_crash,
           re: r.runtime_error
         };
+        runMap[k].rows.push(r);
       });
 
       // Compute winner per run (method with lowest positive valid time)
@@ -1234,7 +1269,12 @@
         runKeys = runKeys.filter(function(k) { return runMap[k].winner === winnerFilter; });
       }
 
-      return { runMap: runMap, runKeys: runKeys };
+      // The surviving rows, so the score can go through computeScores() rather
+      // than a second, drift-prone scoring implementation.
+      var rows = [];
+      runKeys.forEach(function(k) { rows = rows.concat(runMap[k].rows); });
+
+      return { runMap: runMap, runKeys: runKeys, rows: rows };
     }
 
     function _makePieLayout(title, color) {
@@ -1298,58 +1338,27 @@
       });
     }
 
-    function renderAnaScore(runMap, runKeys) {
+    function renderAnaScore(rows) {
       var el = document.getElementById('ana-score');
       if (!el) return;
-      if (runKeys.length === 0) {
+
+      var result = computeScores(rows).overall;
+      if (!result) {
         el.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
         return;
       }
-
-      // Compute scores from already-grouped runs
-      var totals = {}, counts = {}, nGroups = 0;
-      runKeys.forEach(function(k) {
-        var g = runMap[k];
-        var times = {};
-        Object.keys(g.methods).forEach(function(m) {
-          var c = g.methods[m];
-          if (!c.ns && !c.mc && !c.re && c.t > 0) times[m] = c.t;
-        });
-        var nsKeys = Object.keys(g.methods).filter(function(m) {
-          var c = g.methods[m]; return c.ns || c.mc || c.re;
-        });
-        if (Object.keys(times).length + nsKeys.length < 2) return;
-        if (Object.keys(times).length === 0) {
-          nsKeys.forEach(function(m) { totals[m] = (totals[m] || 0); counts[m] = (counts[m] || 0) + 1; });
-          nGroups++;
-          return;
-        }
-        var minT = Math.min.apply(null, Object.keys(times).map(function(m) { return times[m]; }));
-        Object.keys(times).forEach(function(m) {
-          totals[m] = (totals[m] || 0) + (minT / times[m]) * 100;
-          counts[m] = (counts[m] || 0) + 1;
-        });
-        nsKeys.forEach(function(m) { totals[m] = (totals[m] || 0); counts[m] = (counts[m] || 0) + 1; });
-        nGroups++;
-      });
-
-      if (!nGroups) {
-        el.innerHTML = '<span style="color:#adb5bd;font-size:0.83rem">No comparable runs in range.</span>';
-        return;
-      }
-      var scores = {};
-      Object.keys(totals).forEach(function(m) { scores[m] = totals[m] / counts[m]; });
+      var scores = result.scores;
       var maxScore = Math.max.apply(null, Object.keys(scores).map(function(m) { return scores[m]; }));
       var html = Object.keys(scores).sort().map(function(m) {
         return renderMethodBadge(m, scores[m], maxScore);
       }).join('<span class="msb-sep">vs</span>');
-      html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + nGroups + ' runs)</span>';
+      html += '<span style="color:#adb5bd;font-size:0.78rem;margin-left:6px">(' + result.n + ' runs)</span>';
       el.innerHTML = html;
     }
 
     function renderAnaMethodsPies(runMap, runKeys) {
       var el = document.getElementById('ana-methods-pies');
-      var methods = SCORES.methods || [];
+      var methods = selectedMethods;
       if (runKeys.length === 0 || methods.length === 0) { el.innerHTML = ''; return; }
 
       var piesHtml = '<div class="ana-pies-row">';
@@ -1372,7 +1381,7 @@
       var wValues = wLabels.map(function(l) { return wCounts[l]; });
       var wColors = wLabels.map(function(l) {
         if (l === 'All Failed') return '#d62728';
-        var mn = (SCORES.methods || []).find(function(m) { return methodLabel(m) === l; });
+        var mn = ALL_METHODS.find(function(m) { return methodLabel(m) === l; });
         return mn ? methodColor(mn) : '#adb5bd';
       });
       Plotly.newPlot('ana-pie-winner',
@@ -1426,10 +1435,49 @@
 
     function renderAnalytics() {
       var result = getAnaFilteredRuns();
-      renderAnaScore(result.runMap, result.runKeys);
+      renderAnaScore(result.rows);
       renderAnaMissionsPies(result.runMap, result.runKeys);
       renderAnaMethodsPies(result.runMap, result.runKeys);
     }
 
+    // -----------------------------------------------------------------------
+    // Winner dropdowns — rebuilt on every method-filter change so they only
+    // offer methods that are actually selected.  The current choice survives if
+    // it is still available, otherwise it falls back to "All runs".
+    // -----------------------------------------------------------------------
+    function refreshWinnerSelect(prefix) {
+      var sel = document.getElementById(prefix + '-winner-sel');
+      if (!sel) return;
+      var prev = sel.value || 'all';
+      var html = '<option value="all">All runs</option>';
+      selectedMethods.forEach(function(m) {
+        html += '<option value="' + m + '">' + methodLabel(m) + ' wins</option>';
+      });
+      sel.innerHTML = html;
+      sel.value = (prev !== 'all' && selectedMethods.indexOf(prev) !== -1) ? prev : 'all';
+    }
+
+    // -----------------------------------------------------------------------
+    // Central re-render — the single entry point the method filter drives.
+    // Every score on the page comes from CURRENT_SCORES or a computeScores()
+    // call over visibleRows(), so nothing can go stale behind the filter.
+    // -----------------------------------------------------------------------
+    function rerenderAll() {
+      CURRENT_SCORES = computeScores(visibleRows());
+      renderScoreSummary();
+      updateFilteredScore();
+      render();
+      refreshWinnerSelect('ar');
+      renderAllResultsTable();
+      refreshWinnerSelect('ana');
+      renderAnalytics();
+    }
+
+    // -----------------------------------------------------------------------
+    // Initialise — build the static DOM once, then render everything.
+    // -----------------------------------------------------------------------
+    buildMethodBar();
+    buildScoreboard();
+    buildDualSliders();
     buildAnaFilters();
-    renderAnalytics();
+    rerenderAll();
