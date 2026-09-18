@@ -2,13 +2,19 @@
 Tests for _compute_scores — the core scoring logic in html_generator.py.
 
 Scoring rules:
-  - Per (dataset, mission, task, n, m, D, ensemble) group:
+  - Per (dataset, mission, task, n, m, D, T, ensemble) group:
       * winner (lowest time) → 100 pts
       * loser  → (winner_time / loser_time) * 100 pts
       * not_supported / memory_crash / runtime_error → 0 pts
   - Groups with fewer than 2 methods are skipped entirely
   - Groups where all valid times are 0 are skipped (division guard)
   - Scores are averaged per mission and overall
+
+Grouping is keyed on the *approach* name, not the method name — one method can
+contribute several approaches (one per task), and each is scored separately.
+
+The JS port in report_scoring.js must stay in lockstep with _compute_scores;
+tests/test_report_scoring_parity.py checks the two against each other.
 """
 
 import pytest
@@ -28,13 +34,16 @@ def _row(
     n: int = 100,
     m: int = 50,
     D: int = 6,
+    T: int = 100,
     ensemble: str = "lightgbm",
     not_supported: bool = False,
     memory_crash: bool = False,
     runtime_error: bool = False,
 ) -> dict:
+    # Grouping keys on "approach"; in these tests the two names coincide.
     return {
         "method": method,
+        "approach": method,
         "running_time": running_time,
         "dataset": dataset,
         "mission": mission,
@@ -42,6 +51,7 @@ def _row(
         "n": n,
         "m": m,
         "D": D,
+        "T": T,
         "ensemble": ensemble,
         "not_supported": not_supported,
         "memory_crash": memory_crash,
@@ -169,6 +179,32 @@ def test_different_n_different_groups():
     assert scores["b"] == pytest.approx(62.5)
 
 
+def test_different_T_different_groups():
+    # T is part of the group key: a mission sweeping ensemble size scores each
+    # size separately instead of averaging them all into one group.
+    rows = [
+        _row("a", 1.0, T=100), _row("b", 4.0, T=100),
+        _row("a", 3.0, T=500), _row("b", 6.0, T=500),
+    ]
+    result = _scores(rows)
+    assert result["overall"]["n"] == 2
+    # T=100: a=100, b=25; T=500: a=100, b=50 → averages: a=100, b=37.5
+    assert result["overall"]["scores"]["a"] == pytest.approx(100.0)
+    assert result["overall"]["scores"]["b"] == pytest.approx(37.5)
+
+
+def test_same_T_is_one_group():
+    # Sanity counterpart to the above: identical T collapses into one group,
+    # and repeated times for an approach are averaged.
+    rows = [
+        _row("a", 1.0), _row("a", 3.0),   # mean 2.0
+        _row("b", 4.0),
+    ]
+    result = _scores(rows)
+    assert result["overall"]["n"] == 1
+    assert result["overall"]["scores"]["b"] == pytest.approx(50.0)
+
+
 def test_different_dataset_different_groups():
     rows = [
         _row("a", 1.0, dataset="ds1"), _row("b", 2.0, dataset="ds1"),
@@ -250,9 +286,10 @@ def test_empty_rows():
     assert result["methods"] == []
 
 
-def test_row_with_no_method_field_skipped():
+def test_row_with_no_approach_field_skipped():
     rows = [{"running_time": 1.0, "dataset": "ds", "mission": "m", "task": "t",
-             "n": 100, "m": 0, "D": 6, "ensemble": "lgbm", "method": ""}]
+             "n": 100, "m": 0, "D": 6, "T": 100, "ensemble": "lgbm",
+             "method": "shap", "approach": ""}]
     result = _scores(rows)
     assert result["overall"] is None
 
