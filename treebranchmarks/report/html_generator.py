@@ -210,9 +210,10 @@ class HtmlGenerator:
 # HTML assembly — use concatenation so JS braces need no escaping
 # ---------------------------------------------------------------------------
 
-_CSS_PATH       = Path(__file__).parent / "report.css"
-_JS_PATH        = Path(__file__).parent / "report.js"
-_FRAMEWORK_PATH = Path(__file__).parent / "framework_summary.html"
+_CSS_PATH        = Path(__file__).parent / "report.css"
+_SCORING_JS_PATH = Path(__file__).parent / "report_scoring.js"
+_JS_PATH         = Path(__file__).parent / "report.js"
+_FRAMEWORK_PATH  = Path(__file__).parent / "framework_summary.html"
 
 
 def _details_panel(title: str, content: str) -> str:
@@ -236,8 +237,9 @@ def _framework_html() -> str:
 
 
 def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str, summary_html: str | None = None) -> str:
-    css = _CSS_PATH.read_text(encoding="utf-8")
-    js  = _JS_PATH.read_text(encoding="utf-8")
+    css        = _CSS_PATH.read_text(encoding="utf-8")
+    scoring_js = _SCORING_JS_PATH.read_text(encoding="utf-8")
+    js         = _JS_PATH.read_text(encoding="utf-8")
     head = (
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"
@@ -253,7 +255,8 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         f"  <div class=\"subtitle\">Experiment: <strong>{experiment_name}</strong></div>\n"
         + (_summary_html(summary_html) if summary_html is not None else "")
         + _framework_html()
-        + "  <div id=\"scoreboard\"></div>\n"
+        + "  <div id=\"method-bar\"></div>\n"
+        "  <div id=\"scoreboard\"></div>\n"
         "  <h2 class=\"all-results-heading\">Experiment Analysis</h2>\n"
         "  <div id=\"experiment-panel\">\n"
         + _controls_html() +
@@ -290,7 +293,7 @@ def _build_html(experiment_name: str, data_js: str, meta_js: str, scores_js: str
         "</body>\n"
         "</html>\n"
     )
-    return head + js + tail
+    return head + scoring_js + js + tail
 
 
 def _controls_html() -> str:

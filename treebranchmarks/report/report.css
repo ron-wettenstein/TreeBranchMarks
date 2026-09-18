@@ -388,6 +388,24 @@
     .filter-chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .filter-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.79rem; padding: 2px 9px; border-radius: 12px; border: 1px solid #ced4da; cursor: pointer; color: #495057; background: white; }
     .filter-chip input[type=checkbox] { margin: 0; cursor: pointer; accent-color: #1f77b4; width: 12px; height: 12px; }
+    /* A chip that cannot be unchecked because it is one of the last two selected. */
+    .filter-chip.locked { opacity: 0.55; cursor: not-allowed; }
+    .filter-chip.locked input[type=checkbox] { cursor: not-allowed; }
+
+    /* Global method filter — one line, directly above the scoreboard */
+    #method-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 9px 14px;
+      background: #fff;
+      border: 1px solid #e3e6ea;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    #method-bar .fr-label { padding-top: 0; }
     .remove-fast-wrap { display: inline-flex; align-items: center; gap: 5px; font-size: 0.82rem; color: #495057; cursor: pointer; }
     .remove-fast-wrap input[type=checkbox] { cursor: pointer; accent-color: #e67e22; margin: 0; }
 
