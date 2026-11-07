@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -36,6 +37,14 @@ if TYPE_CHECKING:
     from treebranchmarks.core.approach import Approach
     from treebranchmarks.core.params import TreeParameters
     from treebranchmarks.core.task import ApproachResult
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """Write via a temp file + rename, so a crash mid-write never truncates the existing file."""
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
 
 
 def _group_key(
@@ -223,13 +232,11 @@ class MethodResultCache:
 
     def _flush(self, method_name: str, store: dict) -> None:
         data = json.dumps(store, indent=2)
-        with open(self._path(method_name), "w") as f:
-            f.write(data)
+        _atomic_write(self._path(method_name), data)
         for extra in self._extra_paths:
             dest = extra / f"{method_name}.json" if extra.suffix == "" else extra
             dest.parent.mkdir(parents=True, exist_ok=True)
-            with open(dest, "w") as f:
-                f.write(data)
+            _atomic_write(dest, data)
 
     @staticmethod
     def _deserialize(raw: dict) -> "ApproachResult":
