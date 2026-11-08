@@ -21,9 +21,9 @@ with these differences:
    for OriginalWoodelf at D=9–15. Those were measured with the full
    background, so here the description says that.
 5. PLTreeSHAP runs some cells on more trees than in the main experiment
-   (_PLT_TREES): cells whose reduced-tree estimate in the first m=100 run was
-   under 1500 s run all 100 trees, and on California Housing it runs the
-   depths where the main experiment gave it OriginalWoodelf's prerecorded
+   (_PLT_TREES). Cells whose reduced-tree estimate in an earlier m=100 run
+   was cheap enough run on all 100 trees. On California Housing it also runs
+   the depths where the main experiment gave it OriginalWoodelf's prerecorded
    times (the two share one per-depth table there).
 
 Run from project root:
@@ -76,8 +76,9 @@ def _relabel(spec):
 
 
 # PLTreeSHAP cells that run on more trees than in the main experiment: (dataset, task) -> {D: T}.
-# T=100: the reduced-tree estimate in the first m=100 run was under 1500 s. Their old
-# estimates must be removed from pltreeshap_fasttreeshap.json, or they are served from cache.
+# These cells were estimated from 1 or 10 trees in an earlier m=100 run and are cheap enough to
+# measure on all 100. When a cell is added here, its old estimate must be removed from
+# pltreeshap_fasttreeshap.json, or it is served from the cache.
 # California Housing D=12-15 BG SHAP and D=9-12 BG IV: the main experiment gives PLTreeSHAP
 # OriginalWoodelf's prerecorded times there, so here they are run.
 _BG_SHAP, _BG_IV = TaskType.BACKGROUND_SHAP, TaskType.BACKGROUND_SHAP_INTERACTIONS
@@ -85,9 +86,9 @@ _PLT_TREES = {
     ("fraud_detection",     _BG_SHAP): {12: 100, 15: 100},
     ("fraud_detection",     _BG_IV):   {12: 100},
     ("higgs",               _BG_IV):   {9: 100},
-    ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100},
+    ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100, 15: 100},
     ("intrusion_detection", _BG_IV):   {12: 100},
-    ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: 10},
+    ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: 100},
     ("california_housing",  _BG_IV):   {9: 100, 12: 100},
 }
 
