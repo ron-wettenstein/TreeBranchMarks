@@ -20,6 +20,11 @@ with these differences:
 4. California Housing: the main experiment uses prerecorded notebook times
    for OriginalWoodelf at D=9–15. Those were measured with the full
    background, so here the description says that.
+5. PLTreeSHAP runs some cells on more trees than in the main experiment
+   (_PLT_TREES): cells whose reduced-tree estimate in the first m=100 run was
+   under 1500 s run all 100 trees, and on California Housing it runs the
+   depths where the main experiment gave it OriginalWoodelf's prerecorded
+   times (the two share one per-depth table there).
 
 Run from project root:
     python -m benchmarks.woodelfhd_m100_experiment
@@ -27,12 +32,13 @@ Run from project root:
 
 from __future__ import annotations
 
+from dataclasses import replace
 from functools import partial
 from pathlib import Path
 
 from treebranchmarks import Experiment
 from treebranchmarks.core.cli import run_experiment_cli
-from treebranchmarks.core.mission import ApproachDOverride, ControlledMission, PrerecordedTime
+from treebranchmarks.core.mission import ApproachDOverride, ControlledMission, ModelSpec, PrerecordedTime
 from treebranchmarks.core.task import TaskType
 from treebranchmarks.datasets import (
     CaliforniaHousingDataset,
@@ -69,16 +75,39 @@ def _relabel(spec):
     return spec
 
 
-def _adapt(overrides: list[ApproachDOverride]) -> list[ApproachDOverride]:
-    """Swap in the m=100 SHAP approach and relabel prerecorded times."""
-    return [
-        ApproachDOverride(
+# PLTreeSHAP cells that run on more trees than in the main experiment: (dataset, task) -> {D: T}.
+# T=100: the reduced-tree estimate in the first m=100 run was under 1500 s. Their old
+# estimates must be removed from pltreeshap_fasttreeshap.json, or they are served from cache.
+# California Housing D=12-15 BG SHAP and D=9-12 BG IV: the main experiment gives PLTreeSHAP
+# OriginalWoodelf's prerecorded times there, so here they are run.
+_BG_SHAP, _BG_IV = TaskType.BACKGROUND_SHAP, TaskType.BACKGROUND_SHAP_INTERACTIONS
+_PLT_TREES = {
+    ("fraud_detection",     _BG_SHAP): {12: 100, 15: 100},
+    ("fraud_detection",     _BG_IV):   {12: 100},
+    ("higgs",               _BG_IV):   {9: 100},
+    ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100},
+    ("intrusion_detection", _BG_IV):   {12: 100},
+    ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: 10},
+    ("california_housing",  _BG_IV):   {9: 100, 12: 100},
+}
+
+
+def _adapt(overrides: list[ApproachDOverride], label: str, task_type: TaskType) -> list[ApproachDOverride]:
+    """Swap in the m=100 SHAP approach, relabel prerecorded times and apply _PLT_TREES."""
+    out = []
+    for ov in overrides:
+        model_by_D = {D: _relabel(spec) for D, spec in ov.model_by_D.items()}
+        if ov.approach is main._PLTREESHAP_FTS:
+            base = next(s for s in model_by_D.values() if isinstance(s, ModelSpec))
+            for D, T in _PLT_TREES.get((label, task_type), {}).items():
+                hp = {**base.config.hyperparams, "max_depth": D, "n_estimators": T}
+                model_by_D[D] = ModelSpec(replace(base.config, hyperparams=hp), base.wrapper)
+        out.append(ApproachDOverride(
             approach=_SHAP if ov.approach is main._SHAP else ov.approach,
             full_T=ov.full_T,
-            model_by_D={D: _relabel(spec) for D, spec in ov.model_by_D.items()},
-        )
-        for ov in overrides
-    ]
+            model_by_D=model_by_D,
+        ))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +136,7 @@ def build_missions(cache_root: Path = CACHE_ROOT) -> list[ControlledMission]:
         ]:
             missions.append(main._mission(
                 f"{label} {sfx} sweep_D", dataset, D_values,
-                _adapt(overrides_fn(task_type, specs)),
+                _adapt(overrides_fn(task_type, specs), label, task_type),
                 task_type, n, M_BACKGROUND, cache_root,
             ))
     return missions
