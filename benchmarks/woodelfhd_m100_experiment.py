@@ -19,11 +19,14 @@ with these differences:
    compute by ~10x.
 4. California Housing: the main experiment uses prerecorded notebook times
    for OriginalWoodelf at D=9–15. Those were measured with the full
-   background, so here the description says that.
-5. PLTreeSHAP runs some cells on more trees than in the main experiment
-   (_PLT_TREES). Cells whose reduced-tree estimate in an earlier m=100 run
-   was cheap enough run on all 100 trees. On California Housing it also runs
-   the depths where the main experiment gave it OriginalWoodelf's prerecorded
+   background, so here the description says that. BG IV D=9 is run here
+   (see 5). The others would take a day or more. Nearly all of their time
+   (97–98% in the source notebook) is building M matrices, which does not
+   depend on the background, so m=100 would give almost the same times.
+5. Some cells run on more trees than in the main experiment (_MORE_TREES).
+   Cells whose reduced-tree estimate in an earlier m=100 run was cheap enough
+   run on all 100 trees. On California Housing, PLTreeSHAP also runs the
+   depths where the main experiment gave it OriginalWoodelf's prerecorded
    times (the two share one per-depth table there).
 
 Run from project root:
@@ -75,32 +78,49 @@ def _relabel(spec):
     return spec
 
 
-# PLTreeSHAP cells that run on more trees than in the main experiment: (dataset, task) -> {D: T}.
+# Cells that run on more trees than in the main experiment: approach -> (dataset, task) -> {D: T}.
 # These cells were estimated from 1 or 10 trees in an earlier m=100 run and are cheap enough to
-# measure on all 100. When a cell is added here, its old estimate must be removed from
-# pltreeshap_fasttreeshap.json, or it is served from the cache.
-# California Housing D=12-15 BG SHAP and D=9-12 BG IV: the main experiment gives PLTreeSHAP
-# OriginalWoodelf's prerecorded times there, so here they are run.
+# measure on all 100. When a cell is added here, its old estimate must be removed from the
+# method's results JSON (e.g. woodelf_hd.json), or it is served from the cache.
+# California Housing PLTreeSHAP D=12-15 BG SHAP and D=9-12 BG IV, and OriginalWoodelf BG IV D=9:
+# the main experiment gives these OriginalWoodelf's prerecorded times (PLTreeSHAP shares its
+# per-depth table there), so here they are run.
 _BG_SHAP, _BG_IV = TaskType.BACKGROUND_SHAP, TaskType.BACKGROUND_SHAP_INTERACTIONS
-_PLT_TREES = {
-    ("fraud_detection",     _BG_SHAP): {12: 100, 15: 100},
-    ("fraud_detection",     _BG_IV):   {12: 100},
-    ("higgs",               _BG_IV):   {9: 100},
-    ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100, 15: 100},
-    ("intrusion_detection", _BG_IV):   {12: 100},
-    ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: 100},
-    ("california_housing",  _BG_IV):   {9: 100, 12: 100},
+_MORE_TREES = {
+    main._PLTREESHAP_FTS: {
+        ("fraud_detection",     _BG_SHAP): {12: 100, 15: 100},
+        ("fraud_detection",     _BG_IV):   {12: 100},
+        ("higgs",               _BG_IV):   {9: 100},
+        ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100, 15: 100},
+        ("intrusion_detection", _BG_IV):   {12: 100},
+        ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: 100},
+        ("california_housing",  _BG_IV):   {9: 100, 12: 100},
+    },
+    main._WOODELF_HD: {
+        ("higgs",               _BG_IV):   {9: 100, 12: 100, 15: 100, 18: 100},
+        ("intrusion_detection", _BG_SHAP): {12: 100},
+        ("intrusion_detection", _BG_IV):   {12: 100, 15: 100, 18: 100},
+    },
+    main._WOODELF_AAAI: {
+        ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100},
+        ("california_housing",  _BG_SHAP): {9: 100},
+        ("california_housing",  _BG_IV):   {9: 100},
+    },
+    main._SHAP: {
+        ("california_housing",  _BG_SHAP): {25: 100},
+    },
 }
 
 
 def _adapt(overrides: list[ApproachDOverride], label: str, task_type: TaskType) -> list[ApproachDOverride]:
-    """Swap in the m=100 SHAP approach, relabel prerecorded times and apply _PLT_TREES."""
+    """Swap in the m=100 SHAP approach, relabel prerecorded times and apply _MORE_TREES."""
     out = []
     for ov in overrides:
         model_by_D = {D: _relabel(spec) for D, spec in ov.model_by_D.items()}
-        if ov.approach is main._PLTREESHAP_FTS:
+        more = _MORE_TREES.get(ov.approach, {}).get((label, task_type), {})
+        if more:
             base = next(s for s in model_by_D.values() if isinstance(s, ModelSpec))
-            for D, T in _PLT_TREES.get((label, task_type), {}).items():
+            for D, T in more.items():
                 hp = {**base.config.hyperparams, "max_depth": D, "n_estimators": T}
                 model_by_D[D] = ModelSpec(replace(base.config, hyperparams=hp), base.wrapper)
         out.append(ApproachDOverride(
