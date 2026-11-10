@@ -41,7 +41,7 @@ from pathlib import Path
 
 from treebranchmarks import Experiment
 from treebranchmarks.core.cli import run_experiment_cli
-from treebranchmarks.core.mission import ApproachDOverride, ControlledMission, ModelSpec, PrerecordedTime
+from treebranchmarks.core.mission import MEMORY_CRASH, ApproachDOverride, ControlledMission, ModelSpec, PrerecordedTime
 from treebranchmarks.core.task import TaskType
 from treebranchmarks.datasets import (
     CaliforniaHousingDataset,
@@ -84,7 +84,9 @@ def _relabel(spec):
 # method's results JSON (e.g. woodelf_hd.json), or it is served from the cache.
 # California Housing PLTreeSHAP D=12-15 BG SHAP and D=9-12 BG IV, and OriginalWoodelf BG IV D=9:
 # the main experiment gives these OriginalWoodelf's prerecorded times (PLTreeSHAP shares its
-# per-depth table there), so here they are run.
+# per-depth table there), so here they are run. MEMORY_CRASH marks a cell that crashed on all
+# 100 trees: PLTreeSHAP BG SHAP D=15 there, because pltreeshap keeps 2^depth copies of every node
+# for all trees at once (~73 GB for that model), more than a Colab High-RAM runtime has.
 _BG_SHAP, _BG_IV = TaskType.BACKGROUND_SHAP, TaskType.BACKGROUND_SHAP_INTERACTIONS
 _MORE_TREES = {
     main._PLTREESHAP_FTS: {
@@ -93,7 +95,7 @@ _MORE_TREES = {
         ("higgs",               _BG_IV):   {9: 100},
         ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100, 15: 100},
         ("intrusion_detection", _BG_IV):   {12: 100},
-        ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: 100},
+        ("california_housing",  _BG_SHAP): {9: 100, 12: 100, 15: MEMORY_CRASH},
         ("california_housing",  _BG_IV):   {9: 100, 12: 100},
     },
     main._WOODELF_HD: {
@@ -121,6 +123,9 @@ def _adapt(overrides: list[ApproachDOverride], label: str, task_type: TaskType) 
         if more:
             base = next(s for s in model_by_D.values() if isinstance(s, ModelSpec))
             for D, T in more.items():
+                if T is MEMORY_CRASH:
+                    model_by_D[D] = MEMORY_CRASH
+                    continue
                 hp = {**base.config.hyperparams, "max_depth": D, "n_estimators": T}
                 model_by_D[D] = ModelSpec(replace(base.config, hyperparams=hp), base.wrapper)
         out.append(ApproachDOverride(
