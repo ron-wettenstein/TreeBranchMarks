@@ -18,11 +18,9 @@ with these differences:
    extrapolated. Set ``_SHAP_BG_LIMIT = 10`` to match that and cut SHAP
    compute by ~10x.
 4. California Housing: the main experiment uses prerecorded notebook times
-   for OriginalWoodelf at D=9–15. Those were measured with the full
-   background, so here the description says that. BG IV D=9 is run here
-   (see 5). The others would take a day or more. Nearly all of their time
-   (97–98% in the source notebook) is building M matrices, which does not
-   depend on the background, so m=100 would give almost the same times.
+   for OriginalWoodelf at D=9–15, measured with the full background. Here
+   these cells are run with m=100 (see 5): D=9 on 100 trees, D=12 and D=15
+   on 1 tree (on 100 trees they would take days).
 5. Some cells run on more trees than in the main experiment (_MORE_TREES).
    Cells whose reduced-tree estimate in an earlier m=100 run was cheap enough
    run on all 100 trees. On California Housing, PLTreeSHAP also runs the
@@ -82,9 +80,9 @@ def _relabel(spec):
 # These cells were estimated from 1 or 10 trees in an earlier m=100 run and are cheap enough to
 # measure on all 100. When a cell is added here, its old estimate must be removed from the
 # method's results JSON (e.g. woodelf_hd.json), or it is served from the cache.
-# California Housing PLTreeSHAP D=12-15 BG SHAP and D=9-12 BG IV, and OriginalWoodelf BG IV D=9:
-# the main experiment gives these OriginalWoodelf's prerecorded times (PLTreeSHAP shares its
-# per-depth table there), so here they are run. MEMORY_CRASH marks a cell that crashed on all
+# California Housing PLTreeSHAP and OriginalWoodelf at D=9-15: the main experiment gives these
+# OriginalWoodelf's prerecorded full-background times (PLTreeSHAP shares its per-depth table
+# there), so here they are run with m=100. MEMORY_CRASH marks a cell that crashed on all
 # 100 trees: PLTreeSHAP BG SHAP D=15 there, because pltreeshap keeps 2^depth copies of every node
 # for all trees at once (~73 GB for that model), more than a Colab High-RAM runtime has.
 _BG_SHAP, _BG_IV = TaskType.BACKGROUND_SHAP, TaskType.BACKGROUND_SHAP_INTERACTIONS
@@ -105,8 +103,8 @@ _MORE_TREES = {
     },
     main._WOODELF_AAAI: {
         ("intrusion_detection", _BG_SHAP): {9: 100, 12: 100},
-        ("california_housing",  _BG_SHAP): {9: 100},
-        ("california_housing",  _BG_IV):   {9: 100},
+        ("california_housing",  _BG_SHAP): {9: 100, 12: 1, 15: 1},
+        ("california_housing",  _BG_IV):   {9: 100, 12: 1},
     },
     main._SHAP: {
         ("california_housing",  _BG_SHAP): {25: 100},
